@@ -1,0 +1,146 @@
+[package]
+name = "suitecrm_gemini"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "SuiteCRM with Gemini AI Integration"
+license = "MIT"
+repository = "https://github.com/yourusername/suitecrm_gemini"
+keywords = ["crm", "ai", "gemini", "suitecrm", "postgresql"]
+categories = ["command-line-utilities", "web-programming"]
+
+[dependencies]
+# Async Runtime
+tokio = { version = "1.36", features = ["full"] }
+
+# Web Framework
+actix-web = "4.5"
+actix-cors = "0.7"
+
+# Database - PostgreSQL
+sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "postgres", "uuid", "chrono", "macros"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# CLI
+clap = { version = "4.5", features = ["derive", "color", "suggestions"] }
+
+# Error Handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+env_logger = "0.11"
+log = "0.4"
+
+# Configuration
+dotenv = "0.15"
+
+# UUID Generation
+uuid = { version = "1.7", features = ["v4", "serde"] }
+
+# Date/Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Gemini AI Client (when available)
+# gemini_client_rust = "0.1"
+
+# HTTP Client for Gemini API
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }[package]
+name = "gemini_crm"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "AI-Powered CRM with Gemini Integration"
+license = "MIT"
+repository = "https://github.com/yourusername/gemini_crm"
+keywords = ["crm", "ai", "gemini", "cli", "web"]
+categories = ["command-line-utilities", "web-programming"]
+
+[dependencies]
+# Gemini AI Client
+gemini_client_rust = "0.1"
+
+# Async Runtime
+tokio = { version = "1.36", features = ["full"] }
+
+# Web Framework (for API server)
+actix-web = "4.5"
+actix-cors = "0.7"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Database
+rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
+
+# Date/Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# CLI
+clap = { version = "4.5", features = ["derive", "color", "suggestions"] }
+dialoguer = "0.11"
+colored = "2.1"
+
+# Error Handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+env_logger = "0.11"
+log = "0.4"
+
+# Table Display
+prettytable-rs = "0.10"
+
+# Configuration
+dirs = "5.0"
+dotenv = "0.15"
+
+# HTTP Client (if needed for Gemini client)
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+
+# UUID Generation (for unique IDs)
+uuid = { version = "1.7", features = ["v4", "serde"] }
+
+[dev-dependencies]
+# Testing
+mockito = "1.4"
+tempfile = "3.10"
+criterion = "0.5"
+
+[profile.release]
+# Optimize for size
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev]
+# Faster compilation in development
+opt-level = 0
+debug = true
+
+[[bin]]
+name = "gemini_crm"
+path = "src/main.rs"
+
+[features]
+default = ["cli", "api"]
+cli = []
+api = ["actix-web", "actix-cors"]
+
+# Optional features
+telemetry = ["opentelemetry", "opentelemetry-jaeger"]
+metrics = ["prometheus"]
+
+[build-dependencies]
+# Add any build dependencies here if needed
+
+[workspace]
+# If you want to split into multiple crates later
+members = ["."]

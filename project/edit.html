@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CRM Database</title>
+    <style>
+        body {
+            line-height: 2.5em;
+            margin: 30px;
+        }
+        input {
+            min-width: 250px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CRM Database Tables</h1>
+    
+    <div id="connection-status">
+        <p>Checking database connection...</p>
+    </div>
+    
+    <div id="tables-list"></div>
+    
+    <hr>
+    
+    <h2>Add New Project</h2>
+    <form id="project-form">
+        <label>Project Name: <input type="text" name="name" required></label><br>
+        <label>Description: <textarea name="description"></textarea></label><br>
+        <label>Status: 
+            <select name="status">
+                <option value="Draft">Draft</option>
+                <option value="In Review">In Review</option>
+                <option value="Published">Published</option>
+            </select>
+        </label><br>
+        <label>Start Date: <input type="date" name="estimated_start_date"></label><br>
+        <label>End Date: <input type="date" name="estimated_end_date"></label><br>
+        <button type="submit">Add Project</button>
+    </form>
+    
+    <div id="form-result"></div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        
+        // Check database connection and load tables
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (data.database_connected) {
+                    document.getElementById('connection-status').innerHTML = 
+                        '<p style="color: green;">✓ Database connected</p>';
+                    loadTables();
+                } else {
+                    document.getElementById('connection-status').innerHTML = 
+                        `<p style="color: red;">✗ Database connection failed: ${data.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('connection-status').innerHTML = 
+                    `<p style="color: red;">✗ API connection failed: ${error.message}</p>`;
+            }
+        }
+        
+        // Load and display tables
+        async function loadTables() {
+            try {
+                const response = await fetch(`${API_BASE}/tables`);
+                const data = await response.json();
+                
+                let html = '<h2>Database Tables:</h2><ul>';
+                for (const table of data.tables) {
+                    html += `<li>${table.name} (${table.row_count} rows)</li>`;
+                }
+                html += '</ul>';
+                
+                document.getElementById('tables-list').innerHTML = html;
+            } catch (error) {
+                document.getElementById('tables-list').innerHTML = 
+                    `<p style="color: red;">Failed to load tables: ${error.message}</p>`;
+            }
+        }
+        
+        // Handle project form submission
+        document.getElementById('project-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const project = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                status: formData.get('status'),
+                estimated_start_date: formData.get('estimated_start_date'),
+                estimated_end_date: formData.get('estimated_end_date')
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/projects`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(project)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('form-result').innerHTML = 
+                        '<p style="color: green;">✓ Project added successfully!</p>';
+                    e.target.reset();
+                    loadTables(); // Refresh table counts
+                } else {
+                    document.getElementById('form-result').innerHTML = 
+                        `<p style="color: red;">✗ Error: ${result.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('form-result').innerHTML = 
+                    `<p style="color: red;">✗ Error: ${error.message}</p>`;
+            }
+        });
+        
+        // Initialize
+        checkConnection();
+    </script>
+</body>
+</html>
