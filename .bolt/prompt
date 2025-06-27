@@ -1,15 +1,83 @@
 For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured, functional and ready for production using frontend JAM Stack javascript with REST html forms that interact with Google-hosted Rust backend using the Google Gemini CLI, Google Gemini API, and/or gemini_client_rust and/or Leptos Rust SQLx.
 
-Backend SQL data schema reside at:
+Backend SQL data schema resides in sql/suitecrm-postgres.sql and provides a PostgreSQL database generation script atching SuiteCRM which uses table and field names akin to Salesforce and Microsoft Dynamics.
 
-Backend SQL data schema is SuiteCRM which is akin to Salesforce and Microsoft Dynamics.
+Store private connection keys in a separate file from the main cargo.toml file.
 
-Store private keys in a separate file from the main cargo.toml file.
+Default Postgres database config, compatible with Azure and Google:
+server = 'model-earth-server.database.windows.net'
+database = 'ModelEarthDB'    
+username = 'sqladmin'              
+password = ''
+
+When there is no password or the connection fails, populate the data pull process with placeholders that convey information about the data that was not loadable.
 
 Frontend JAM Stack javascript will include API Configuration and State Management.
 
-Frontend javascript will include:
+Frontend javascript might include:
 const API_BASE = 'http://localhost:8080/membersense/api'; // Update this to match your Rust backend URL
 
 Frontend javascript display and interactivity will work without running a build.
 
+Our JAM Stack frontend javascript-driven design should be inspired by Notion’s aesthetic: modular, calm, and ultra-minimal. Use a soft, harmonious color palette featuring light green, pastel blue, and muted orange accents. The interface should include a minimal left sidebar column with simple icons for navigation (Home, Projects, People and Teams, My Account) along with navigation for their subnav which is initially hidden until clicking and arrow-toggle to the right of each mainnav. Left-side navigation will move smoothly to the left side to become a narrow column of icons. When briefly hovering over the narrow side icon column will expand right-ward and display all navigation titles at the same time, with an arrow to the right of each title to reveal its subnav. Each subnav item should have its own icon, which will remain visible when the side returns to a narrow column when rolling off the navigation after 1 second with a half second slide toward the left. The user can rollback back on within that second to deactivate the countdown and restore the full navigation.
+
+Main navigation (followed by the subnav for each):
+
+Home (Welcome, Documentation, Dashboard
+Projects (Opportunities, Assigned Tasks, Timelines)
+People and Teams (People, Teams, Organizations)
+My Account (Preferences, Skills, Interests)
+
+Each main page will have a folder with an index.html page where it will reside as its own single page app. In each main section, display tabs for the subnav.
+
+For subnav, our navigation links use single lowercase words in the format [mainnav]/#[subnav] via HashRouter instead of BrowserRouter to ensure compatibility with static file servers that do not support server-side routing. 
+
+Include a spacious main content area that uses Notion-style blocks, toggle sections, and modular cards to display team profiles, project tasks, timelines, and optional invoices. Style elements with soft shadows, rounded corners, and subtle gradients. Typography should use Inter or SF Pro, with bold titles (24–32px), clean labels, and fine secondary text. The background should be neutral (#F9FAFB), with dark readable text (#1A1A1A), generous padding, and consistent vertical rhythm. Every element should feel deliberate and easy to interact with — large touch targets, soft dividers, and a layout that balances clarity with functionality. The final UI should feel like a blend of Notion and Apple design — professional, polished, and calming.
+
+Provide an easy to administer login auth system with Google, Github, LinkedIn, and an email login option. Provide an “Admin Demo” button to bypass the login. Store the auth keys in settings file that is excluded from deployment by .gitignore
+
+In the Projects section:
+Provide a detailed form for “Post an Activity” for adding to-do items (activities) to a project.
+Provide an “Join” button to join a specific project and/or activity.
+Allow the “Post an Activity” form to be used for posting job openings, 
+List job openings amid the Open Projects list and include an “Apply” button when an activity is a job opening. Otherwise show a “Join” button and allow anyone to join the project’s activity.
+
+In the Projects section, also integrate forms for managing campaigns, working with prospects, tracking calls and converting leads into participating project contributors. 
+
+Preferences page form will store user voting policy preferences in these tables from the SuiteCRM SQL schema provided above. Provide 20 "hot topic" voting policy preference areas for the user to rate that differ from the Interests below.
+
+users
+surveys
+surveyquestionoptions
+surveyquestionoptions_audit
+surveyquestionoptions_surveyquestionresponses
+surveyquestionresponses
+
+Use a survey process with the tables above for users to set their policy preferences. Set the default question type to be a 5 point scale (1-Strongly Disagree, 2-Disagree, 3-No Opinion, 4-Agree, 5-Strongly Agree). For each survey, display a sankey chart that relates the correlations between sets of user responses using light green to indicate positive correlations, and mauve (light red) to indicate negative correlations. For the Sankey chart's flow, in a survey admin form, provide a field for entering 2 to 5 question IDs as a comma separated list. Include all other fields in the surveys table as elements in the survey admin form.
+
+Include a step in the survey that collects the users location, age and other optional user data currently in the SuiteCRM users data schema structure provided.
+
+Include the following with 5-star ratings on the Interests page and store in the same SQL table structure as the Preferences survey above.
+
+Agriculture
+Aquifer Restoration
+Climate Resilience
+Digital Inclusion
+Economic Growth
+Education
+Environmental Sustainability
+Financial Inclusion
+Food Security
+Governance & Transparency
+Healthcare Access
+Infrastructure Development
+Renewable Energy
+Rural Development
+Small Business Support
+Social Impact
+Technology Innovation
+Water & Sanitation
+Women's Empowerment
+Youth Programs
+
+Make the site exciting and motivating for the programming collaorators and job seekers using it to hook up with projects in their local neighborhoods. Our audience is technical coders who will be deploying AI to streamline government while providing realtime mentoring at local projects funded by Innovation Bonds.
