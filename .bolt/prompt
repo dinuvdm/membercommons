@@ -1,6 +1,6 @@
 For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured, functional and ready for production using frontend JAM Stack javascript with REST html forms that interact with Google-hosted Rust backend using gemini_client_rust and/or Google Gemini CLI and/or Google Gemini API and/or Leptos Rust SQLx.
 
-Backend SQL data schema resides in sql/suitecrm-postgres.sql and provides a PostgreSQL database generation script matching SuiteCRM which uses table and field names akin to Salesforce and Microsoft Dynamics.
+Backend SQL data schema resides in the sql/suitecrm-postgres.sql file and provides a PostgreSQL database generation script matching SuiteCRM which uses table and field names akin to Salesforce and Microsoft Dynamics.
 
 Create a clean, modern website for a project posting, assignment and to-do tracking system and all-in-one partner tool for managing public-facing listings in searchable directories with pagination above the directory. All members who register will be able to collaborate in managing account processes for other users in their respective teams, organizations and clients - to share opportunities, handle proposals, assign projects, track progress, configure and output invoices. SQL tables are similar to SuiteCRM, SalesForce and Microsoft Dynamics CDM and include:
 
@@ -27,6 +27,10 @@ The accounts table will serve as the table for both teams and organizations.
 There will not be an extra table for members or managers.
 
 Managers of each account will be the person who created the account. Provide managers of accounts (teams and organizations) with access to admin features for their accounts, including the ability to promote associated account users to managers and editors.
+
+Include functional Google Gemini integration throughout the frontend interface, including:
+1. Smart Insights: Provide sumarized analysis of account/contact relationships, teams and orgs and provide next step process and links for move projects forward.
+2. Natural Language Search: Search contacts using conversational queries
 
 Store private connection keys in a separate file from the main cargo.toml file.
 
