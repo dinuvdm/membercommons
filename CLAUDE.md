@@ -76,10 +76,22 @@ const API_BASE = 'http://localhost:8080/api'; // Backend URL
 
 ### Navigation Structure
 ```
-Home (Welcome, Documentation, Dashboard)
-├── Projects (Opportunities, Assigned Tasks, Timelines)  
-├── People and Teams (People, Teams, Organizations)
-└── My Account (Preferences, Skills, Interests)
+Home
+├── Welcome
+├── Documentation
+├── Dashboard
+Projects
+├── Opportunities
+├── Assigned Tasks
+├── Timelines 
+People and Teams
+├── People
+├── Teams
+├── Organizations
+My Account
+├── Preferences
+├── Skills
+├── Interests
 ```
 
 ### Key Dependencies
