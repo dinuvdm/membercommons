@@ -1,12 +1,12 @@
 [package]
 name = "MemberCommons"
-version = "0.1.0"
+version = "0.3"
 edition = "2025"
 authors = ["Loren Heyns <your.email@example.com>"]
-description = "SuiteCRM with Gemini AI Integration"
+description = "Bolt AI Integration with Common SQL Rust REST API and Azure PostgreSQL"
 license = "MIT"
-repository = "https://github.com/yourusername/suitecrm_gemini"
-keywords = ["crm", "ai", "gemini", "suitecrm", "postgresql"]
+repository = "https://github.com/localsite/membercommons"
+keywords = ["crm", "ai", "bolt.new", "suitecrm", "postgresql"]
 categories = ["command-line-utilities", "web-programming"]
 
 [dependencies]
