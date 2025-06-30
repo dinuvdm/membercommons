@@ -174,10 +174,13 @@ class ProjectsManager {
         const filteredProjects = this.getFilteredProjects();
         
         container.innerHTML = `
+            <p><img src="img/presenting-banner.jpg" style="width:100%;border-radius: 25px;"><br><br></p>
+                
             <div class="projects-header">
-                <div class="projects-title-section">
+                
+                <div class="projects-title-section" style="clear:both">
                     <h2 class="section-title">Project Opportunities</h2>
-                    <p class="section-subtitle">Discover and join exciting local projects that need your skills.</p>
+                    <p class="section-subtitle">Discover and join local tech projects to share and sharpen your <!--that need your--> skills.</p>
                 </div>
                 
                 <div class="projects-actions">
