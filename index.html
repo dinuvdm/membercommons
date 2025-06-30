@@ -398,6 +398,7 @@
             display: block;
         }
 
+
         .card {
             background: var(--bg-secondary);
             border-radius: var(--radius-lg);
@@ -796,7 +797,7 @@
                                 <i class="subnav-icon" data-feather="smile"></i>
                                 <span>Welcome</span>
                             </a>
-                            <a href="#start" class="subnav-link" data-tab="start">
+                            <a href="#documentation" class="subnav-link" data-tab="documentation">
                                 <i class="subnav-icon" data-feather="book"></i>
                                 <span>Getting Started</span>
                             </a>
@@ -899,7 +900,7 @@
                 <div class="section active" id="home-section">
 
                     <!-- Welcome Tab -->
-                    <div class="tab-content active" id="welcome-tab">
+                    <div class="tab-content" id="welcome-tab">
                         <div class="welcome-hero">
                             <a href="https://bolt.new/" target="bolt"><img onclick="goWelcome()" style="position:absolute; opacity:1;right:55px; top:150px;cursor:pointer; width:130px;" src="img/logo/bolt/bolt-built.png"></a>
                             <h1 class="hero-title">Welcome to DemocracyLab 2.0!</h1>
@@ -915,7 +916,7 @@
 
                         <div class="tabs">
                             <button class="tab active" data-tab="welcome">Welcome</button>
-                            <button class="tab" data-tab="start">Getting Started</button>
+                            <button class="tab" data-tab="documentation">Getting Started</button>
                             <button class="tab" data-tab="dashboard">Dashboard</button>
                         </div>
 
@@ -1045,8 +1046,8 @@
                             <div style="background: var(--bg-tertiary); padding: 20px; border-radius: var(--radius-md); margin-bottom: 16px;">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                                     <div>
-                                        <h4 style="margin: 0 0 4px 0;">Database Schema Design</h4>
-                                        <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">AI-Powered Economic Development Dashboard</p>
+                                        <h4 style="margin: 0 0 4px 0;">Database Schema install script for Azure</h4>
+                                        <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">AI-Powered Economic Development Dashboard using <a href="/profile/crm/">Standards Based SQL</a></p>
                                     </div>
                                     <span class="status-badge status-in_progress">In Progress</span>
                                 </div>
@@ -1063,7 +1064,7 @@
                             <div style="background: var(--bg-tertiary); padding: 20px; border-radius: var(--radius-md); margin-bottom: 16px;">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                                     <div>
-                                        <h4 style="margin: 0 0 4px 0;">User Interface Review</h4>
+                                        <h4 style="margin: 0 0 4px 0;">Bolt AI updates to Team Project Interface for Review</h4>
                                         <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Community Resource Mapping Platform</p>
                                     </div>
                                     <span class="status-badge status-open">Pending</span>
@@ -1117,7 +1118,7 @@
                     </div>
                     
                     <!-- People Tab -->
-                    <div class="tab-content active" id="people-tab">
+                    <div class="tab-content" id="people-tab">
                         <div class="card">
                             <div class="card-header">
                                 <h2 class="card-title">People Directory</h2>
@@ -1554,7 +1555,7 @@
                     </div>
                     
                     <!-- Preferences Tab -->
-                    <div class="tab-content active" id="preferences-tab">
+                    <div class="tab-content" id="preferences-tab">
                         <div class="card">
                             <div class="card-header">
                                 <h2 class="card-title">My Policy Preferences</h2>
@@ -2484,7 +2485,7 @@
                 tab.addEventListener('click', function() {
                     const tabName = this.getAttribute('data-tab');
                     if (tabName) {
-                        router.navigate(AppState.currentSection, tabName);
+                        switchTab(tabName);
                     }
                 });
             });
@@ -2602,17 +2603,24 @@
         function switchTab(tabName) {
             AppState.currentTab = tabName;
             
-            // Hide all tab contents in current section
+            // Update tab button active states
             const currentSection = document.querySelector('.section.active');
             if (currentSection) {
-                currentSection.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.remove('active');
+                currentSection.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.remove('active');
+                    if (tab.getAttribute('data-tab') === tabName) {
+                        tab.classList.add('active');
+                    }
                 });
                 
-                // Show target tab content
+                // Scroll to the target section
                 const targetContent = currentSection.querySelector(`#${tabName}-tab`);
                 if (targetContent) {
-                    targetContent.classList.add('active');
+                    targetContent.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start',
+                        inline: 'nearest'
+                    });
                 }
             }
         }
