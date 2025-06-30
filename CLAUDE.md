@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `cargo test` - Run tests
 
 ### Development Mode
-- `cargo run -- serve` starts server on localhost:8080 by default
+- `cargo run -- serve` starts server on localhost:8081 by default
 - Server host/port configurable via `SERVER_HOST`/`SERVER_PORT` environment variables
 
 ## Project Vision & Requirements
@@ -43,8 +43,52 @@ Technical coders and programmers who deploy AI to streamline government processe
 - **Design Philosophy**: Notion-inspired aesthetic - modular, calm, ultra-minimal
 - **Color Palette**: Light green, pastel blue, muted orange accents on neutral background (#F9FAFB)
 - **Navigation**: Collapsible left sidebar with smooth animations
-- **Routing**: HashRouter for static compatibility (`[mainnav]/#[subnav]`)
+- **Routing**: HashRouter for static compatibility with deep linking support
 - **No Build Required**: Frontend works directly without compilation
+
+### HashRouter Implementation
+The application implements a sophisticated HashRouter system that enables:
+- **Deep Linking**: Direct navigation to any section/tab via URL hash
+- **Parameter Preservation**: URL parameters persist across navigation changes
+- **State Management**: Automatic UI updates based on URL changes
+- **Filter Integration**: Search terms, city filters, and project filters are reflected in URL
+
+#### URL Structure
+```
+#section/tab?param1=value1&param2=value2
+```
+
+#### Examples
+- `#home/welcome` - Home section, Welcome tab
+- `#projects/opportunities?city=atlanta&filter=innovation_bonds` - Projects with filters
+- `#people/teams?search=react` - People section with search term
+- `#account/preferences` - Account preferences
+
+#### Navigation Methods
+- Click navigation elements to update URL automatically
+- Use `router.navigate(section, tab, params)` programmatically
+- Use `router.setParam(key, value)` to update individual parameters
+- Parameters automatically applied to filters and search inputs
+
+#### HashRouter Features
+1. **Automatic Validation**: Invalid sections/tabs default to valid alternatives
+2. **Parameter Persistence**: Moving from `#home/dashboard?city=Atlanta` to `#people` becomes `#people/people?city=Atlanta`
+3. **Filter Synchronization**: URL parameters automatically populate form filters
+4. **Browser Integration**: Full browser back/forward button support
+5. **Bookmarkable URLs**: Any application state can be bookmarked and shared
+
+#### Supported URL Parameters
+- `city`: Filter by location (atlanta, portland, detroit, remote)
+- `search`: Search term for projects or people
+- `filter`: Project filter (all, opportunities, job_openings, innovation_bonds, high_priority)
+- `skill`: Filter by technical skill
+- `experience`: Filter by experience level
+
+#### Implementation Notes
+- HashRouter is initialized on DOM load and handles all navigation automatically
+- Existing navigation event handlers updated to use `router.navigate()` instead of direct DOM manipulation
+- Filter changes trigger URL updates with 500ms debounce for search inputs
+- All application state syncs with URL parameters for consistent user experience
 
 ### Database Schema
 Complete CRM schema based on SuiteCRM/Salesforce structure:
@@ -62,7 +106,7 @@ Complete CRM schema based on SuiteCRM/Salesforce structure:
    DATABASE_URL=postgresql://sqladmin@model-earth-server.database.windows.net/ModelEarthDB
    GEMINI_API_KEY=your_key_here
    SERVER_HOST=127.0.0.1
-   SERVER_PORT=8080
+   SERVER_PORT=8081
    ```
 
 2. **Fallback Handling**: When database connection fails, populate with informative placeholders rather than errors
@@ -71,7 +115,7 @@ Complete CRM schema based on SuiteCRM/Salesforce structure:
 
 ### Frontend Setup Requirements
 ```javascript
-const API_BASE = 'http://localhost:8080/api'; // Backend URL
+const API_BASE = 'http://localhost:8081/api'; // Backend URL
 ```
 
 ### Navigation Structure

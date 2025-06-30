@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - MemberCommons</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css">
+    
+    <!-- Shared Navigation Styles -->
+    <link rel="stylesheet" href="../css/navigation.css">
+    
+    <!-- Page-specific Styles -->
+    <link rel="stylesheet" href="../css/account.css">
+    
+    <style>
+        :root {
+            --bg-primary: #F9FAFB;
+            --bg-secondary: #FFFFFF;
+            --bg-tertiary: #F3F4F6;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --accent-green: #10B981;
+            --accent-blue: #3B82F6;
+            --accent-orange: #F59E0B;
+            --border-light: #E5E7EB;
+            --border-medium: #D1D5DB;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --sidebar-width: 280px;
+            --sidebar-collapsed: 64px;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-light);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #059669;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-light);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-light);
+            color: var(--text-primary);
+        }
+
+        /* Page content specific styles */
+        .page-content {
+            display: none;
+        }
+
+        .page-content.active {
+            display: block;
+        }
+
+        /* Survey styles */
+        .survey-progress {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar {
+            width: 200px;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-green);
+            border-radius: var(--radius-sm);
+            transition: width 0.3s ease;
+        }
+
+        .survey-container {
+            margin-bottom: 24px;
+        }
+
+        .survey-navigation {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .survey-results {
+            margin-top: 32px;
+        }
+
+        .sankey-chart-container {
+            margin: 24px 0;
+            text-align: center;
+        }
+
+        .profile-summary {
+            display: grid;
+            gap: 16px;
+        }
+
+        .profile-category {
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+        }
+
+        .category-score {
+            font-weight: 600;
+            color: var(--accent-green);
+            margin-bottom: 8px;
+        }
+
+        .category-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Skills styles */
+        .skills-section {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .skill-category {
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 24px;
+        }
+
+        .skill-category:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .category-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .skills-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .skill-item {
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .skill-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .skill-level {
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .skill-level.expert {
+            background: #DCFCE7;
+            color: #166534;
+        }
+
+        .skill-level.advanced {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .skill-level.intermediate {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .skill-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .skill-progress {
+            height: 100%;
+            background: var(--accent-green);
+            border-radius: var(--radius-sm);
+            transition: width 0.3s ease;
+        }
+
+        .skill-experience {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .certifications-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .certification-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+        }
+
+        .cert-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-orange);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .cert-info {
+            flex: 1;
+        }
+
+        .cert-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .cert-issuer {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .cert-date {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .cert-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .cert-badge.verified {
+            background: #DCFCE7;
+            color: #166534;
+        }
+
+        /* Interests styles */
+        .interests-summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .summary-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .interests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .interest-card {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .interest-header {
+            margin-bottom: 16px;
+        }
+
+        .interest-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-blue);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin: 0 auto 12px;
+        }
+
+        .interest-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .star-rating {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .star-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--border-medium);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .star-btn.active {
+            color: #F59E0B;
+        }
+
+        .star-btn:hover {
+            color: #F59E0B;
+        }
+
+        .interest-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .interests-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation will be injected here by navigation.js -->
+    
+    <!-- Preferences Content -->
+    <div id="preferences-content" class="page-content active">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">My Policy Preferences</h2>
+                <div class="survey-progress">
+                    <span class="progress-text">0 of 20 completed</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 24px;">Rate your agreement with these policy positions to help us match you with aligned projects and collaborators.</p>
+            
+            <div class="survey-container" id="survey-container">
+                <!-- All survey questions will be loaded here with 5-star ratings -->
+            </div>
+
+            <div class="survey-navigation">
+                <button class="btn btn-primary" id="save-survey">Save Progress</button>
+                <button class="btn btn-primary" id="finish-survey">Complete Survey</button>
+            </div>
+
+            <div class="survey-results" style="display: none;">
+                <h3>Your Policy Profile</h3>
+                <div class="sankey-chart-container">
+                    <canvas id="sankey-chart" width="600" height="300"></canvas>
+                </div>
+                <div class="profile-summary">
+                    <div class="profile-category">
+                        <h4>Technology & Innovation</h4>
+                        <div class="category-score">Strong Support (4.2/5)</div>
+                        <div class="category-description">You strongly support government investment in technology and innovation initiatives.</div>
+                    </div>
+                    <div class="profile-category">
+                        <h4>Environmental Policy</h4>
+                        <div class="category-score">Strong Support (4.8/5)</div>
+                        <div class="category-description">You are highly aligned with environmental protection and renewable energy policies.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skills Content -->
+    <div id="skills-content" class="page-content">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Technical Skills & Expertise</h2>
+                <button class="btn btn-primary">
+                    <i data-feather="plus"></i>
+                    Add Skill
+                </button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 24px;">Showcase your technical skills to attract relevant project opportunities and collaborators.</p>
+            
+            <div class="skills-section">
+                <div class="skill-category">
+                    <h3 class="category-title">Programming Languages</h3>
+                    <div class="skills-grid">
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name">JavaScript</span>
+                                <span class="skill-level expert">Expert</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 90%"></div>
+                            </div>
+                            <div class="skill-experience">5+ years • React, Node.js, TypeScript</div>
+                        </div>
+
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name">Python</span>
+                                <span class="skill-level advanced">Advanced</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 80%"></div>
+                            </div>
+                            <div class="skill-experience">3+ years • Django, FastAPI, Data Science</div>
+                        </div>
+
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name">Rust</span>
+                                <span class="skill-level intermediate">Intermediate</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 60%"></div>
+                            </div>
+                            <div class="skill-experience">1+ year • Actix-web, SQLx</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-category">
+                    <h3 class="category-title">Frameworks & Libraries</h3>
+                    <div class="skills-grid">
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name">React</span>
+                                <span class="skill-level expert">Expert</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 95%"></div>
+                            </div>
+                            <div class="skill-experience">4+ years • Hooks, Context, Redux</div>
+                        </div>
+
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name">Node.js</span>
+                                <span class="skill-level advanced">Advanced</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 85%"></div>
+                            </div>
+                            <div class="skill-experience">3+ years • Express, NestJS, APIs</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-category">
+                    <h3 class="category-title">Cloud & DevOps</h3>
+                    <div class="skills-grid">
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name">AWS</span>
+                                <span class="skill-level advanced">Advanced</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 75%"></div>
+                            </div>
+                            <div class="skill-experience">2+ years • EC2, Lambda, RDS, S3</div>
+                        </div>
+
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name">Docker</span>
+                                <span class="skill-level advanced">Advanced</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 80%"></div>
+                            </div>
+                            <div class="skill-experience">3+ years • Containerization, Compose</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-category">
+                    <h3 class="category-title">Certifications & Achievements</h3>
+                    <div class="certifications-grid">
+                        <div class="certification-item">
+                            <div class="cert-icon">
+                                <i data-feather="award"></i>
+                            </div>
+                            <div class="cert-info">
+                                <h4 class="cert-name">AWS Certified Developer</h4>
+                                <p class="cert-issuer">Amazon Web Services</p>
+                                <p class="cert-date">Issued: Jan 2024</p>
+                            </div>
+                            <div class="cert-badge verified">
+                                <i data-feather="check-circle"></i>
+                                Verified
+                            </div>
+                        </div>
+
+                        <div class="certification-item">
+                            <div class="cert-icon">
+                                <i data-feather="award"></i>
+                            </div>
+                            <div class="cert-info">
+                                <h4 class="cert-name">Google AI/ML Certificate</h4>
+                                <p class="cert-issuer">Google Cloud</p>
+                                <p class="cert-date">Issued: Nov 2023</p>
+                            </div>
+                            <div class="cert-badge verified">
+                                <i data-feather="check-circle"></i>
+                                Verified
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interests Content -->
+    <div id="interests-content" class="page-content">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Interest Areas</h2>
+                <div class="interests-summary">
+                    <span class="summary-text">8 of 20 interests rated</span>
+                </div>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 24px;">Rate your interest level in different project focus areas to receive personalized project recommendations.</p>
+            
+            <div class="interests-grid">
+                <div class="interest-card">
+                    <div class="interest-header">
+                        <div class="interest-icon">
+                            <i data-feather="cpu"></i>
+                        </div>
+                        <h3 class="interest-name">Technology Innovation</h3>
+                    </div>
+                    <div class="star-rating" data-interest="technology">
+                        <button class="star-btn active" data-rating="1">★</button>
+                        <button class="star-btn active" data-rating="2">★</button>
+                        <button class="star-btn active" data-rating="3">★</button>
+                        <button class="star-btn active" data-rating="4">★</button>
+                        <button class="star-btn active" data-rating="5">★</button>
+                    </div>
+                    <p class="interest-description">AI, machine learning, emerging technologies</p>
+                </div>
+
+                <div class="interest-card">
+                    <div class="interest-header">
+                        <div class="interest-icon">
+                            <i data-feather="leaf"></i>
+                        </div>
+                        <h3 class="interest-name">Environmental Sustainability</h3>
+                    </div>
+                    <div class="star-rating" data-interest="environment">
+                        <button class="star-btn active" data-rating="1">★</button>
+                        <button class="star-btn active" data-rating="2">★</button>
+                        <button class="star-btn active" data-rating="3">★</button>
+                        <button class="star-btn active" data-rating="4">★</button>
+                        <button class="star-btn" data-rating="5">★</button>
+                    </div>
+                    <p class="interest-description">Climate solutions, renewable energy, green tech</p>
+                </div>
+
+                <div class="interest-card">
+                    <div class="interest-header">
+                        <div class="interest-icon">
+                            <i data-feather="book"></i>
+                        </div>
+                        <h3 class="interest-name">Education</h3>
+                    </div>
+                    <div class="star-rating" data-interest="education">
+                        <button class="star-btn active" data-rating="1">★</button>
+                        <button class="star-btn active" data-rating="2">★</button>
+                        <button class="star-btn active" data-rating="3">★</button>
+                        <button class="star-btn" data-rating="4">★</button>
+                        <button class="star-btn" data-rating="5">★</button>
+                    </div>
+                    <p class="interest-description">Digital literacy, educational technology</p>
+                </div>
+
+                <div class="interest-card">
+                    <div class="interest-header">
+                        <div class="interest-icon">
+                            <i data-feather="heart"></i>
+                        </div>
+                        <h3 class="interest-name">Healthcare Access</h3>
+                    </div>
+                    <div class="star-rating" data-interest="healthcare">
+                        <button class="star-btn active" data-rating="1">★</button>
+                        <button class="star-btn active" data-rating="2">★</button>
+                        <button class="star-btn active" data-rating="3">★</button>
+                        <button class="star-btn active" data-rating="4">★</button>
+                        <button class="star-btn active" data-rating="5">★</button>
+                    </div>
+                    <p class="interest-description">Health tech, medical access, public health</p>
+                </div>
+
+                <div class="interest-card">
+                    <div class="interest-header">
+                        <div class="interest-icon">
+                            <i data-feather="trending-up"></i>
+                        </div>
+                        <h3 class="interest-name">Economic Growth</h3>
+                    </div>
+                    <div class="star-rating" data-interest="economic">
+                        <button class="star-btn active" data-rating="1">★</button>
+                        <button class="star-btn active" data-rating="2">★</button>
+                        <button class="star-btn active" data-rating="3">★</button>
+                        <button class="star-btn" data-rating="4">★</button>
+                        <button class="star-btn" data-rating="5">★</button>
+                    </div>
+                    <p class="interest-description">Small business, entrepreneurship, innovation</p>
+                </div>
+
+                <div class="interest-card">
+                    <div class="interest-header">
+                        <div class="interest-icon">
+                            <i data-feather="shield"></i>
+                        </div>
+                        <h3 class="interest-name">Governance & Transparency</h3>
+                    </div>
+                    <div class="star-rating" data-interest="governance">
+                        <button class="star-btn active" data-rating="1">★</button>
+                        <button class="star-btn active" data-rating="2">★</button>
+                        <button class="star-btn active" data-rating="3">★</button>
+                        <button class="star-btn active" data-rating="4">★</button>
+                        <button class="star-btn" data-rating="5">★</button>
+                    </div>
+                    <p class="interest-description">Open government, accountability, civic tech</p>
+                </div>
+
+                <div class="interest-card">
+                    <div class="interest-header">
+                        <div class="interest-icon">
+                            <i data-feather="droplet"></i>
+                        </div>
+                        <h3 class="interest-name">Water & Sanitation</h3>
+                    </div>
+                    <div class="star-rating" data-interest="water">
+                        <button class="star-btn" data-rating="1">★</button>
+                        <button class="star-btn" data-rating="2">★</button>
+                        <button class="star-btn" data-rating="3">★</button>
+                        <button class="star-btn" data-rating="4">★</button>
+                        <button class="star-btn" data-rating="5">★</button>
+                    </div>
+                    <p class="interest-description">Clean water access, infrastructure, quality</p>
+                </div>
+
+                <div class="interest-card">
+                    <div class="interest-header">
+                        <div class="interest-icon">
+                            <i data-feather="users"></i>
+                        </div>
+                        <h3 class="interest-name">Social Impact</h3>
+                    </div>
+                    <div class="star-rating" data-interest="social">
+                        <button class="star-btn active" data-rating="1">★</button>
+                        <button class="star-btn active" data-rating="2">★</button>
+                        <button class="star-btn active" data-rating="3">★</button>
+                        <button class="star-btn active" data-rating="4">★</button>
+                        <button class="star-btn active" data-rating="5">★</button>
+                    </div>
+                    <p class="interest-description">Community development, social justice</p>
+                </div>
+            </div>
+
+            <div class="interests-actions">
+                <button class="btn btn-secondary">Load More Interests</button>
+                <button class="btn btn-primary">Save Preferences</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.min.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/navigation.js"></script>
+    <script src="../js/survey.js"></script>
+    
+    <script>
+        // Application State
+        const AppState = {
+            currentUser: null,
+            currentSection: 'account',
+            currentTab: 'preferences',
+            isAuthenticated: false,
+            navigation: null
+        };
+
+        // Initialize navigation with callbacks
+        document.addEventListener('DOMContentLoaded', function() {
+            // Parse hash to determine initial tab
+            const hash = window.location.hash.slice(1);
+            if (hash) {
+                AppState.currentTab = hash;
+            }
+
+            setTimeout(() => {
+                AppState.navigation = initializeNavigation({
+                    defaultSection: 'account',
+                    defaultTab: AppState.currentTab,
+                    onSectionChange: (section, tab) => {
+                        AppState.currentSection = section;
+                        AppState.currentTab = tab;
+                        
+                        // Handle navigation to other single-page apps
+                        if (section === 'home') {
+                            window.location.href = '../#' + tab;
+                            return;
+                        } else if (section === 'projects') {
+                            window.location.href = '../projects/#' + tab;
+                            return;
+                        } else if (section === 'people') {
+                            window.location.href = '../people/#' + tab;
+                            return;
+                        }
+                        
+                        showContent(tab);
+                        updatePageTitle(section, tab);
+                    },
+                    onTabChange: (tab, section) => {
+                        AppState.currentTab = tab;
+                        
+                        // Handle navigation to other single-page apps
+                        if (section === 'home') {
+                            window.location.href = '../#' + tab;
+                            return;
+                        } else if (section === 'projects') {
+                            window.location.href = '../projects/#' + tab;
+                            return;
+                        } else if (section === 'people') {
+                            window.location.href = '../people/#' + tab;
+                            return;
+                        }
+                        
+                        showContent(tab);
+                        updatePageTitle(section, tab);
+                    },
+                    onSidebarToggle: (collapsed) => {
+                        console.log('Sidebar toggled:', collapsed ? 'collapsed' : 'expanded');
+                    }
+                });
+
+                // Move existing page content into the navigation structure
+                const pageContents = document.querySelectorAll('.page-content');
+                const tabContent = document.getElementById('tab-content');
+                if (tabContent && pageContents.length > 0) {
+                    pageContents.forEach(content => {
+                        tabContent.appendChild(content);
+                    });
+                }
+
+                // Initialize feather icons
+                initializeFeatherIcons();
+
+                // Show initial content
+                showContent(AppState.currentTab);
+                updatePageTitle(AppState.currentSection, AppState.currentTab);
+
+                // Initialize survey if needed
+                if (AppState.currentTab === 'preferences' && window.SurveyManager) {
+                    window.SurveyManager.init();
+                }
+            }, 100);
+
+            // Handle hash changes for direct navigation
+            window.addEventListener('hashchange', function() {
+                const hash = window.location.hash.slice(1);
+                if (hash && hash !== AppState.currentTab) {
+                    AppState.currentTab = hash;
+                    showContent(hash);
+                    updatePageTitle(AppState.currentSection, hash);
+                    
+                    // Update navigation state
+                    if (AppState.navigation) {
+                        AppState.navigation.switchTab(hash);
+                    }
+                }
+            });
+        });
+
+        // Content management functions
+        function showContent(tabId) {
+            // Hide all content
+            document.querySelectorAll('.page-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Show target content
+            const targetContent = document.getElementById(tabId + '-content');
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+
+            // Update feather icons after content change
+            initializeFeatherIcons();
+
+            // Initialize interactive features
+            initializeStarRatings();
+        }
+
+        function updatePageTitle(section, tab) {
+            const titles = {
+                'account': {
+                    'preferences': 'Preferences - My Account - MemberCommons',
+                    'skills': 'Skills - My Account - MemberCommons',
+                    'interests': 'Interests - My Account - MemberCommons'
+                }
+            };
+
+            const title = titles[section]?.[tab] || 'My Account - MemberCommons';
+            document.title = title;
+        }
+
+        // Initialize star rating functionality
+        function initializeStarRatings() {
+            document.querySelectorAll('.star-rating').forEach(rating => {
+                const stars = rating.querySelectorAll('.star-btn');
+                stars.forEach((star, index) => {
+                    star.addEventListener('click', () => {
+                        const ratingValue = index + 1;
+                        
+                        // Update stars visual state
+                        stars.forEach((s, i) => {
+                            s.classList.toggle('active', i < ratingValue);
+                        });
+                        
+                        // Store rating value
+                        rating.dataset.rating = ratingValue;
+                        
+                        console.log('Rating updated:', rating.dataset.interest, ratingValue);
+                    });
+                });
+            });
+        }
+
+        // Public API for external scripts
+        window.MemberCommons = {
+            getAppState: () => AppState,
+            showContent: showContent,
+            updatePageTitle: updatePageTitle
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+/* Shared CSS for multiple admin pages */
+
+/* Documentation and code formatting */
+pre {
+    line-height: 1.25em;
+}
+
+pre code {
+    background-color: #eee;
+    padding: 15px;
+    border-left: 4px solid #137AD1;
+    margin-bottom: 22px;
+    display: block;
+    unicode-bidi: embed;
+    font-family: monospace;
+    font-size: 14px;
+    border-radius: 6px;
+}
+
+code {
+    background-color: #eee;
+    padding: 2px 5px;
+    font-family: monospace;
+    font-size: 14px;
+    border-radius: 3px;
+}
+
+/* Documentation content styling */
+.readme-content h1,
+.readme-content h2,
+.readme-content h3,
+.readme-content h4 {
+    color: var(--text-primary);
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+.readme-content h1 {
+    font-size: 24px;
+    border-bottom: 2px solid var(--border-light);
+    padding-bottom: 8px;
+}
+
+.readme-content h2 {
+    font-size: 20px;
+}
+
+.readme-content h3 {
+    font-size: 18px;
+}
+
+.readme-content p {
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.readme-content ul,
+.readme-content ol {
+    margin-left: 20px;
+    margin-bottom: 12px;
+}
+
+.readme-content li {
+    margin-bottom: 4px;
+}
+
+.readme-content blockquote {
+    border-left: 4px solid var(--accent-blue);
+    padding-left: 16px;
+    margin: 16px 0;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.readme-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+}
+
+.readme-content th,
+.readme-content td {
+    border: 1px solid var(--border-light);
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.readme-content th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+.edit-link {
+    margin-bottom: 16px;
+}

@@ -1,8 +1,8 @@
 [package]
-name = "suitecrm_gemini"
+name = "MemberCommons"
 version = "0.1.0"
-edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
+edition = "2025"
+authors = ["Loren Heyns <your.email@example.com>"]
 description = "SuiteCRM with Gemini AI Integration"
 license = "MIT"
 repository = "https://github.com/yourusername/suitecrm_gemini"
@@ -14,8 +14,8 @@ categories = ["command-line-utilities", "web-programming"]
 tokio = { version = "1.36", features = ["full"] }
 
 # Web Framework
-actix-web = "4.5"
-actix-cors = "0.7"
+actix-web = { version = "4.5", optional = true }
+actix-cors = { version = "0.7", optional = true }
 
 # Database - PostgreSQL
 sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "postgres", "uuid", "chrono", "macros"] }
@@ -49,63 +49,17 @@ chrono = { version = "0.4", features = ["serde"] }
 # gemini_client_rust = "0.1"
 
 # HTTP Client for Gemini API
-reqwest = { version = "0.12", features = ["json", "rustls-tls"] }[package]
-name = "gemini_crm"
-version = "0.1.0"
-edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
-description = "AI-Powered CRM with Gemini Integration"
-license = "MIT"
-repository = "https://github.com/yourusername/gemini_crm"
-keywords = ["crm", "ai", "gemini", "cli", "web"]
-categories = ["command-line-utilities", "web-programming"]
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 
-[dependencies]
-# Gemini AI Client
-gemini_client_rust = "0.1"
-
-# Async Runtime
-tokio = { version = "1.36", features = ["full"] }
-
-# Web Framework (for API server)
-actix-web = "4.5"
-actix-cors = "0.7"
-
-# Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-
-# Database
-rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
-
-# Date/Time
-chrono = { version = "0.4", features = ["serde"] }
-
-# CLI
-clap = { version = "4.5", features = ["derive", "color", "suggestions"] }
+# Additional CLI tools
 dialoguer = "0.11"
 colored = "2.1"
-
-# Error Handling
-anyhow = "1.0"
-thiserror = "1.0"
-
-# Logging
-env_logger = "0.11"
-log = "0.4"
 
 # Table Display
 prettytable-rs = "0.10"
 
-# Configuration
+# Additional Configuration
 dirs = "5.0"
-dotenv = "0.15"
-
-# HTTP Client (if needed for Gemini client)
-reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
-
-# UUID Generation (for unique IDs)
-uuid = { version = "1.7", features = ["v4", "serde"] }
 
 [dev-dependencies]
 # Testing
@@ -134,9 +88,9 @@ default = ["cli", "api"]
 cli = []
 api = ["actix-web", "actix-cors"]
 
-# Optional features
-telemetry = ["opentelemetry", "opentelemetry-jaeger"]
-metrics = ["prometheus"]
+# Optional features (disabled until dependencies are added)
+# telemetry = ["opentelemetry", "opentelemetry-jaeger"]
+# metrics = ["prometheus"]
 
 [build-dependencies]
 # Add any build dependencies here if needed

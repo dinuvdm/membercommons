@@ -1,0 +1,75 @@
+{
+  "navigation": {
+    "sidebar": {
+      "brand": {
+        "logo": "MC",
+        "text": "MemberCommons"
+      },
+      "sections": [
+        {
+          "id": "home",
+          "label": "Home",
+          "icon": "home",
+          "default_tab": "welcome",
+          "subnav": [
+            {"id": "welcome", "label": "Welcome", "icon": "smile"},
+            {"id": "documentation", "label": "Documentation", "icon": "book"},
+            {"id": "dashboard", "label": "Dashboard", "icon": "bar-chart-2"}
+          ]
+        },
+        {
+          "id": "projects", 
+          "label": "Projects",
+          "icon": "folder",
+          "default_tab": "opportunities",
+          "subnav": [
+            {"id": "opportunities", "label": "Opportunities", "icon": "target"},
+            {"id": "assigned-tasks", "label": "Assigned Tasks", "icon": "check-square"},
+            {"id": "timelines", "label": "Timelines", "icon": "calendar"}
+          ]
+        },
+        {
+          "id": "people",
+          "label": "People & Teams", 
+          "icon": "users",
+          "default_tab": "people",
+          "subnav": [
+            {"id": "people", "label": "People", "icon": "user"},
+            {"id": "teams", "label": "Teams", "icon": "users"},
+            {"id": "organizations", "label": "Organizations", "icon": "grid"}
+          ]
+        },
+        {
+          "id": "account",
+          "label": "My Account",
+          "icon": "settings", 
+          "default_tab": "preferences",
+          "subnav": [
+            {"id": "preferences", "label": "Preferences", "icon": "sliders"},
+            {"id": "skills", "label": "Skills", "icon": "award"},
+            {"id": "interests", "label": "Interests", "icon": "heart"}
+          ]
+        },
+        {
+          "id": "admin",
+          "label": "Admin Tools",
+          "icon": "tool",
+          "default_tab": "database",
+          "subnav": [
+            {"id": "database", "label": "Database Admin", "icon": "database"},
+            {"id": "log-output", "label": "Log Output", "icon": "monitor"}
+          ]
+        }
+      ]
+    },
+    "settings": {
+      "sidebar_width": "280px",
+      "sidebar_collapsed": "64px",
+      "transition": "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      "enable_tooltips": true,
+      "enable_routing": true,
+      "default_section": "home",
+      "default_tab": "welcome"
+    }
+  }
+}

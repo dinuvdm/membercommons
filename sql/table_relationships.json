@@ -1,0 +1,1497 @@
+{
+  "tables": [
+    {
+      "table_name": "accounts",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "campaign_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "accounts_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "accounts_bugs",
+      "relationships": [
+        {"column": "account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "bug_id", "referenced_table": "bugs", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "accounts_cases",
+      "relationships": [
+        {"column": "account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "case_id", "referenced_table": "cases", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "accounts_contacts",
+      "relationships": [
+        {"column": "account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "accounts_cstm",
+      "relationships": [
+        {"column": "id_c", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "accounts_opportunities",
+      "relationships": [
+        {"column": "account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "opportunity_id", "referenced_table": "opportunities", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "acl_actions",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "acl_roles",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "acl_roles_actions",
+      "relationships": [
+        {"column": "role_id", "referenced_table": "acl_roles", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "action_id", "referenced_table": "acl_actions", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "acl_roles_users",
+      "relationships": [
+        {"column": "role_id", "referenced_table": "acl_roles", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "address_book",
+      "relationships": [
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "bean_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by bean type (e.g., contacts, accounts)"}
+      ]
+    },
+    {
+      "table_name": "alerts",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "reminder_id", "referenced_table": "reminders", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "am_projecttemplates",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "am_projecttemplates_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "am_projecttemplates", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "am_projecttemplates_contacts_1_c",
+      "relationships": [
+        {"column": "am_projecttemplates_ida", "referenced_table": "am_projecttemplates", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contacts_idb", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "am_projecttemplates_project_1_c",
+      "relationships": [
+        {"column": "am_projecttemplates_project_1am_projecttemplates_ida", "referenced_table": "am_projecttemplates", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "am_projecttemplates_project_1project_idb", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "am_projecttemplates_users_1_c",
+      "relationships": [
+        {"column": "am_projecttemplates_ida", "referenced_table": "am_projecttemplates", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "users_idb", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "am_tasktemplates",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "am_tasktemplates_am_projecttemplates_c",
+      "relationships": [
+        {"column": "am_tasktemplates_am_projecttemplatesam_projecttemplates_ida", "referenced_table": "am_projecttemplates", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "am_tasktemplates_am_projecttemplatesam_tasktemplates_idb", "referenced_table": "am_tasktemplates", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "am_tasktemplates_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "am_tasktemplates", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aobh_businesshours",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aod_index",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aod_indexevent",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aok_knowledge_base_categories",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aok_knowledge_base_categories_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aok_knowledge_base_categories", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aok_knowledgebase",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "user_id_c", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "user_id1_c", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aok_knowledgebase_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aok_knowledgebase", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aok_knowledgebase_categories",
+      "relationships": [
+        {"column": "aok_knowledgebase_id", "referenced_table": "aok_knowledgebase", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aok_knowledge_base_categories_id", "referenced_table": "aok_knowledge_base_categories", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aop_case_events",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "case_id", "referenced_table": "cases", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aop_case_events_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aop_case_events", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aop_case_updates",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "case_id", "referenced_table": "cases", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aop_case_updates_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aop_case_updates", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aor_charts",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aor_report_id", "referenced_table": "aor_reports", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aor_conditions",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aor_report_id", "referenced_table": "aor_reports", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aor_fields",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aor_report_id", "referenced_table": "aor_reports", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aor_reports",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aor_reports_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aor_reports", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aor_scheduled_reports",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aor_report_id", "referenced_table": "aor_reports", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_contracts",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "currency_id", "referenced_table": "currencies", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contract_account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "opportunity_id", "referenced_table": "opportunities", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "call_id", "referenced_table": "calls", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_contracts_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aos_contracts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aos_contracts_documents",
+      "relationships": [
+        {"column": "aos_contracts_id", "referenced_table": "aos_contracts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "documents_id", "referenced_table": "documents", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "document_revision_id", "referenced_table": "document_revisions", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_invoices",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "billing_account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "billing_contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "currency_id", "referenced_table": "currencies", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_invoices_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aos_invoices", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aos_line_item_groups",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "currency_id", "referenced_table": "currencies", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by parent_type (e.g., aos_invoices, aos_quotes)"}
+      ]
+    },
+    {
+      "table_name": "aos_line_item_groups_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aos_line_item_groups", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aos_pdf_templates",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_pdf_templates_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aos_pdf_templates", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aos_product_categories",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_category_id", "referenced_table": "aos_product_categories", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_product_categories_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aos_product_categories", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aos_products",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "currency_id", "referenced_table": "currencies", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aos_product_category_id", "referenced_table": "aos_product_categories", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_products_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aos_products", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aos_products_quotes",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "currency_id", "referenced_table": "currencies", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by parent_type (e.g., aos_invoices, aos_quotes)"},
+        {"column": "product_id", "referenced_table": "aos_products", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "group_id", "referenced_table": "aos_line_item_groups", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_products_quotes_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aos_products_quotes", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aos_quotes",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "billing_account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "billing_contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "opportunity_id", "referenced_table": "opportunities", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "currency_id", "referenced_table": "currencies", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_quotes_aos_invoices_c",
+      "relationships": [
+        {"column": "aos_quotes77d9_quotes_ida", "referenced_table": "aos_quotes", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aos_quotes6b83nvoices_idb", "referenced_table": "aos_invoices", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_quotes_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aos_quotes", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "aos_quotes_os_contracts_c",
+      "relationships": [
+        {"column": "aos_quotese81e_quotes_ida", "referenced_table": "aos_quotes", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aos_quotes4dc0ntracts_idb", "referenced_table": "aos_contracts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aos_quotes_project_c",
+      "relationships": [
+        {"column": "aos_quotes1112_quotes_ida", "referenced_table": "aos_quotes", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aos_quotes7207project_idb", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aow_actions",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aow_workflow_id", "referenced_table": "aow_workflow", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aow_conditions",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aow_workflow_id", "referenced_table": "aow_workflow", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aow_processed",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aow_workflow_id", "referenced_table": "aow_workflow", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by parent_type"}
+      ]
+    },
+    {
+      "table_name": "aow_processed_aow_actions",
+      "relationships": [
+        {"column": "aow_processed_id", "referenced_table": "aow_processed", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "aow_action_id", "referenced_table": "aow_actions", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aow_workflow",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "aow_workflow_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "aow_workflow", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "bugs",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "bugs_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "bugs", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "calls",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by parent_type"},
+        {"column": "repeat_parent_id", "referenced_table": "calls", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "calls_contacts",
+      "relationships": [
+        {"column": "call_id", "referenced_table": "calls", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "calls_leads",
+      "relationships": [
+        {"column": "call_id", "referenced_table": "calls", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "lead_id", "referenced_table": "leads", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "calls_reschedule",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "call_id", "referenced_table": "calls", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "calls_reschedule_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "calls_reschedule", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "calls_users",
+      "relationships": [
+        {"column": "call_id", "referenced_table": "calls", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "campaign_log",
+      "relationships": [
+        {"column": "campaign_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "target_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by target_type"},
+        {"column": "activity_type_id", "referenced_table": null, "referenced_column": null, "constraint_type": "none", "note": "No clear referenced table"},
+        {"column": "related_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by related_type"}
+      ]
+    },
+    {
+      "table_name": "campaign_trkrs",
+      "relationships": [
+        {"column": "campaign_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "campaigns",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "currency_id", "referenced_table": "currencies", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "campaigns_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "cases",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "cases_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "cases", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "config",
+      "relationships": []
+    },
+    {
+      "table_name": "contacts",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "reports_to_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "opportunity_id", "referenced_table": "opportunities", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "campaign_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "contacts_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "contacts_cstm",
+      "relationships": [
+        {"column": "id_c", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "contacts_users",
+      "relationships": [
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "currencies",
+      "relationships": [
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "custom_fields",
+      "relationships": []
+    },
+    {
+      "table_name": "dash_dashboardbackups",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "dash_dashboardmanager",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "dash_dashboardpages",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "document_revisions",
+      "relationships": [
+        {"column": "document_id", "referenced_table": "documents", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "documents",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "document_revision_id", "referenced_table": "document_revisions", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "documents_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "documents", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "eapm",
+      "relationships": [
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "email_addr_bean_rel",
+      "relationships": [
+        {"column": "email_address_id", "referenced_table": "email_addresses", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "bean_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by bean_module"}
+      ]
+    },
+    {
+      "table_name": "email_addresses",
+      "relationships": []
+    },
+    {
+      "table_name": "email_marketing",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "campaign_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "email_marketing_prospect_lists",
+      "relationships": [
+        {"column": "email_marketing_id", "referenced_table": "email_marketing", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "prospect_list_id", "referenced_table": "prospect_lists", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "email_templates",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "emails",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by parent_type"}
+      ]
+    },
+    {
+      "table_name": "emails_beans",
+      "relationships": [
+        {"column": "email_id", "referenced_table": "emails", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "bean_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by bean_module"}
+      ]
+    },
+    {
+      "table_name": "emails_text",
+      "relationships": [
+        {"column": "email_id", "referenced_table": "emails", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "fields_meta_data",
+      "relationships": []
+    },
+    {
+      "table_name": "fp_event_locations",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "fp_event_locations_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "fp_event_locations", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "fp_events",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "fp_event_locations_fp_events_1_id", "referenced_table": "fp_event_locations", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "fp_events_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "fp_events", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "fp_events_contacts_c",
+      "relationships": [
+        {"column": "fp_events_contactsfp_events_ida", "referenced_table": "fp_events", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "fp_events_contactscontacts_idb", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "fp_events_leads_1_c",
+      "relationships": [
+        {"column": "fp_events_leads_1fp_events_ida", "referenced_table": "fp_events", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "fp_events_leads_1leads_idb", "referenced_table": "leads", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "fp_events_prospects_1_c",
+      "relationships": [
+        {"column": "fp_events_prospects_1fp_events_ida", "referenced_table": "fp_events", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "fp_events_prospects_1prospects_idb", "referenced_table": "prospects", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "inbound_email",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "inbound_email_autoreply",
+      "relationships": []
+    },
+    {
+      "table_name": "inbound_email_cache",
+      "relationships": []
+    },
+    {
+      "table_name": "inbound_email_cache_ts",
+      "relationships": []
+    },
+    {
+      "table_name": "jjwg_address_cache",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "jjwg_areas",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "jjwg_areas_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "jjwg_areas", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "jjwg_maps",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "jjwg_maps_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "jjwg_maps", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "jjwg_markers",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "jjwg_markers_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "jjwg_markers", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "job_queue",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "scheduler_id", "referenced_table": "schedulers", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "leads",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "reports_to_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "opportunity_id", "referenced_table": "opportunities", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "campaign_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "leads_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "leads", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "leads_cstm",
+      "relationships": [
+        {"column": "id_c", "referenced_table": "leads", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "linked_documents",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by parent_type"},
+        {"column": "document_id", "referenced_table": "documents", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "document_revision_id", "referenced_table": "document_revisions", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "meetings",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by parent_type"},
+        {"column": "repeat_parent_id", "referenced_table": "meetings", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "meetings_contacts",
+      "relationships": [
+        {"column": "meeting_id", "referenced_table": "meetings", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "meetings_cstm",
+      "relationships": [
+        {"column": "id_c", "referenced_table": "meetings", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "meetings_leads",
+      "relationships": [
+        {"column": "meeting_id", "referenced_table": "meetings", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "lead_id", "referenced_table": "leads", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "meetings_users",
+      "relationships": [
+        {"column": "meeting_id", "referenced_table": "meetings", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "notes",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by parent_type"},
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "notifications",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by parent_type"}
+      ]
+    },
+    {
+      "table_name": "oauth2clients",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "oauth2tokens",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "client", "referenced_table": "oauth2clients", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "oauth_consumer",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "oauth_tokens",
+      "relationships": [
+        {"column": "consumer", "referenced_table": "oauth_consumer", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "opportunities",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "campaign_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "currency_id", "referenced_table": "currencies", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "opportunities_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "opportunities", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "opportunities_contacts",
+      "relationships": [
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "opportunity_id", "referenced_table": "opportunities", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "opportunities_cstm",
+      "relationships": [
+        {"column": "id_c", "referenced_table": "opportunities", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "outbound_email",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "outbound_email_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "outbound_email", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "project",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "project_contacts_1_c",
+      "relationships": [
+        {"column": "project_contacts_1project_ida", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "project_contacts_1contacts_idb", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "project_cstm",
+      "relationships": [
+        {"column": "id_c", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "project_task",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "project_id", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "project_task_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "project_task", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "project_users_1_c",
+      "relationships": [
+        {"column": "project_users_1project_ida", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "project_users_1users_idb", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "projects_accounts",
+      "relationships": [
+        {"column": "account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "project_id", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "projects_bugs",
+      "relationships": [
+        {"column": "bug_id", "referenced_table": "bugs", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "project_id", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "projects_cases",
+      "relationships": [
+        {"column": "case_id", "referenced_table": "cases", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "project_id", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "projects_contacts",
+      "relationships": [
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "project_id", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "projects_opportunities",
+      "relationships": [
+        {"column": "opportunity_id", "referenced_table": "opportunities", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "project_id", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "projects_products",
+      "relationships": [
+        {"column": "product_id", "referenced_table": "aos_products", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "project_id", "referenced_table": "project", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "prospect_list_campaigns",
+      "relationships": [
+        {"column": "prospect_list_id", "referenced_table": "prospect_lists", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "campaign_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "prospect_lists",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "prospect_lists_prospects",
+      "relationships": [
+        {"column": "prospect_list_id", "referenced_table": "prospect_lists", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "related_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by related_type"}
+      ]
+    },
+    {
+      "table_name": "prospects",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "lead_id", "referenced_table": "leads", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "campaign_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "prospects_cstm",
+      "relationships": [
+        {"column": "id_c", "referenced_table": "prospects", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "relationships",
+      "relationships": []
+    },
+    {
+      "table_name": "releases",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "reminders",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "related_event_module_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by related_event_module"}
+      ]
+    },
+    {
+      "table_name": "reminders_invitees",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "reminder_id", "referenced_table": "reminders", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "related_invitee_module_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by related_invitee_module"}
+      ]
+    },
+    {
+      "table_name": "roles",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "roles_modules",
+      "relationships": [
+        {"column": "role_id", "referenced_table": "roles", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "roles_users",
+      "relationships": [
+        {"column": "role_id", "referenced_table": "roles", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "saved_search",
+      "relationships": [
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "schedulers",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "schedulers_times",
+      "relationships": [
+        {"column": "scheduler_id", "referenced_table": "schedulers", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "securitygroups",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "securitygroups_acl_roles",
+      "relationships": [
+        {"column": "securitygroup_id", "referenced_table": "securitygroups", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "role_id", "referenced_table": "acl_roles", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "securitygroups_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "securitygroups", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "securitygroups_default",
+      "relationships": [
+        {"column": "securitygroup_id", "referenced_table": "securitygroups", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "securitygroups_records",
+      "relationships": [
+        {"column": "securitygroup_id", "referenced_table": "securitygroups", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "record_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by module"},
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "securitygroups_users",
+      "relationships": [
+        {"column": "securitygroup_id", "referenced_table": "securitygroups", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "sugarfeed",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "related_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by related_module"}
+      ]
+    },
+    {
+      "table_name": "surveyquestionoptions",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "survey_question_id", "referenced_table": "surveyquestions", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "surveyquestionoptions_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "surveyquestionoptions", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "surveyquestionoptions_surveyquestionresponses",
+      "relationships": [
+        {"column": "surveyq72c7options_ida", "referenced_table": "surveyquestionoptions", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "surveyq10d4sponses_idb", "referenced_table": "surveyquestionresponses", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "surveyquestionresponses",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "surveyquestion_id", "referenced_table": "surveyquestions", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "surveyresponse_id", "referenced_table": "surveyresponses", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "surveyquestionresponses_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "surveyquestionresponses", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "surveyquestions",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "survey_id", "referenced_table": "surveys", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "surveyquestions_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "surveyquestions", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "surveyresponses",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "account_id", "referenced_table": "accounts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "campaign_id", "referenced_table": "campaigns", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "survey_id", "referenced_table": "surveys", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "surveyresponses_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "surveyresponses", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "surveys",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "surveys_audit",
+      "relationships": [
+        {"column": "parent_id", "referenced_table": "surveys", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key", "note": "VARCHAR(36) stores UUID as string"}
+      ]
+    },
+    {
+      "table_name": "tasks",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "contact_id", "referenced_table": "contacts", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "parent_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by parent_type"}
+      ]
+    },
+    {
+      "table_name": "templatesectionline",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "tracker",
+      "relationships": [
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "upgrade_history",
+      "relationships": []
+    },
+    {
+      "table_name": "user_preferences",
+      "relationships": [
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "users",
+      "relationships": [
+        {"column": "modified_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "created_by", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "reports_to_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "users_feeds",
+      "relationships": [
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "feed_id", "referenced_table": "sugarfeed", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "users_last_import",
+      "relationships": [
+        {"column": "assigned_user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"},
+        {"column": "bean_id", "referenced_table": null, "referenced_column": null, "constraint_type": "dynamic", "note": "Varies by bean_type"}
+      ]
+    },
+    {
+      "table_name": "users_password_link",
+      "relationships": [
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "users_signatures",
+      "relationships": [
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "vcals",
+      "relationships": [
+        {"column": "user_id", "referenced_table": "users", "referenced_column": "id", "constraint_type": "foreign_key"}
+      ]
+    },
+    {
+      "table_name": "versions",
+      "relationships": []
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured, functional and ready for production using frontend JAM Stack javascript with REST html forms that interact with Google-hosted Rust backend using gemini_client_rust and/or Google Gemini CLI and/or Google Gemini API and/or Leptos Rust SQLx.
+We're building a beautiful website that is fully functional, professional and exciting for teams, and not cookie cutter. Our JAM Stack webpages that are full of features and ready for production using frontend  javascript with REST html forms that interact with an Azure PostgreSQL backend using Rust SQLx.
 
 Backend SQL data schema resides in the sql/suitecrm-postgres.sql file and provides a PostgreSQL database generation script matching SuiteCRM which uses table and field names akin to Salesforce and Microsoft Dynamics.
 
@@ -45,7 +45,7 @@ When there is no password or the connection fails, populate the data pull proces
 Frontend JAM Stack javascript will include API Configuration and State Management.
 
 Frontend javascript might include:
-const API_BASE = 'http://localhost:8080/membersense/api'; // Update this to match your Rust backend URL
+const API_BASE = 'http://localhost:8081/membersense/api'; // Update this to match your Rust backend URL
 
 Frontend javascript display and interactivity will work without running a build.
 
