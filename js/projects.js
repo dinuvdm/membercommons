@@ -77,8 +77,8 @@ class ProjectsManager {
         this.projects = [
             {
                 id: '1',
-                name: 'AI-Powered Local Government Dashboard',
-                description: 'Build a real-time dashboard for city services using modern web technologies. This project will help local government streamline citizen services and provide transparency.',
+                name: 'AI-Powered Economic Development Dashboard',
+                description: 'Build a real-time dashboard for local and state services using modern web technologies. Help government streamline citizen services with transparency and open tech.',
                 status: 'active',
                 type: 'opportunity',
                 skills: ['React', 'Node.js', 'PostgreSQL', 'AI/ML'],
@@ -103,7 +103,7 @@ class ProjectsManager {
                         id: 'a2',
                         name: 'Database Architecture',
                         type: 'task',
-                        description: 'Design and implement PostgreSQL database schema for city services data.',
+                        description: 'Design and implement PostgreSQL database schema for local and state services data.',
                         skills: ['PostgreSQL', 'Database Design'],
                         status: 'in_progress',
                         assigned_to: 'Sarah Johnson'
