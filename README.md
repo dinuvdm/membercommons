@@ -1,12 +1,8 @@
 # MemberCommons - Bolt for Government
 
-Project Collaboration Platform
+### Team Project Collaboration Platform
 
-TwentyOne is a JAM Stack web application designed for federated teams implementing zero-cost governance using modern web technologies with AI-powered insights, it connects developers, designers, and innovators to collaborate on government modernization and community impact projects for job creation and environmental protection.
-
-<!--
-   gemini_client_rust and/or Google Gemini CLI and/or Google Gemini API and/or Leptos 
--->
+MemberCommons is a JAM Stack toolset for teams implementing partner tools using modern web technologies with AI-powered insights. MemberCommons connects staff with developers, designers, and innovators to collaborate on innovation projects focused on skill training, job creation and environmental improvement.
 
 ## 🌟 Key Features
 
