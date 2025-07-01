@@ -58,7 +58,7 @@
 }
 
 /* Desktop behavior - push content when hover expanding */
-@media (min-width: 1025px) {
+@media (min-width: 500px) {
     .sidebar.collapsed.hover-expanded:not(.locked) ~ .main-content {
         margin-left: var(--sidebar-width); /* Push content when hover expanding */
         transition: var(--transition-smooth);
@@ -552,8 +552,8 @@
     box-shadow: var(--shadow-md);
 }
 
-/* Tablet/Narrow screen behavior - overlay mode */
-@media (max-width: 700px) {
+/* Mobile/Narrow screen behavior - overlay mode */
+@media (max-width: 500px) {
     .sidebar.collapsed.hover-expanded:not(.locked) {
         width: 100vw; /* Full width on narrow screens */
         z-index: 2000; /* Higher z-index for overlay */
