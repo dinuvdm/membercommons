@@ -123,19 +123,19 @@ const API_BASE = 'http://localhost:8081/api'; // Backend URL
 Home
 ├── Welcome
 ├── Documentation
-├── Dashboard
+└── Dashboard
 Projects
 ├── Opportunities
 ├── Assigned Tasks
-├── Timelines 
+└── Timelines
 People and Teams
 ├── People
 ├── Teams
-├── Organizations
+└── Organizations
 My Account
 ├── Preferences
 ├── Skills
-├── Interests
+└── Interests
 ```
 
 ### Key Dependencies

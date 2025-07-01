@@ -86,8 +86,8 @@ class ProjectsManager {
                 location: 'Atlanta, GA',
                 team_size: 6,
                 created_by: 'City Innovation Office',
-                created_date: '2024-01-15',
-                deadline: '2024-06-30',
+                created_date: '2025-01-15',
+                deadline: '2025-11-30',
                 priority: 'high',
                 activities: [
                     {
@@ -97,7 +97,7 @@ class ProjectsManager {
                         description: 'Lead the frontend development using React and modern JavaScript frameworks.',
                         skills: ['React', 'TypeScript', 'CSS'],
                         status: 'open',
-                        deadline: '2024-02-15'
+                        deadline: '2025-02-15'
                     },
                     {
                         id: 'a2',
@@ -121,8 +121,8 @@ class ProjectsManager {
                 location: 'Portland, OR',
                 team_size: 4,
                 created_by: 'Neighborhood Alliance',
-                created_date: '2024-01-10',
-                deadline: '2024-05-15',
+                created_date: '2025-01-10',
+                deadline: '2025-12-15',
                 priority: 'medium',
                 activities: [
                     {
@@ -132,7 +132,7 @@ class ProjectsManager {
                         description: 'Integrate mapping services and location data for community resources.',
                         skills: ['GIS', 'JavaScript', 'APIs'],
                         status: 'open',
-                        deadline: '2024-03-01'
+                        deadline: '2025-11-01'
                     }
                 ]
             },
@@ -147,8 +147,8 @@ class ProjectsManager {
                 location: 'Detroit, MI',
                 team_size: 8,
                 created_by: 'Digital Inclusion Coalition',
-                created_date: '2024-01-20',
-                deadline: '2024-07-30',
+                created_date: '2025-01-20',
+                deadline: '2025-07-30',
                 priority: 'high',
                 activities: [
                     {
@@ -158,7 +158,7 @@ class ProjectsManager {
                         description: 'Design user-friendly interfaces for learners of all technical backgrounds.',
                         skills: ['UX Design', 'Accessibility', 'User Research'],
                         status: 'open',
-                        deadline: '2024-02-28'
+                        deadline: '2025-10-28'
                     }
                 ]
             }
@@ -180,7 +180,15 @@ class ProjectsManager {
                 
                 <div class="projects-title-section" style="clear:both">
                     <h2 class="section-title">Project Opportunities</h2>
-                    <p class="section-subtitle">Discover and join local tech projects to share and sharpen your <!--that need your--> skills.</p>
+                    <p class="section-subtitle">Discover and contribute to tech projects that sharpen your <!--that need your--> skills.</p>
+                    <p>
+                        <a href="/profile/preferences">Project Preferences - BoltAI Prototype</a><br>
+                        <a href="/profile/preferences/projects">Project Details - US DFC Funded - BoltAI Prototype</a><br>
+                        <a href="/profile/preferences/manager.html">Preferences Manager - BoltAI Prototype</a><br>
+                        <!--
+                        https://democracylab2.org/profile/project/commons
+                        -->
+                    </p>
                 </div>
                 
                 <div class="projects-actions">
