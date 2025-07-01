@@ -31,7 +31,7 @@ All database admin endpoints have been integrated into the main Rust backend:
 - ✅ Routes are configured and ready to use
 - ✅ Security restrictions (SELECT-only queries) are enforced
 
-[The Cargo.toml](https://github.com/localsite/membercommons/blob/claude/cargo.toml) file for each package is called its manifest. It is written in the TOML format. Learn more about the [The Cargo Manifest Format](https://doc.rust-lang.org/cargo/reference/manifest.html).
+[The Cargo.toml](https://github.com/localsite/membercommons/blob/main/cargo.toml) file for each package is called its manifest. It is written in the TOML format. Learn more about the [The Cargo Manifest Format](https://doc.rust-lang.org/cargo/reference/manifest.html).
 
 **Start the server:**
 ```bash
