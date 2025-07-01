@@ -1,8 +1,8 @@
-# MemberCommons - Bolt for Government
+# MemberCommons
 
 ### Team Project Collaboration Platform
 
-MemberCommons is a JAM Stack toolset for teams implementing partner tools using modern web technologies with AI-powered insights. MemberCommons connects staff with developers, designers, and innovators to collaborate on innovation projects focused on skill training, job creation and environmental improvement.
+MemberCommons is a JAM Stack toolset for teams implementing partner tools using modern web technologies with AI-powered insights. MemberCommons connects staff with developers, designers, and innovators to collaborate on coding projects focused on skill training, job creation and environmental improvement.
 
 ## 🌟 Key Features
 

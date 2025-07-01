@@ -175,7 +175,7 @@ class ProjectsManager {
         
         container.innerHTML = `
             <div style="position:relative">
-            <img src="img/presenting-bolt-4gov.png" style="width:100%;border-top-left-radius:25px;border-top-right-radius:25px;"><br><br></div>
+            <img src="/membercommons/img/presenting-bolt-4gov.png" style="width:100%;border-top-left-radius:25px;border-top-right-radius:25px;"><br><br></div>
                 
             <div class="projects-header">
                 
