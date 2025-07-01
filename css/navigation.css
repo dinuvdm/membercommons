@@ -124,8 +124,8 @@
 
 /* Hide toggle button when collapsed */
 .sidebar.collapsed .sidebar-toggle {
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 .sidebar.collapsed.hover-expanded:not(.locked) .sidebar-toggle {
@@ -554,19 +554,30 @@
 
 /* Mobile/Narrow screen behavior - overlay mode */
 @media (max-width: 500px) {
-    .sidebar.collapsed.hover-expanded:not(.locked) {
-        width: 100vw; /* Full width on narrow screens */
+    .sidebar.collapsed.hovered {
+        width: 100vw !important; /* Full width on narrow screens - important to override JS */
         z-index: 2000; /* Higher z-index for overlay */
         box-shadow: var(--shadow-lg);
+        transform: translateX(0) !important; /* Ensure it's visible when hovered */
     }
     
-    .sidebar.collapsed.hover-expanded:not(.locked) ~ .main-content {
+    .sidebar.collapsed.hovered ~ .main-content {
         margin-left: var(--sidebar-collapsed); /* Don't push content on narrow screens */
+    }
+    
+    /* Keep sidebar visible in collapsed state on narrow screens */
+    .sidebar.collapsed {
+        transform: translateX(0) !important; /* Stay visible, don't hide off-screen */
+        width: var(--sidebar-collapsed) !important;
+    }
+    
+    .main-content {
+        margin-left: 0; /* No margin on narrow screens - overlay behavior */
     }
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
+/* Mobile Responsiveness - Very small screens only */
+@media (max-width: 400px) {
     .sidebar {
         transform: translateX(-100%);
         width: 100vw; /* Full screen width on mobile */
@@ -579,7 +590,7 @@
         box-shadow: var(--shadow-lg); /* Add shadow when visible */
     }
     
-    /* Force collapsed state on mobile to prevent hover expansion */
+    /* Force collapsed state on very small mobile to prevent hover expansion */
     .sidebar.collapsed {
         width: 100vw; /* Still full width when collapsed */
         transform: translateX(-100%);
@@ -595,16 +606,6 @@
     
     .sidebar-toggle {
         display: block;
-    }
-    
-    /* Disable hover expansion on mobile */
-    .sidebar.collapsed.hover-expanded {
-        width: 100vw;
-        transform: translateX(-100%);
-    }
-    
-    .sidebar.collapsed.hover-expanded.mobile-open {
-        transform: translateX(0);
     }
 }
 

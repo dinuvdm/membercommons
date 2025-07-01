@@ -673,6 +673,12 @@
             .feature-grid {
                 grid-template-columns: 1fr;
             }
+            
+            /* Hide Search Projects button on narrow screens */
+            .auth-container .btn[onclick="goProjects()"],
+            .auth-container .btn:last-child {
+                display: none;
+            }
         }
 
         /* Subnav icons in collapsed state */
@@ -787,7 +793,7 @@
             <div class="nav-menu">
                 <div class="nav-section">
                     <div class="nav-item">
-                        <button class="nav-link active" data-section="home">
+                        <button class="nav-link" data-section="home">
                             <i class="nav-icon" data-feather="home"></i>
                             <span class="nav-text">Home</span>
                             <i class="nav-arrow" data-feather="chevron-right"></i>
@@ -2058,16 +2064,28 @@
 
             // Update navigation active states
             updateNavigationState(section, tab) {
-                // Update main navigation
+                // Update main navigation - always highlight current section
                 document.querySelectorAll('.nav-link').forEach(link => {
                     link.classList.remove('active');
                     if (link.dataset.section === section) {
+                        link.classList.add('active');
                         // Expand subnav for active section
                         const subnav = link.nextElementSibling;
                         const arrow = link.querySelector('.nav-arrow');
                         if (subnav && subnav.classList.contains('subnav')) {
                             subnav.classList.add('expanded');
-                            arrow.classList.add('expanded');
+                            arrow?.classList.add('expanded');
+                        }
+                    } else {
+                        // Update arrow direction for non-active sections based on subnav state
+                        const subnav = link.nextElementSibling;
+                        const arrow = link.querySelector('.nav-arrow');
+                        if (subnav && subnav.classList.contains('subnav')) {
+                            if (subnav.classList.contains('expanded')) {
+                                arrow?.classList.add('expanded');
+                            } else {
+                                arrow?.classList.remove('expanded');
+                            }
                         }
                     }
                 });
@@ -2079,15 +2097,6 @@
                         link.classList.add('active');
                     }
                 });
-                
-                // Only make nav title active if no subnav item is active
-                const hasActiveSubnav = document.querySelector('.subnav-link.active');
-                if (!hasActiveSubnav) {
-                    const currentNavLink = document.querySelector(`.nav-link[data-section="${section}"]`);
-                    if (currentNavLink) {
-                        currentNavLink.classList.add('active');
-                    }
-                }
 
                 // Update tabs
                 const currentSection = document.querySelector('.section.active');
@@ -2230,6 +2239,38 @@
             }
         }
 
+        // Function to update sidebar toggle icon based on overlap state
+        function updateSidebarToggleIcon() {
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebarToggle || !sidebar) return;
+            
+            const icon = sidebarToggle.querySelector('i');
+            if (!icon) return;
+            
+            // Check app container width
+            const appContainer = document.querySelector('.app-container');
+            const containerWidth = appContainer ? appContainer.offsetWidth : window.innerWidth;
+            
+            // Check if sidebar is overlapping entire container
+            const isFullOverlap = containerWidth <= 500;
+            const isHoverExpanded = sidebar.classList.contains('hovered');
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            const isPartialOverlap = isCollapsed && isHoverExpanded && containerWidth > 500;
+            
+            if (isFullOverlap) {
+                icon.setAttribute('data-feather', 'x');
+            } else if (isPartialOverlap) {
+                icon.setAttribute('data-feather', 'chevrons-right');
+            } else {
+                icon.setAttribute('data-feather', 'chevrons-left');
+            }
+            
+            if (window.feather) {
+                feather.replace();
+            }
+        }
+
         // Navigation Functions
         function initializeNavigation() {
             // Handle sidebar toggle
@@ -2241,6 +2282,14 @@
             let hoverTimeout;
             let isHoverExpanded = false;
             let slideRightEnabled = true; // Toggle for slide-right functionality
+            
+            // Auto-collapse sidebar on narrow screens at page load
+            const appContainer = document.querySelector('.app-container');
+            const containerWidth = appContainer ? appContainer.offsetWidth : window.innerWidth;
+            if (containerWidth <= 1000 && !sidebar.classList.contains('collapsed')) {
+                sidebar.classList.add('collapsed');
+                AppState.sidebarCollapsed = true;
+            }
             
             // Reusable function to toggle sidebar state
             function toggleSidebar(forceState = null) {
@@ -2273,28 +2322,9 @@
                 isHoverExpanded = false;
                 sidebar.style.width = '';
                 
-                // Handle toggle button visibility
+                // Update toggle icon based on overlap state
                 if (sidebarToggle) {
-                    if (sidebar.classList.contains('collapsed')) {
-                        // When collapsed, hide the toggle button
-                        sidebarToggle.style.opacity = '0';
-                        sidebarToggle.style.pointerEvents = 'none';
-                    } else {
-                        // When expanded, show toggle button
-                        sidebarToggle.style.opacity = '1';
-                        sidebarToggle.style.pointerEvents = 'auto';
-                    }
-                    
-                    // Update toggle icon
-                    const icon = sidebarToggle.querySelector('i');
-                    if (icon) {
-                        if (sidebar.classList.contains('collapsed')) {
-                            icon.setAttribute('data-feather', 'chevrons-right');
-                        } else {
-                            icon.setAttribute('data-feather', 'chevrons-left');
-                        }
-                        feather.replace();
-                    }
+                    updateSidebarToggleIcon();
                 }
                 
                 return !sidebar.classList.contains('collapsed'); // Return true if expanded
@@ -2406,6 +2436,9 @@
                 link.addEventListener('click', function(e) {
                     const section = this.getAttribute('data-section');
                     if (section) {
+                        // Check if page is scrolled to top
+                        const isAtTop = window.scrollY <= 10; // Allow small tolerance
+                        
                         // Toggle subnav for clicked section (don't close others)
                         const subnav = this.nextElementSibling;
                         const arrow = this.querySelector('.nav-arrow');
@@ -2425,21 +2458,33 @@
                                 return; // Don't navigate when clicking arrow
                             }
                             
+                            // If not at top, scroll to top instead of toggling subnav
+                            if (!isAtTop) {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                return; // Don't toggle subnav or navigate
+                            }
+                            
+                            // At top: handle subnav toggling
                             if (isCurrentlyExpanded) {
-                                // If clicking the already active section, toggle it
-                                if (this.classList.contains('active')) {
-                                    subnav.classList.remove('expanded');
-                                    arrow?.classList.remove('expanded');
-                                    return; // Don't navigate if we're just closing
-                                }
+                                // If subnav is expanded, close it (regardless of active state)
+                                subnav.classList.remove('expanded');
+                                arrow?.classList.remove('expanded');
+                                return; // Don't navigate if we're just closing
                             } else {
                                 // Expand this subnav
                                 subnav.classList.add('expanded');
                                 arrow?.classList.add('expanded');
                             }
+                        } else if (!isAtTop) {
+                            // No subnav but not at top, scroll to top
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            return;
                         }
                         
-                        router.navigate(section);
+                        // Navigate to section (only if at top)
+                        if (isAtTop) {
+                            router.navigate(section);
+                        }
                     }
                 });
             });
@@ -2512,12 +2557,7 @@
                             clearTimeout(hoverTimeout);
                             isHoverExpanded = false;
                             
-                            // Hide toggle button when slide-right is disabled
-                            const toggleBtn = sidebar.querySelector('.sidebar-toggle');
-                            if (toggleBtn && sidebar.classList.contains('collapsed')) {
-                                toggleBtn.style.opacity = '0';
-                                toggleBtn.style.pointerEvents = 'none';
-                            }
+                            // Toggle button visibility handled by CSS
                         } else {
                             // Enable slide-right: remove disabled class and immediately expand
                             sidebar.classList.remove('slide-right-disabled');
@@ -2529,12 +2569,7 @@
                                 sidebar.style.width = 'var(--sidebar-width)';
                                 isHoverExpanded = true;
                                 
-                                // Show the toggle button
-                                const toggleBtn = sidebar.querySelector('.sidebar-toggle');
-                                if (toggleBtn) {
-                                    toggleBtn.style.opacity = '1';
-                                    toggleBtn.style.pointerEvents = 'auto';
-                                }
+                                // Toggle button visibility handled by CSS
                             }
                         }
                         
@@ -2553,12 +2588,10 @@
                     this.style.width = 'var(--sidebar-width)';
                     isHoverExpanded = true;
                     
-                    // Show the toggle button on hover
-                    const toggleBtn = this.querySelector('.sidebar-toggle');
-                    if (toggleBtn) {
-                        toggleBtn.style.opacity = '1';
-                        toggleBtn.style.pointerEvents = 'auto';
-                    }
+                    // Toggle button visibility handled by CSS
+                    
+                    // Update toggle icon
+                    updateSidebarToggleIcon();
                 }
             });
             
@@ -2569,15 +2602,21 @@
                         this.style.width = 'var(--sidebar-collapsed)';
                         isHoverExpanded = false;
                         
-                        // Hide the toggle button again
-                        const toggleBtn = this.querySelector('.sidebar-toggle');
-                        if (toggleBtn) {
-                            toggleBtn.style.opacity = '0';
-                            toggleBtn.style.pointerEvents = 'none';
-                        }
+                        // Toggle button visibility handled by CSS
+                        
+                        // Update toggle icon
+                        updateSidebarToggleIcon();
                     }, 1000);
                 }
             });
+            
+            // Add window resize listener to update icon
+            window.addEventListener('resize', function() {
+                updateSidebarToggleIcon();
+            });
+            
+            // Set initial icon state
+            updateSidebarToggleIcon();
         }
 
         function switchSection(sectionName) {
