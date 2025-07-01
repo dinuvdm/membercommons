@@ -902,11 +902,16 @@
                     <!-- Welcome Tab -->
                     <div class="tab-content" id="welcome-tab">
                         <div class="welcome-hero">
-                            <a href="https://bolt.new/" target="bolt"><img onclick="goWelcome()" style="position:absolute; opacity:1;right:55px; top:150px;cursor:pointer; width:130px;" src="img/logo/bolt/bolt-built.png"></a>
-                            <h1 class="hero-title">Welcome to DemocracyLab 2.0!</h1>
-                            <p class="hero-subtitle">The AI<!--ultimate--> collaboration platform for <!--technical teams working on --> open innovation projects</p>
-                            <button class="btn btn-secondary" onclick="showAuthModal()">Create Account</button>
-                            <button class="btn btn-secondary" onclick="goPreferences()">Policy Preferences</button>
+                            <div style="float:right">
+                                <a href="https://bolt.new/" target="bolt"><img onclick="goWelcome()" style="cursor:pointer; width:130px;" src="img/logo/bolt/bolt-built.png"></a>
+                            </div>
+                            <div style="overflow:auto">
+                                <h1 class="hero-title">Welcome to DemocracyLab 2.0!</h1>
+                                <p class="hero-subtitle">The AI<!--ultimate--> collaboration platform for <!--technical teams working on --> open innovation projects</p>
+                                <button class="btn btn-secondary" onclick="showAuthModal()" style="margin-bottom:15px">Create Account</button>
+                                <button class="btn btn-secondary" onclick="goPreferences()">Policy Preferences</button>
+                            </div>
+
                         </div>
 
                         <div style="float:right; margin-right:20px">
