@@ -122,8 +122,8 @@
     color: var(--text-primary);
 }
 
-/* Hide toggle button when collapsed */
-.sidebar.collapsed .sidebar-toggle {
+/* Hide toggle button when collapsed (but not when hover-expanded) */
+.sidebar.collapsed:not(.hovered) .sidebar-toggle {
     opacity: 0 !important;
     pointer-events: none !important;
 }
