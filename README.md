@@ -306,4 +306,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Built with ❤️ for the Innovation Bond community**
 
-*Connecting technical talent with local impact projects to build the future of government technology.*
+*Connecting technical talent with impactful projects to build the future of AI-enabled technology.*
