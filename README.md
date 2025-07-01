@@ -128,16 +128,21 @@ MemberCommons/
    ```bash
    cargo run -- init-db
    ```
-Or 
 
-      SERVER_PORT=8081 cargo run -- serve
 
 6. **Start the backend server**
    ```bash
    cargo run -- serve
    ```
+&nbsp; &nbsp; Or include the port by running:
+
+   ```bash
+      SERVER_PORT=8081 cargo run -- serve
+   ```
 
 ### Frontend Setup
+
+We recommend skipping 1 and open a server in your webroot instead.
 
 1. **Serve the frontend**
    ```bash
@@ -155,6 +160,16 @@ Or
    ```
    http://localhost:3000
    ```
+
+&nbsp; &nbsp; Or (recommended) open your webroot folder after running in your webroot (parent of membercommons folder):
+   ```
+   python -m http.server 8887
+   ```
+   
+Then view here when coding (hit refresh after changing with an AI CLI above):
+
+[http://localhost:8887/membercommons](http://localhost:8887/membercommons)
+
 
 ## 🔧 Configuration
 
