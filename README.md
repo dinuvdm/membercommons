@@ -307,7 +307,9 @@ Python 3.7
 
    conda create -n gemini-env python=3.9
    conda activate gemini-env
-   pip install -q -U google-genai
+   <!-- pip install -q -U google-genai -->
+
+   npm install -g @google/gemini-cli
 
 ---
 

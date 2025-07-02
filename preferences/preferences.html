@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Project Preferences</title>
+<link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link type="text/css" rel="stylesheet" href="/localsite/css/base.css" id="/localsite/css/base.css" />
+<script type="text/javascript" src="/localsite/js/localsite.js?showheader=true&showsearch=false"></script>
+
+<style>
+  .navlink-preferences {
+    font: 600 16px/1.8 "Lato", sans-serif !important;
+    color: #222 !important;
+  }
+  .dark .navlink-preferences {
+      color: #fff !important;
+  }
+</style>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    }
+    h1 {
+        font-size: 28px !important;
+        font-weight: 700 !important;
+        font-family: Roboto, Inter, -apple-system, system-ui, BlinkMacSystemFont, Segoe UI, Helvetica Neue, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+    }
+    .star-icon {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    .star-icon.filled {
+        fill: currentColor;
+    }
+    .icon {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    .icon-sm {
+        width: 16px;
+        height: 16px;
+    }
+    .icon-xs {
+        width: 12px;
+        height: 12px;
+    }
+    .activeFiltersLabel {
+        float: left;
+    }
+    .dropdown-menu {
+        position: absolute;
+        right: 0;
+        top: 100%;
+        z-index: 50;
+        min-width: 12rem;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        padding: 0.5rem 0;
+        display: none;
+    }
+    .dropdown-menu.show {
+        display: block;
+    }
+    .dropdown-item {
+        white-space: nowrap;
+        display: block;
+        width: 100%;
+        padding: 0.5rem 1rem;
+        text-align: left;
+        font-size: 0.875rem;
+        color: #374151;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.15s ease-in-out;
+    }
+    .dropdown-item:hover {
+        background-color: #f3f4f6;
+    }
+    .hidden {
+        display: none !important;
+    }
+    .pagination-button {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        background: white;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+    }
+    .pagination-button:hover {
+        background: #f3f4f6;
+    }
+    .pagination-button.active {
+        background: #10b981;
+        color: white;
+        border-color: #10b981;
+    }
+    .pagination-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+</head>
+<body>
+    <div class="content contentpadding">
+        <div id="root"></div>
+    </div>
+    <script>
+        // Mock data representing DFC projects (fallback if Excel load fails)
+        const mockProjects = [
+            {
+                id: 1,
+                "Project Name": "Solar Energy Infrastructure - Ghana",
+                "Project Description": "Expanding renewable energy access in rural communities through solar panel installations and micro-grid systems.",
+                "Country": "Ghana",
+                "NAICS Sector": "Utilities",
+                "Committed": 25000000,
+                "Department": "Finance",
+                "Project Type": "TPL IG",
+                "Region": "Africa",
+                "Fiscal Year": "2024",
+                "Project Number": "DFC-2024-001",
+                "Framework": "Energy Access",
+                "Project Profile URL": "https://example.com/project1",
+                tags: ["renewable energy", "rural development", "sustainability", "infrastructure"],
+                starred: false,
+                comment: ""
+            },
+            {
+                id: 2,
+                "Project Name": "Small Business Lending Platform - Colombia",
+                "Project Description": "Digital lending platform to support small and medium enterprises with microfinance solutions.",
+                "Country": "Colombia",
+                "NAICS Sector": "Finance and Insurance",
+                "Committed": 15000000,
+                "Department": "Investment Funds",
+                "Project Type": "DI",
+                "Region": "Latin America",
+                "Fiscal Year": "2024",
+                "Project Number": "DFC-2024-002",
+                "Framework": "Financial Inclusion",
+                "Project Profile URL": "https://example.com/project2",
+                tags: ["fintech", "microfinance", "entrepreneurship", "digital innovation"],
+                starred: false,
+                comment: ""
+            },
+            {
+                id: 3,
+                "Project Name": "Agricultural Technology Hub - Kenya",
+                "Project Description": "Modern farming techniques and technology training center for sustainable agriculture.",
+                "Country": "Kenya",
+                "NAICS Sector": "Agriculture",
+                "Committed": 18000000,
+                "Department": "Technical Assistance",
+                "Project Type": "COPS IG",
+                "Region": "Africa",
+                "Fiscal Year": "2024",
+                "Project Number": "DFC-2024-003",
+                "Framework": "Food Security",
+                "Project Profile URL": "https://example.com/project3",
+                tags: ["agriculture", "technology", "training", "food security"],
+                starred: false,
+                comment: ""
+            },
+            {
+                id: 4,
+                "Project Name": "Healthcare Access Initiative - Bangladesh",
+                "Project Description": "Mobile health clinics and telemedicine infrastructure for underserved communities.",
+                "Country": "Bangladesh",
+                "NAICS Sector": "Health Care",
+                "Committed": 22000000,
+                "Department": "Equity Investments",
+                "Project Type": "TPL IG",
+                "Region": "Asia",
+                "Fiscal Year": "2024",
+                "Project Number": "DFC-2024-004",
+                "Framework": "Health Access",
+                "Project Profile URL": "https://example.com/project4",
+                tags: ["healthcare", "telemedicine", "rural access", "medical technology"],
+                starred: false,
+                comment: ""
+            },
+            {
+                id: 5,
+                "Project Name": "Water Infrastructure Project - Morocco",
+                "Project Description": "Clean water distribution systems and waste management solutions for urban areas.",
+                "Country": "Morocco",
+                "NAICS Sector": "Utilities",
+                "Committed": 30000000,
+                "Department": "Finance",
+                "Project Type": "Redacted",
+                "Region": "Africa",
+                "Fiscal Year": "2024",
+                "Project Number": "DFC-2024-005",
+                "Framework": "Infrastructure",
+                "Project Profile URL": "https://example.com/project5",
+                tags: ["water infrastructure", "sanitation", "urban development", "public health"],
+                starred: false,
+                comment: ""
+            },
+            {
+                id: 6,
+                "Project Name": "Digital Education Platform - Philippines",
+                "Project Description": "Online learning platform and digital literacy programs for remote education access.",
+                "Country": "Philippines",
+                "NAICS Sector": "Educational Services",
+                "Committed": 12000000,
+                "Department": "Technical Assistance",
+                "Project Type": "DI",
+                "Region": "Asia",
+                "Fiscal Year": "2024",
+                "Project Number": "DFC-2024-006",
+                "Framework": "Education Access",
+                "Project Profile URL": "https://example.com/project6",
+                tags: ["education", "digital literacy", "remote learning", "technology access"],
+                starred: false,
+                comment: ""
+            }
+        ];
+
+        // Voting preferences categories
+        const votingPreferences = [
+            "Agriculture", "Aquifer Restoration", "Climate Resilience", "Digital Inclusion", "Economic Growth",
+            "Education", "Environmental Sustainability", "Financial Inclusion", "Food Security", "Governance & Transparency",
+            "Healthcare Access", "Infrastructure Development", "Renewable Energy", "Rural Development", "Small Business Support",
+            "Social Impact", "Technology Innovation", "Water & Sanitation", "Women's Empowerment", "Youth Programs"
+        ];
+
+        // Filter categories
+        const departments = ["Finance", "Insurance", "Investment Funds", "Equity Investments", "Technical Assistance"];
+        const naicsSectors = ["Agriculture", "Accommodation and Food Services", "Educational Services", "Finance and Insurance", "Health Care", "Information", "Utilities"];
+        const projectTypes = ["TPL IG", "Redacted", "COPS IG", "DI"];
+
+        // Preference to filter mappings
+        const preferenceToFilterMappings = {
+            "Agriculture": { naicsSectors: ["Agriculture"], departments: ["Technical Assistance"] },
+            "Education": { naicsSectors: ["Educational Services"], departments: ["Technical Assistance"] },
+            "Healthcare Access": { naicsSectors: ["Health Care"], departments: ["Equity Investments"] },
+            "Financial Inclusion": { naicsSectors: ["Finance and Insurance"], departments: ["Investment Funds", "Finance"] },
+            "Infrastructure Development": { naicsSectors: ["Utilities"], departments: ["Finance"] },
+            "Technology Innovation": { naicsSectors: ["Information"], departments: ["Investment Funds"] },
+            "Small Business Support": { naicsSectors: ["Finance and Insurance"], departments: ["Investment Funds"] },
+            "Rural Development": { departments: ["Technical Assistance"] },
+            "Environmental Sustainability": { naicsSectors: ["Utilities"], departments: ["Finance"] },
+            "Renewable Energy": { naicsSectors: ["Utilities"], departments: ["Finance"] },
+            "Water & Sanitation": { naicsSectors: ["Utilities"], departments: ["Finance"] },
+            "Digital Inclusion": { naicsSectors: ["Information", "Educational Services"], departments: ["Technical Assistance"] },
+            "Economic Growth": { naicsSectors: ["Finance and Insurance"], departments: ["Investment Funds"] },
+            "Food Security": { naicsSectors: ["Agriculture"], departments: ["Technical Assistance"] }
+        };
+
+        // Local storage keys
+        const STORAGE_KEYS = {
+            VOTES: 'dfc_project_votes',
+            PREFERENCES: 'dfc_user_preferences',
+            STARRED_PROJECTS: 'dfc_starred_projects',
+            DEPARTMENT_FILTERS: 'dfc_department_filters',
+            NAICS_FILTERS: 'dfc_naics_filters',
+            PROJECT_TYPE_FILTERS: 'dfc_project_type_filters',
+            FILTER_LOGIC: 'dfc_filter_logic'
+        };
+
+        // Global state
+        let appState = {
+            votes: [],
+            preferences: {},
+            departmentFilters: {},
+            naicsFilters: {},
+            projectTypeFilters: {},
+            filterLogic: 'any', // 'any' or 'all'
+            showPreferences: false,
+            searchTerm: '',
+            starredProjects: new Set(),
+            forceShowComment: new Set(),
+            currentPage: 1,
+            itemsPerPage: 20,
+            projects: [],
+            excelLoaded: false
+        };
+
+        // Excel loading function
+        async function loadExcelData() {
+            try {
+                const response = await fetch('projects/DFC-ActiveProjects.xlsx');
+                if (!response.ok) {
+                    throw new Error('Excel file not found');
+                }
+                
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                
+                // Transform Excel data to match our format
+                const transformedData = jsonData.map((row, index) => ({
+                    id: index + 1,
+                    "Fiscal Year": row["Fiscal Year"] || "",
+                    "Project Number": row["Project Number"] || "",
+                    "Project Type": row["Project Type"] || "",
+                    "Region": row["Region"] || "",
+                    "Country": row["Country"] || "",
+                    "Department": row["Department"] || "",
+                    "Framework": row["Framework"] || "",
+                    "Project Name": row["Project Name"] || "",
+                    "Committed": parseFloat(row["Committed"]) || 0,
+                    "NAICS Sector": row["NAICS Sector"] || "",
+                    "Project Description": row["Project Description"] || "",
+                    "Project Profile URL": row["Project Profile URL"] || "",
+                    tags: generateTags(row),
+                    starred: false,
+                    comment: ""
+                })).filter(project => project["Project Name"]); // Only include rows with project names
+                
+                appState.projects = transformedData;
+                appState.excelLoaded = true;
+                console.log(`Loaded ${transformedData.length} projects from Excel`);
+                
+            } catch (error) {
+                console.warn('Failed to load Excel data, using mock data:', error);
+                appState.projects = mockProjects;
+                appState.excelLoaded = false;
+            }
+        }
+
+        // Generate tags from project data
+        function generateTags(project) {
+            const tags = [];
+            if (project["NAICS Sector"]) tags.push(project["NAICS Sector"].toLowerCase());
+            if (project["Department"]) tags.push(project["Department"].toLowerCase());
+            if (project["Region"]) tags.push(project["Region"].toLowerCase());
+            if (project["Framework"]) tags.push(project["Framework"].toLowerCase());
+            
+            // Add descriptive tags based on project name and description
+            const text = `${project["Project Name"]} ${project["Project Description"]}`.toLowerCase();
+            if (text.includes('solar') || text.includes('renewable')) tags.push('renewable energy');
+            if (text.includes('health') || text.includes('medical')) tags.push('healthcare');
+            if (text.includes('education') || text.includes('learning')) tags.push('education');
+            if (text.includes('agriculture') || text.includes('farming')) tags.push('agriculture');
+            if (text.includes('water') || text.includes('sanitation')) tags.push('water & sanitation');
+            if (text.includes('digital') || text.includes('technology')) tags.push('technology');
+            if (text.includes('finance') || text.includes('lending')) tags.push('financial services');
+            if (text.includes('infrastructure')) tags.push('infrastructure');
+            
+            return [...new Set(tags)]; // Remove duplicates
+        }
+
+        // Utility functions
+        function createElement(tag, className = '', innerHTML = '') {
+            const element = document.createElement(tag);
+            if (className) element.className = className;
+            if (innerHTML) element.innerHTML = innerHTML;
+            return element;
+        }
+
+        function createSVGElement(pathData, className = '') {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', `icon ${className}`);
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.innerHTML = pathData;
+            return svg;
+        }
+
+        // Icon functions
+        function createStarIcon(filled = false, className = '') {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', `star-icon cursor-pointer transition-colors duration-150 ${filled ? 'filled text-yellow-400' : 'text-gray-300 hover:text-yellow-300'} ${className}`);
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.innerHTML = '<polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />';
+            return svg;
+        }
+
+        function getSectorIcon(sector) {
+            const iconMap = {
+                'utilities': '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" /><path d="M6 12h4v6h4v-6h4" />',
+                'health care': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />',
+                'educational services': '<circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />',
+                'agriculture': '<path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />',
+                'finance and insurance': '<line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />',
+                'information': '<rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />',
+                'default': '<line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />'
+            };
+            
+            const colorMap = {
+                'utilities': 'text-green-600',
+                'health care': 'text-blue-600',
+                'educational services': 'text-purple-600',
+                'agriculture': 'text-yellow-600',
+                'finance and insurance': 'text-orange-600',
+                'information': 'text-indigo-600',
+                'default': 'text-gray-600'
+            };
+
+            const sectorKey = sector.toLowerCase();
+            const iconPath = iconMap[sectorKey] || iconMap.default;
+            const iconColor = colorMap[sectorKey] || colorMap.default;
+
+            return createSVGElement(iconPath, `w-5 h-5 ${iconColor}`);
+        }
+
+        function getStatusColor(status) {
+            switch (status.toLowerCase()) {
+                case 'active': return 'bg-green-100 text-green-800';
+                case 'proposed': return 'bg-blue-100 text-blue-800';
+                case 'under review': return 'bg-yellow-100 text-yellow-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        // Storage functions
+        function loadFromStorage() {
+            try {
+                const savedVotes = localStorage.getItem(STORAGE_KEYS.VOTES);
+                const savedPreferences = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
+                const savedStarred = localStorage.getItem(STORAGE_KEYS.STARRED_PROJECTS);
+                const savedDepartmentFilters = localStorage.getItem(STORAGE_KEYS.DEPARTMENT_FILTERS);
+                const savedNaicsFilters = localStorage.getItem(STORAGE_KEYS.NAICS_FILTERS);
+                const savedProjectTypeFilters = localStorage.getItem(STORAGE_KEYS.PROJECT_TYPE_FILTERS);
+                const savedFilterLogic = localStorage.getItem(STORAGE_KEYS.FILTER_LOGIC);
+
+                if (savedVotes) {
+                    appState.votes = JSON.parse(savedVotes);
+                }
+
+                if (savedPreferences) {
+                    const prefs = JSON.parse(savedPreferences);
+                    appState.preferences = prefs;
+                    if (Object.keys(prefs).length === 0 || !Object.values(prefs).some(Boolean)) {
+                        appState.showPreferences = true;
+                    }
+                } else {
+                    appState.showPreferences = true;
+                }
+
+                if (savedStarred) {
+                    appState.starredProjects = new Set(JSON.parse(savedStarred));
+                }
+
+                if (savedDepartmentFilters) {
+                    appState.departmentFilters = JSON.parse(savedDepartmentFilters);
+                }
+
+                if (savedNaicsFilters) {
+                    appState.naicsFilters = JSON.parse(savedNaicsFilters);
+                }
+
+                if (savedProjectTypeFilters) {
+                    appState.projectTypeFilters = JSON.parse(savedProjectTypeFilters);
+                }
+
+                if (savedFilterLogic) {
+                    appState.filterLogic = savedFilterLogic;
+                }
+            } catch (error) {
+                console.error('Error loading data from localStorage:', error);
+                appState.showPreferences = true;
+            }
+        }
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.VOTES, JSON.stringify(appState.votes));
+                localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(appState.preferences));
+                localStorage.setItem(STORAGE_KEYS.STARRED_PROJECTS, JSON.stringify([...appState.starredProjects]));
+                localStorage.setItem(STORAGE_KEYS.DEPARTMENT_FILTERS, JSON.stringify(appState.departmentFilters));
+                localStorage.setItem(STORAGE_KEYS.NAICS_FILTERS, JSON.stringify(appState.naicsFilters));
+                localStorage.setItem(STORAGE_KEYS.PROJECT_TYPE_FILTERS, JSON.stringify(appState.projectTypeFilters));
+                localStorage.setItem(STORAGE_KEYS.FILTER_LOGIC, appState.filterLogic);
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+            }
+        }
+
+        // Event handlers
+        function handleVote(projectId, rating) {
+            const existingVote = appState.votes.find(v => v.projectId === projectId);
+            if (existingVote) {
+                existingVote.rating = rating;
+            } else {
+                appState.votes.push({ projectId, rating });
+            }
+
+            if (rating >= 4) {
+                appState.starredProjects.add(projectId);
+            }
+
+            saveToStorage();
+            render();
+        }
+
+        function handleCommentChange(projectId, comment) {
+            const existingVote = appState.votes.find(v => v.projectId === projectId);
+            if (existingVote) {
+                existingVote.comment = comment;
+            } else {
+                appState.votes.push({ projectId, rating: 0, comment });
+            }
+
+            saveToStorage();
+        }
+
+        function handlePreferenceChange(preference, checked) {
+            appState.preferences[preference] = checked;
+            
+            // Auto-update related filters
+            if (preferenceToFilterMappings[preference]) {
+                const mapping = preferenceToFilterMappings[preference];
+                
+                if (mapping.departments) {
+                    mapping.departments.forEach(dept => {
+                        appState.departmentFilters[dept] = checked;
+                    });
+                }
+                
+                if (mapping.naicsSectors) {
+                    mapping.naicsSectors.forEach(sector => {
+                        appState.naicsFilters[sector] = checked;
+                    });
+                }
+            }
+            
+            saveToStorage();
+            render();
+        }
+
+        function handleDepartmentFilterChange(department, checked) {
+            appState.departmentFilters[department] = checked;
+            saveToStorage();
+            appState.currentPage = 1;
+            render();
+        }
+
+        function handleNaicsFilterChange(sector, checked) {
+            appState.naicsFilters[sector] = checked;
+            saveToStorage();
+            appState.currentPage = 1;
+            render();
+        }
+
+        function handleProjectTypeFilterChange(type, checked) {
+            appState.projectTypeFilters[type] = checked;
+            saveToStorage();
+            appState.currentPage = 1;
+            render();
+        }
+
+        function handleFilterLogicChange(logic) {
+            appState.filterLogic = logic;
+            saveToStorage();
+            appState.currentPage = 1;
+            render();
+        }
+
+        function handleToggleStar(projectId) {
+            if (appState.starredProjects.has(projectId)) {
+                appState.starredProjects.delete(projectId);
+            } else {
+                appState.starredProjects.add(projectId);
+            }
+            saveToStorage();
+            render();
+        }
+
+        function handleToggleComment(projectId) {
+            if (appState.forceShowComment.has(projectId)) {
+                appState.forceShowComment.delete(projectId);
+            } else {
+                appState.forceShowComment.add(projectId);
+            }
+            render();
+        }
+
+        // Star rating component
+        function createStarRating(rating, projectId, size = 'md') {
+            const container = createElement('div', 'flex space-x-1');
+            const starSize = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
+
+            for (let i = 1; i <= 5; i++) {
+                const star = createStarIcon(i <= rating, starSize);
+                star.addEventListener('click', () => handleVote(projectId, i));
+                container.appendChild(star);
+            }
+
+            return container;
+        }
+
+        // Dropdown menu component
+        function createDropdownMenu(projectId, isStarred, hasComment) {
+            const container = createElement('div', 'relative');
+            const button = createElement('button', 'p-1 hover:bg-gray-100 rounded-lg transition-colors');
+            button.innerHTML = '<svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>';
+            
+            const menu = createElement('div', 'dropdown-menu');
+            
+            const starButton = createElement('button', 'dropdown-item flex items-center space-x-2');
+            starButton.innerHTML = `
+                ${isStarred ? 
+                    '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12" /></svg><span>Remove from List</span>' :
+                    '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg><span>Add to List</span>'
+                }
+            `;
+            starButton.addEventListener('click', () => {
+                handleToggleStar(projectId);
+                menu.classList.remove('show');
+            });
+
+            const commentButton = createElement('button', 'dropdown-item flex items-center space-x-2');
+            commentButton.innerHTML = `
+                ${hasComment ? 
+                    '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg><span>Edit Comment</span>' :
+                    '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg><span>Add Comment</span>'
+                }
+            `;
+            commentButton.addEventListener('click', () => {
+                handleToggleComment(projectId);
+                menu.classList.remove('show');
+            });
+
+            menu.appendChild(starButton);
+            menu.appendChild(commentButton);
+
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+                menu.classList.toggle('show');
+            });
+
+            document.addEventListener('click', () => {
+                menu.classList.remove('show');
+            });
+
+            container.appendChild(button);
+            container.appendChild(menu);
+            return container;
+        }
+
+        // Project card component
+        function createProjectCard(project) {
+            const vote = appState.votes.find(v => v.projectId === project.id);
+            const isStarred = appState.starredProjects.has(project.id);
+            const showCommentForced = appState.forceShowComment.has(project.id);
+            const showCommentBox = vote?.rating || vote?.comment || showCommentForced;
+
+            const card = createElement('div', 'bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:border-green-200 transition-all duration-200');
+
+            // Header section
+            const header = createElement('div', 'flex items-start justify-between mb-4');
+            const headerLeft = createElement('div', 'flex items-center space-x-3');
+            headerLeft.appendChild(getSectorIcon(project["NAICS Sector"]));
+            const headerInfo = createElement('div');
+            headerInfo.appendChild(createElement('h3', 'font-semibold text-gray-900 text-lg', project["Project Name"]));
+            headerInfo.appendChild(createElement('p', 'text-sm text-gray-600', `${project["Country"]} • ${project["NAICS Sector"]}`));
+            headerLeft.appendChild(headerInfo);
+            
+            const statusBadge = createElement('span', `px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800`, project["Project Type"]);
+            
+            header.appendChild(headerLeft);
+            header.appendChild(statusBadge);
+
+            // Description
+            const description = createElement('p', 'text-gray-700 mb-4 leading-relaxed', project["Project Description"]);
+
+            // Project details
+            const detailsInfo = createElement('div', 'mb-4 space-y-2');
+            
+            if (project["Project Number"]) {
+                const projectNumber = createElement('div', 'text-sm text-gray-600');
+                projectNumber.innerHTML = `<span class="font-medium">Project Number:</span> ${project["Project Number"]}`;
+                detailsInfo.appendChild(projectNumber);
+            }
+            
+            if (project["Department"]) {
+                const department = createElement('div', 'text-sm text-gray-600');
+                department.innerHTML = `<span class="font-medium">Department:</span> ${project["Department"]}`;
+                detailsInfo.appendChild(department);
+            }
+            
+            if (project["Framework"]) {
+                const framework = createElement('div', 'text-sm text-gray-600');
+                framework.innerHTML = `<span class="font-medium">Framework:</span> ${project["Framework"]}`;
+                detailsInfo.appendChild(framework);
+            }
+
+            // Funding info
+            const fundingInfo = createElement('div', 'mb-4');
+            const fundingRow = createElement('div', 'flex items-center justify-between text-sm mb-2');
+            fundingRow.appendChild(createElement('span', 'text-gray-600', 'Committed Amount'));
+            fundingRow.appendChild(createElement('span', 'font-semibold text-gray-900', `$${project["Committed"].toLocaleString()}`));
+            fundingInfo.appendChild(fundingRow);
+
+            // Tags
+            const tagsContainer = createElement('div', 'mb-4');
+            const tagsWrapper = createElement('div', 'flex flex-wrap gap-2');
+            project.tags.forEach(tag => {
+                tagsWrapper.appendChild(createElement('span', 'px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs', tag));
+            });
+            tagsContainer.appendChild(tagsWrapper);
+
+            // Project Profile URL
+            if (project["Project Profile URL"]) {
+                const urlLink = createElement('div', 'mb-4');
+                const link = createElement('a', 'text-blue-600 hover:text-blue-800 text-sm underline', 'View Project Profile');
+                link.href = project["Project Profile URL"];
+                link.target = '_blank';
+                urlLink.appendChild(link);
+                card.appendChild(urlLink);
+            }
+
+            // Voting section
+            const votingSection = createElement('div', 'pt-4 border-t border-gray-100');
+            const votingHeader = createElement('div', 'flex items-center justify-between mb-3');
+            votingHeader.appendChild(createElement('span', 'text-sm font-medium text-gray-700', 'Your Vote:'));
+            
+            const votingControls = createElement('div', 'flex items-center space-x-2');
+            votingControls.appendChild(createStarRating(vote?.rating || 0, project.id));
+            votingControls.appendChild(createDropdownMenu(project.id, isStarred, !!vote?.comment));
+            votingHeader.appendChild(votingControls);
+
+            votingSection.appendChild(votingHeader);
+
+            // Comment box
+            if (showCommentBox) {
+                const commentSection = createElement('div', 'mt-4');
+                const commentHeader = createElement('div', 'flex items-center space-x-2 mb-2');
+                commentHeader.innerHTML = '<svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>';
+                commentHeader.appendChild(createElement('label', 'text-sm font-medium text-gray-700', 'Your Comment:'));
+                
+                const textarea = createElement('textarea', 'w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none text-sm');
+                textarea.setAttribute('rows', '3');
+                textarea.setAttribute('placeholder', 'Share your thoughts about this project...');
+                textarea.value = vote?.comment || '';
+                textarea.addEventListener('input', (e) => {
+                    handleCommentChange(project.id, e.target.value);
+                });
+
+                commentSection.appendChild(commentHeader);
+                commentSection.appendChild(textarea);
+                votingSection.appendChild(commentSection);
+            }
+
+            card.appendChild(header);
+            card.appendChild(description);
+            card.appendChild(detailsInfo);
+            card.appendChild(fundingInfo);
+            card.appendChild(tagsContainer);
+            card.appendChild(votingSection);
+
+            return card;
+        }
+
+        // Filter projects
+        function getFilteredProjects() {
+            let filtered = appState.projects;
+            const activePreferences = Object.keys(appState.preferences).filter(key => appState.preferences[key]);
+            const activeDepartments = Object.keys(appState.departmentFilters).filter(key => appState.departmentFilters[key]);
+            const activeNaics = Object.keys(appState.naicsFilters).filter(key => appState.naicsFilters[key]);
+            const activeProjectTypes = Object.keys(appState.projectTypeFilters).filter(key => appState.projectTypeFilters[key]);
+
+            // Filter by search term
+            if (appState.searchTerm) {
+                const searchLower = appState.searchTerm.toLowerCase();
+                filtered = filtered.filter(project =>
+                    project["Project Name"].toLowerCase().includes(searchLower) ||
+                    project["Project Description"].toLowerCase().includes(searchLower) ||
+                    project["Country"].toLowerCase().includes(searchLower) ||
+                    project["NAICS Sector"].toLowerCase().includes(searchLower) ||
+                    project["Department"].toLowerCase().includes(searchLower) ||
+                    project.tags.some(tag => tag.toLowerCase().includes(searchLower))
+                );
+            }
+
+            // Apply filters based on logic (AND/OR)
+            const hasActiveFilters = activePreferences.length > 0 || activeDepartments.length > 0 || 
+                                   activeNaics.length > 0 || activeProjectTypes.length > 0;
+
+            if (hasActiveFilters) {
+                filtered = filtered.filter(project => {
+                    const matchesPreferences = activePreferences.length === 0 || activePreferences.some(pref => 
+                        project.tags.some(tag => tag.toLowerCase().includes(pref.toLowerCase())) ||
+                        project["NAICS Sector"].toLowerCase().includes(pref.toLowerCase()) ||
+                        project["Project Name"].toLowerCase().includes(pref.toLowerCase()) ||
+                        project["Project Description"].toLowerCase().includes(pref.toLowerCase())
+                    );
+
+                    const matchesDepartments = activeDepartments.length === 0 || 
+                        activeDepartments.includes(project["Department"]);
+
+                    const matchesNaics = activeNaics.length === 0 || 
+                        activeNaics.includes(project["NAICS Sector"]);
+
+                    const matchesProjectTypes = activeProjectTypes.length === 0 || 
+                        activeProjectTypes.includes(project["Project Type"]);
+
+                    if (appState.filterLogic === 'all') {
+                        return matchesPreferences && matchesDepartments && matchesNaics && matchesProjectTypes;
+                    } else {
+                        return matchesPreferences || matchesDepartments || matchesNaics || matchesProjectTypes;
+                    }
+                });
+            }
+
+            return filtered;
+        }
+
+        // Pagination functions
+        function getPaginatedProjects(projects) {
+            const startIndex = (appState.currentPage - 1) * appState.itemsPerPage;
+            const endIndex = startIndex + appState.itemsPerPage;
+            return projects.slice(startIndex, endIndex);
+        }
+
+        function getTotalPages(totalItems) {
+            return Math.ceil(totalItems / appState.itemsPerPage);
+        }
+
+        function getPageSizeOptions(totalItems) {
+            const options = [20, 50, 100];
+            return options.filter(option => option <= totalItems || option === 20); // .concat(['All']) // All is very slow.
+        }
+
+        // Pagination component
+        function createPagination(totalItems) {
+            const totalPages = getTotalPages(totalItems);
+            const container = createElement('div', 'flex items-center justify-between mt-8 p-4 bg-white rounded-lg border border-gray-200');
+            
+            // Page size selector
+            const pageSizeContainer = createElement('div', 'flex items-center space-x-2');
+            pageSizeContainer.appendChild(createElement('span', 'text-sm text-gray-700', 'Show:'));
+            
+            const pageSizeSelect = createElement('select', 'border border-gray-300 rounded px-2 py-1 text-sm min-w-[60px]');
+            const pageSizeOptions = getPageSizeOptions(totalItems);
+            
+            pageSizeOptions.forEach(option => {
+                const optionElement = createElement('option', '', option.toString());
+                optionElement.value = option === 'All' ? totalItems : option;
+                if ((option === 'All' && appState.itemsPerPage >= totalItems) || 
+                    (option !== 'All' && appState.itemsPerPage === option)) {
+                    optionElement.selected = true;
+                }
+                pageSizeSelect.appendChild(optionElement);
+            });
+            
+            pageSizeSelect.addEventListener('change', (e) => {
+                appState.itemsPerPage = parseInt(e.target.value);
+                appState.currentPage = 1;
+                render();
+            });
+            
+            pageSizeContainer.appendChild(pageSizeSelect);
+            
+            // Page info
+            const startItem = (appState.currentPage - 1) * appState.itemsPerPage + 1;
+            const endItem = Math.min(appState.currentPage * appState.itemsPerPage, totalItems);
+            const pageInfo = createElement('span', 'text-sm text-gray-700', 
+                `Showing ${startItem}-${endItem} of ${totalItems} projects`);
+            
+            // Page navigation
+            const pageNavigation = createElement('div', 'flex items-center space-x-1');
+            
+            // Previous button
+            const prevButton = createElement('button', 'pagination-button rounded-l', 'Previous');
+            prevButton.disabled = appState.currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (appState.currentPage > 1) {
+                    appState.currentPage--;
+                    render();
+                }
+            });
+            pageNavigation.appendChild(prevButton);
+            
+            // Page numbers
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, appState.currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = createElement('button', 
+                    `pagination-button ${i === appState.currentPage ? 'active' : ''}`, 
+                    i.toString());
+                pageButton.addEventListener('click', () => {
+                    appState.currentPage = i;
+                    render();
+                });
+                pageNavigation.appendChild(pageButton);
+            }
+            
+            // Next button
+            const nextButton = createElement('button', 'pagination-button rounded-r', 'Next');
+            nextButton.disabled = appState.currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (appState.currentPage < totalPages) {
+                    appState.currentPage++;
+                    render();
+                }
+            });
+            pageNavigation.appendChild(nextButton);
+            
+            container.appendChild(pageSizeContainer);
+            container.appendChild(pageInfo);
+            container.appendChild(pageNavigation);
+            
+            return container;
+        }
+
+        // Main render function
+        function render() {
+            const root = document.getElementById('root');
+            root.innerHTML = '';
+
+            const container = createElement('div', 'min-h-screen bg-gray-50');
+            const mainContent = createElement('div', 'max-w-6xl mx-auto px-4 py-8');
+
+            const filteredProjects = getFilteredProjects();
+            const paginatedProjects = getPaginatedProjects(filteredProjects);
+            const starredProjectsList = appState.projects.filter(project => appState.starredProjects.has(project.id));
+            const activePreferences = Object.keys(appState.preferences).filter(key => appState.preferences[key]);
+            const totalCommitted = filteredProjects.reduce((sum, project) => sum + project["Committed"], 0);
+
+            // Header info
+            const headerInfo = createElement('div', 'mb-4');
+            headerInfo.innerHTML = `
+                <h1>Project Preferences - Prototype</h1>
+                <p>MockUp developed using <a href="https://bolt.new">Bolt AI</a>. Visit the current DemocracyLab site at <a href="https://DemocracyLab.org">DemocracyLab.org</a><br></p>
+                <p class="text-gray-600">
+                    ${appState.excelLoaded ? 'Data loaded' : 'Using fallback data (Excel file not found)'} - 
+                    <a href="../crm">Partner Database Tools</a> - 
+                    View <a href="manager.html">Preference Manager</a> and <a href="projects">Detailed Project List</a>.
+                </p>
+            `;
+            mainContent.appendChild(headerInfo);
+
+            // Search bar
+            const searchSection = createElement('div', 'mb-4');
+            const searchContainer = createElement('div', 'relative');
+            searchContainer.innerHTML = '<svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>';
+            const searchInput = createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = 'Search projects by name, country, sector, department, or description...';
+            searchInput.className = 'w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent';
+            searchInput.value = appState.searchTerm;
+            searchInput.addEventListener('input', (e) => {
+                appState.searchTerm = e.target.value;
+                appState.currentPage = 1;
+                render();
+            });
+            searchContainer.appendChild(searchInput);
+            searchSection.appendChild(searchContainer);
+            mainContent.appendChild(searchSection);
+
+            // Starred projects section
+            if (starredProjectsList.length > 0) {
+                const starredSection = createElement('div', 'bg-white rounded-lg p-6 mb-8 shadow-sm border border-gray-100');
+                const starredHeader = createElement('h2', 'text-xl font-semibold text-gray-900 mb-4 flex items-center');
+                starredHeader.innerHTML = `<svg class="w-5 h-5 mr-2 text-yellow-500 star-icon filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" /></svg>My Project Selections (${starredProjectsList.length})`;
+                
+                const starredGrid = createElement('div', 'grid gap-4');
+                starredProjectsList.forEach(project => {
+                    const vote = appState.votes.find(v => v.projectId === project.id);
+                    const projectRow = createElement('div', 'p-4 bg-gray-50 rounded-lg');
+                    
+                    const projectHeader = createElement('div', 'flex items-center justify-between mb-2');
+                    const projectInfo = createElement('div', 'flex-1');
+                    projectInfo.appendChild(createElement('h3', 'font-medium text-gray-900', project["Project Name"]));
+                    projectInfo.appendChild(createElement('p', 'text-sm text-gray-600', `${project["Country"]} • ${project["NAICS Sector"]} • $${project["Committed"].toLocaleString()}`));
+                    
+                    const projectControls = createElement('div', 'flex items-center space-x-2');
+                    projectControls.appendChild(createStarRating(vote?.rating || 0, project.id, 'sm'));
+                    projectControls.appendChild(createDropdownMenu(project.id, true, !!vote?.comment));
+                    
+                    projectHeader.appendChild(projectInfo);
+                    projectHeader.appendChild(projectControls);
+                    projectRow.appendChild(projectHeader);
+
+                    if (vote?.comment) {
+                        const commentBox = createElement('div', 'mt-2 p-3 bg-white rounded border border-gray-200');
+                        const commentHeader = createElement('div', 'flex items-center space-x-2 mb-1');
+                        commentHeader.innerHTML = '<svg class="w-3 h-3 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>';
+                        commentHeader.appendChild(createElement('span', 'text-xs font-medium text-gray-600', 'Your Comment:'));
+                        commentBox.appendChild(commentHeader);
+                        commentBox.appendChild(createElement('p', 'text-sm text-gray-700', vote.comment));
+                        projectRow.appendChild(commentBox);
+                    }
+
+                    starredGrid.appendChild(projectRow);
+                });
+
+                starredSection.appendChild(starredHeader);
+                starredSection.appendChild(starredGrid);
+                mainContent.appendChild(starredSection);
+            }
+
+            // Preferences toggle
+            if (!appState.showPreferences) {
+                const prefsToggle = createElement('div', 'mb-6');
+                const prefsButton = createElement('button', 'flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors');
+                prefsButton.innerHTML = `
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1m17-4a4 4 0 0 1-8 0 4 4 0 0 1 8 0zM7 21a4 4 0 0 1-8 0 4 4 0 0 1 8 0z" />
+                    </svg>
+                    <span>Filters & Preferences</span>
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6,9 12,15 18,9" />
+                    </svg>
+                `;
+                prefsButton.addEventListener('click', () => {
+                    appState.showPreferences = true;
+                    render();
+                });
+                prefsToggle.appendChild(prefsButton);
+                mainContent.appendChild(prefsToggle);
+            }
+
+            // Preferences and filters panel
+            if (appState.showPreferences) {
+                const prefsPanel = createElement('div', 'bg-white rounded-lg p-6 shadow-sm border border-gray-100 mb-8');
+                const prefsHeader = createElement('div', 'flex items-center justify-between mb-4');
+                prefsHeader.appendChild(createElement('h3', 'text-lg font-semibold text-gray-900', 'Filters & Preferences'));
+                
+                const closeButton = createElement('button', 'p-1 hover:bg-gray-100 rounded-lg transition-colors');
+                closeButton.innerHTML = '<svg class="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>';
+                closeButton.addEventListener('click', () => {
+                    appState.showPreferences = false;
+                    render();
+                });
+                prefsHeader.appendChild(closeButton);
+
+                prefsPanel.appendChild(prefsHeader);
+
+                // Filter logic toggle
+                const logicSection = createElement('div', 'mb-6 p-4 bg-gray-50 rounded-lg');
+                logicSection.appendChild(createElement('h4', 'text-sm font-semibold text-gray-900 mb-3', 'Filter Logic'));
+                
+                const logicContainer = createElement('div', 'flex items-center space-x-4');
+                
+                const anyRadio = createElement('label', 'flex items-center space-x-2 cursor-pointer');
+                const anyInput = createElement('input');
+                anyInput.type = 'radio';
+                anyInput.name = 'filterLogic';
+                anyInput.value = 'any';
+                anyInput.checked = appState.filterLogic === 'any';
+                anyInput.addEventListener('change', () => handleFilterLogicChange('any'));
+                anyRadio.appendChild(anyInput);
+                anyRadio.appendChild(createElement('span', 'text-sm text-gray-700', 'Matches Any (OR)'));
+                
+                const allRadio = createElement('label', 'flex items-center space-x-2 cursor-pointer');
+                const allInput = createElement('input');
+                allInput.type = 'radio';
+                allInput.name = 'filterLogic';
+                allInput.value = 'all';
+                allInput.checked = appState.filterLogic === 'all';
+                allInput.addEventListener('change', () => handleFilterLogicChange('all'));
+                allRadio.appendChild(allInput);
+                allRadio.appendChild(createElement('span', 'text-sm text-gray-700', 'Matches All (AND)'));
+                
+                logicContainer.appendChild(anyRadio);
+                logicContainer.appendChild(allRadio);
+                logicSection.appendChild(logicContainer);
+                prefsPanel.appendChild(logicSection);
+
+                // My Preferences section
+                const preferencesSection = createElement('div', 'mb-6');
+                preferencesSection.appendChild(createElement('h4', 'text-sm font-semibold text-gray-900 mb-3', 'My Preferences'));
+                preferencesSection.appendChild(createElement('p', 'text-xs text-gray-600 mb-3', 'Select your areas of interest. Related filters will be auto-selected.'));
+
+                const prefsGrid = createElement('div', 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3');
+                votingPreferences.forEach(preference => {
+                    const label = createElement('label', 'flex items-center space-x-2 cursor-pointer');
+                    const checkbox = createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500';
+                    checkbox.checked = appState.preferences[preference] || false;
+                    checkbox.addEventListener('change', (e) => {
+                        handlePreferenceChange(preference, e.target.checked);
+                    });
+                    
+                    label.appendChild(checkbox);
+                    label.appendChild(createElement('span', 'text-sm text-gray-700', preference));
+                    prefsGrid.appendChild(label);
+                });
+                preferencesSection.appendChild(prefsGrid);
+                prefsPanel.appendChild(preferencesSection);
+
+                // Department filters
+                const departmentSection = createElement('div', 'mb-6');
+                departmentSection.appendChild(createElement('h4', 'text-sm font-semibold text-gray-900 mb-3', 'Department'));
+                
+                const departmentGrid = createElement('div', 'grid grid-cols-2 md:grid-cols-3 gap-3');
+                departments.forEach(department => {
+                    const label = createElement('label', 'flex items-center space-x-2 cursor-pointer');
+                    const checkbox = createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
+                    checkbox.checked = appState.departmentFilters[department] || false;
+                    checkbox.addEventListener('change', (e) => {
+                        handleDepartmentFilterChange(department, e.target.checked);
+                    });
+                    
+                    label.appendChild(checkbox);
+                    label.appendChild(createElement('span', 'text-sm text-gray-700', department));
+                    departmentGrid.appendChild(label);
+                });
+                departmentSection.appendChild(departmentGrid);
+                prefsPanel.appendChild(departmentSection);
+
+                // NAICS Sector filters
+                const naicsSection = createElement('div', 'mb-6');
+                naicsSection.appendChild(createElement('h4', 'text-sm font-semibold text-gray-900 mb-3', 'NAICS Sector'));
+                
+                const naicsGrid = createElement('div', 'grid grid-cols-2 md:grid-cols-3 gap-3');
+                naicsSectors.forEach(sector => {
+                    const label = createElement('label', 'flex items-center space-x-2 cursor-pointer');
+                    const checkbox = createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500';
+                    checkbox.checked = appState.naicsFilters[sector] || false;
+                    checkbox.addEventListener('change', (e) => {
+                        handleNaicsFilterChange(sector, e.target.checked);
+                    });
+                    
+                    label.appendChild(checkbox);
+                    label.appendChild(createElement('span', 'text-sm text-gray-700', sector));
+                    naicsGrid.appendChild(label);
+                });
+                naicsSection.appendChild(naicsGrid);
+                prefsPanel.appendChild(naicsSection);
+
+                // Project Type filters
+                const projectTypeSection = createElement('div', 'mb-6');
+                projectTypeSection.appendChild(createElement('h4', 'text-sm font-semibold text-gray-900 mb-3', 'Project Type'));
+                
+                const projectTypeGrid = createElement('div', 'grid grid-cols-2 md:grid-cols-4 gap-3');
+                projectTypes.forEach(type => {
+                    const label = createElement('label', 'flex items-center space-x-2 cursor-pointer');
+                    const checkbox = createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500';
+                    checkbox.checked = appState.projectTypeFilters[type] || false;
+                    checkbox.addEventListener('change', (e) => {
+                        handleProjectTypeFilterChange(type, e.target.checked);
+                    });
+                    
+                    label.appendChild(checkbox);
+                    label.appendChild(createElement('span', 'text-sm text-gray-700', type));
+                    projectTypeGrid.appendChild(label);
+                });
+                projectTypeSection.appendChild(projectTypeGrid);
+                prefsPanel.appendChild(projectTypeSection);
+
+                mainContent.appendChild(prefsPanel);
+            }
+
+            // Active filters display
+            const activeFilters = [
+                ...activePreferences.map(p => ({ type: 'preference', value: p })),
+                ...Object.keys(appState.departmentFilters).filter(k => appState.departmentFilters[k]).map(d => ({ type: 'department', value: d })),
+                ...Object.keys(appState.naicsFilters).filter(k => appState.naicsFilters[k]).map(n => ({ type: 'naics', value: n })),
+                ...Object.keys(appState.projectTypeFilters).filter(k => appState.projectTypeFilters[k]).map(t => ({ type: 'projectType', value: t }))
+            ];
+
+            if (activeFilters.length > 0) {
+                const filtersSection = createElement('div', 'mb-6 flex items-center gap-6');
+                const filtersHeader = createElement('div', 'flex items-center space-x-2 flex-shrink-0');
+                filtersHeader.innerHTML = '<svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" /></svg>';
+                filtersHeader.appendChild(createElement('span', 'text-sm font-medium text-gray-700', `Active Filters (${appState.filterLogic.toUpperCase()}):`));
+
+                const filtersContainer = createElement('div', 'flex flex-wrap gap-2');
+                activeFilters.forEach(filter => {
+                    const colorMap = {
+                        preference: 'bg-green-100 text-green-800',
+                        department: 'bg-blue-100 text-blue-800',
+                        naics: 'bg-purple-100 text-purple-800',
+                        projectType: 'bg-orange-100 text-orange-800'
+                    };
+                    
+                    const filterButton = createElement('button', `inline-flex items-center space-x-2 px-3 py-1.5 ${colorMap[filter.type]} rounded-full text-sm font-medium hover:opacity-80 transition-colors group`);
+                    filterButton.innerHTML = `
+                        <span>${filter.value}</span>
+                        <svg class="w-3 h-3 opacity-60 group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    `;
+                    filterButton.addEventListener('click', () => {
+                        switch (filter.type) {
+                            case 'preference':
+                                appState.preferences[filter.value] = false;
+                                break;
+                            case 'department':
+                                appState.departmentFilters[filter.value] = false;
+                                break;
+                            case 'naics':
+                                appState.naicsFilters[filter.value] = false;
+                                break;
+                            case 'projectType':
+                                appState.projectTypeFilters[filter.value] = false;
+                                break;
+                        }
+                        saveToStorage();
+                        appState.currentPage = 1;
+                        render();
+                    });
+                    filtersContainer.appendChild(filterButton);
+                });
+
+                const clearAllButton = createElement('button', 'px-3 py-1.5 text-gray-500 hover:text-gray-700 text-sm font-medium underline', 'Clear all');
+                clearAllButton.addEventListener('click', () => {
+                    appState.preferences = {};
+                    appState.departmentFilters = {};
+                    appState.naicsFilters = {};
+                    appState.projectTypeFilters = {};
+                    saveToStorage();
+                    appState.currentPage = 1;
+                    render();
+                });
+                filtersContainer.appendChild(clearAllButton);
+
+                filtersSection.appendChild(filtersHeader);
+                filtersSection.appendChild(filtersContainer);
+                mainContent.appendChild(filtersSection);
+            }
+
+            // Projects section header
+            const projectsSection = createElement('div', 'space-y-6');
+            const projectsHeader = createElement('div', 'w-full flex items-center justify-between pl-[5px] pr-[8px]');
+            const projectsTitle = createElement('h3', 'text-xl font-semibold text-gray-900');
+            projectsTitle.textContent = `US Development Finance Corporation Projects (${filteredProjects.length})`;
+
+            const totalAmount = createElement('span', 'text-lg font-medium text-gray-900');
+            totalAmount.textContent = `Total: $${totalCommitted.toLocaleString()}`;
+
+            projectsHeader.appendChild(projectsTitle);
+            projectsHeader.appendChild(totalAmount);
+            projectsSection.appendChild(projectsHeader);
+
+            // Projects grid or no results
+            if (filteredProjects.length === 0) {
+                const noResults = createElement('div', 'text-center py-12');
+                noResults.innerHTML = `
+                    <div class="text-gray-400 mb-4">
+                        <svg class="w-12 h-12 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.35-4.35" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
+                    <p class="text-gray-600">Try adjusting your search terms or filters</p>
+                `;
+                projectsSection.appendChild(noResults);
+            } else {
+                const projectsGrid = createElement('div', 'grid gap-6');
+                paginatedProjects.forEach(project => {
+                    projectsGrid.appendChild(createProjectCard(project));
+                });
+                projectsSection.appendChild(projectsGrid);
+
+                // Add pagination
+                if (filteredProjects.length > 20) {
+                    projectsSection.appendChild(createPagination(filteredProjects.length));
+                }
+            }
+
+            mainContent.appendChild(projectsSection);
+
+            // Footer
+            const footer = createElement('div', 'mt-12 pt-8 border-t border-gray-200');
+            const footerContent = createElement('div', 'text-center text-sm text-gray-500');
+            footerContent.innerHTML = `
+                <p>
+                    Explore <a href="https://github.com/compdemocracy">Computational Democracy Tools</a> and <a href="projects">DFC Transaction Data</a>
+                </p>
+                <p class="mt-1">
+                    <b>Dev Site - Mockup for Bolt AI Hackathon</b>
+                </p>
+            `;
+            footer.appendChild(footerContent);
+            mainContent.appendChild(footer);
+
+            container.appendChild(mainContent);
+            root.appendChild(container);
+        }
+
+        // Initialize the app
+        async function init() {
+            loadFromStorage();
+            await loadExcelData();
+            render();
+        }
+
+        // Start the app when DOM is loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
