@@ -1126,13 +1126,13 @@
                     <div class="hero-section">
                         <div class="hero-content">
                             <h1 class="hero-title">MemberCommons</h1>
-                            <p class="hero-subtitle">Team Project Collaboration Platform for Innovation Bond Projects</p>
+                            <p class="hero-subtitle">Team Collaboration Platform for Project Tracking with AI Insights</p>
                             <div class="hero-actions">
-                                <button class="btn btn-primary" onclick="showContent('opportunities')">
+                                <button class="btn btn-primary" onclick="router.navigate('projects', 'opportunities')">
                                     <i data-feather="target"></i>
                                     Explore Projects
                                 </button>
-                                <button class="btn btn-secondary" onclick="showContent('people')">
+                                <button class="btn btn-secondary" onclick="router.navigate('people', 'teams'); setTimeout(() => scrollToSection('teams'), 100)">
                                     <i data-feather="users"></i>
                                     Join Teams
                                 </button>
