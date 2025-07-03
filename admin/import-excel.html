@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Data Import - MemberCommons Admin</title>
+    <link rel="icon" type="image/x-icon" href="../img/logo/neighborhood/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #F9FAFB;
+            --bg-secondary: #FFFFFF;
+            --bg-tertiary: #F3F4F6;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --accent-green: #10B981;
+            --accent-blue: #3B82F6;
+            --accent-red: #EF4444;
+            --accent-yellow: #F59E0B;
+            --border-light: #E5E7EB;
+            --border-medium: #D1D5DB;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+            background-color: var(--bg-secondary);
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            border: 2px dashed var(--border-medium);
+            border-radius: var(--radius-md);
+            background: var(--bg-tertiary);
+            transition: all 0.2s ease;
+            min-height: 100px;
+        }
+
+        .file-input-display:hover {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .file-info {
+            text-align: center;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .file-details {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-size: 14px;
+            min-height: 44px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #2563EB;
+        }
+
+        .btn-success {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--accent-yellow);
+            color: white;
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            background: #D97706;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-light);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            border: 1px solid;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--accent-green);
+            color: #065F46;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--accent-red);
+            color: #991B1B;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--accent-yellow);
+            color: #92400E;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--accent-blue);
+            color: #1E40AF;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 14px;
+        }
+
+        .preview-table th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .preview-table td {
+            color: var(--text-secondary);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.success { background: var(--accent-green); }
+        .status-dot.error { background: var(--accent-red); }
+        .status-dot.warning { background: var(--accent-yellow); }
+        .status-dot.info { background: var(--accent-blue); }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 24px;
+            padding: 8px 0;
+        }
+
+        .back-link:hover {
+            color: #2563EB;
+        }
+
+        .error-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .error-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .error-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../" class="back-link">
+            ← Back to Admin Dashboard
+        </a>
+
+        <div class="header">
+            <h1>Excel Data Import</h1>
+            <p>Import project data from Excel files into the MemberCommons database</p>
+        </div>
+
+        <!-- File Selection -->
+        <div class="card">
+            <h2>1. Select Excel File</h2>
+            <div class="form-group">
+                <label class="form-label">Choose Excel File (.xlsx)</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" />
+                    <div class="file-input-display" id="fileDisplay">
+                        <div class="file-info">
+                            <div class="file-name">Click to select Excel file</div>
+                            <div class="file-details">Supports .xlsx and .xls formats</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group hidden" id="sheetSelection">
+                <label class="form-label">Select Sheet</label>
+                <select id="sheetSelect" class="form-select">
+                    <option value="">Loading sheets...</option>
+                </select>
+            </div>
+
+            <div class="btn-group">
+                <button id="analyzeBtn" class="btn btn-primary" disabled>
+                    Analyze File
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="card hidden" id="previewSection">
+            <h2>2. Data Preview</h2>
+            <div id="previewContent">
+                <!-- Preview content will be inserted here -->
+            </div>
+            
+            <div class="btn-group">
+                <button id="previewBtn" class="btn btn-secondary">
+                    Refresh Preview
+                </button>
+                <button id="importBtn" class="btn btn-success">
+                    Import Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Import Results -->
+        <div class="card hidden" id="resultsSection">
+            <h2>3. Import Results</h2>
+            <div id="resultsContent">
+                <!-- Results content will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="statusMessages"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8081/api';
+        
+        let selectedFile = null;
+        let selectedSheet = null;
+        let previewData = null;
+
+        // DOM elements
+        const fileInput = document.getElementById('excelFile');
+        const fileDisplay = document.getElementById('fileDisplay');
+        const sheetSelection = document.getElementById('sheetSelection');
+        const sheetSelect = document.getElementById('sheetSelect');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const previewBtn = document.getElementById('previewBtn');
+        const importBtn = document.getElementById('importBtn');
+        const previewSection = document.getElementById('previewSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const statusMessages = document.getElementById('statusMessages');
+
+        // Event listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        sheetSelect.addEventListener('change', handleSheetSelect);
+        analyzeBtn.addEventListener('click', analyzeFile);
+        previewBtn.addEventListener('click', previewData);
+        importBtn.addEventListener('click', importData);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                
+                // Update display
+                const fileName = file.name;
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                
+                fileDisplay.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-name">${fileName}</div>
+                        <div class="file-details">${fileSize} MB • Excel file</div>
+                    </div>
+                `;
+                
+                analyzeBtn.disabled = false;
+                hideSection(previewSection);
+                hideSection(resultsSection);
+                clearMessages();
+            }
+        }
+
+        function handleSheetSelect(event) {
+            selectedSheet = event.target.value;
+            if (selectedSheet) {
+                previewBtn.disabled = false;
+            }
+        }
+
+        async function analyzeFile() {
+            if (!selectedFile) return;
+
+            showLoading(analyzeBtn, 'Analyzing...');
+            
+            try {
+                // For now, we'll use a fixed path since we can't upload files directly
+                // In production, you'd implement file upload first
+                const response = await fetch(`${API_BASE}/import/excel/sheets`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        file_path: 'preferences/projects/DFC-ActiveProjects.xlsx'
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    populateSheetSelect(result.sheets);
+                    showSection(sheetSelection);
+                    showMessage('File analyzed successfully', 'success');
+                } else {
+                    showMessage(result.message || 'Failed to analyze file', 'error');
+                }
+            } catch (error) {
+                showMessage('Error analyzing file: ' + error.message, 'error');
+            } finally {
+                hideLoading(analyzeBtn, 'Analyze File');
+            }
+        }
+
+        async function previewData() {
+            if (!selectedSheet) return;
+
+            showLoading(previewBtn, 'Loading Preview...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/import/excel/preview`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        file_path: 'preferences/projects/DFC-ActiveProjects.xlsx',
+                        sheet_name: selectedSheet,
+                        table_name: 'projects'
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    previewData = result;
+                    displayPreview(result);
+                    showSection(previewSection);
+                    showMessage(`Preview loaded: ${result.total_records} records found`, 'success');
+                } else {
+                    showMessage(result.message || 'Failed to preview data', 'error');
+                }
+            } catch (error) {
+                showMessage('Error previewing data: ' + error.message, 'error');
+            } finally {
+                hideLoading(previewBtn, 'Refresh Preview');
+            }
+        }
+
+        async function importData() {
+            if (!selectedSheet || !previewData) return;
+
+            if (!confirm(`Import ${previewData.total_records} records into the projects table?`)) {
+                return;
+            }
+
+            showLoading(importBtn, 'Importing...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/import/excel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        file_path: 'preferences/projects/DFC-ActiveProjects.xlsx',
+                        sheet_name: selectedSheet,
+                        table_name: 'projects'
+                    })
+                });
+
+                const result = await response.json();
+                
+                displayResults(result);
+                showSection(resultsSection);
+                
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                } else {
+                    showMessage(result.message || 'Import failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Error importing data: ' + error.message, 'error');
+            } finally {
+                hideLoading(importBtn, 'Import Data');
+            }
+        }
+
+        function populateSheetSelect(sheets) {
+            sheetSelect.innerHTML = '<option value="">Select a sheet...</option>';
+            sheets.forEach(sheet => {
+                const option = document.createElement('option');
+                option.value = sheet;
+                option.textContent = sheet;
+                sheetSelect.appendChild(option);
+            });
+        }
+
+        function displayPreview(data) {
+            const content = document.getElementById('previewContent');
+            
+            let html = `
+                <div class="alert alert-info">
+                    <strong>Preview:</strong> Showing first 10 of ${data.total_records} records
+                </div>
+            `;
+
+            if (data.preview && data.preview.length > 0) {
+                html += '<table class="preview-table"><thead><tr>';
+                
+                // Get headers from first record
+                const headers = Object.keys(data.preview[0]);
+                headers.forEach(header => {
+                    html += `<th>${header.replace(/_/g, ' ').toUpperCase()}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+
+                // Add data rows
+                data.preview.forEach(record => {
+                    html += '<tr>';
+                    headers.forEach(header => {
+                        const value = record[header];
+                        const displayValue = value ? String(value).substring(0, 50) + (String(value).length > 50 ? '...' : '') : '';
+                        html += `<td>${displayValue}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+            } else {
+                html += '<div class="alert alert-warning">No data found in the selected sheet.</div>';
+            }
+
+            content.innerHTML = html;
+        }
+
+        function displayResults(result) {
+            const content = document.getElementById('resultsContent');
+            
+            let html = '';
+            
+            if (result.success) {
+                html += `
+                    <div class="alert alert-success">
+                        <div class="status-indicator">
+                            <span class="status-dot success"></span>
+                            Import completed successfully
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="alert alert-error">
+                        <div class="status-indicator">
+                            <span class="status-dot error"></span>
+                            Import failed
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 20px 0;">
+                    <div style="text-align: center; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                        <div style="font-size: 24px; font-weight: 700; color: var(--text-primary);">${result.records_processed || 0}</div>
+                        <div style="font-size: 14px; color: var(--text-secondary);">Records Processed</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                        <div style="font-size: 24px; font-weight: 700; color: var(--accent-green);">${result.records_inserted || 0}</div>
+                        <div style="font-size: 14px; color: var(--text-secondary);">Records Inserted</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                        <div style="font-size: 24px; font-weight: 700; color: var(--accent-red);">${result.errors ? result.errors.length : 0}</div>
+                        <div style="font-size: 14px; color: var(--text-secondary);">Errors</div>
+                    </div>
+                </div>
+            `;
+
+            if (result.errors && result.errors.length > 0) {
+                html += '<h3 style="margin-top: 24px; margin-bottom: 12px;">Error Details</h3>';
+                html += '<div class="error-list">';
+                result.errors.forEach(error => {
+                    html += `<div class="error-item">${error}</div>`;
+                });
+                html += '</div>';
+            }
+
+            content.innerHTML = html;
+        }
+
+        function showMessage(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            
+            statusMessages.appendChild(alertDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+
+        function clearMessages() {
+            statusMessages.innerHTML = '';
+        }
+
+        function showSection(element) {
+            element.classList.remove('hidden');
+        }
+
+        function hideSection(element) {
+            element.classList.add('hidden');
+        }
+
+        function showLoading(button, text) {
+            button.disabled = true;
+            button.textContent = text;
+            button.classList.add('loading');
+        }
+
+        function hideLoading(button, text) {
+            button.disabled = false;
+            button.textContent = text;
+            button.classList.remove('loading');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showMessage('Excel import tool loaded. Select a file to begin.', 'info');
+        });
+    </script>
+</body>
+</html>

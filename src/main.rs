@@ -11,6 +11,8 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use uuid::Uuid;
 
+mod import;
+
 // Configuration structure
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -898,6 +900,12 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                             .route("/tables", web::get().to(db_list_tables))
                             .route("/table/{table_name}", web::get().to(db_get_table_info))
                             .route("/query", web::post().to(db_execute_query))
+                    )
+                    .service(
+                        web::scope("/import")
+                            .route("/excel", web::post().to(import::import_excel_data))
+                            .route("/excel/preview", web::post().to(import::preview_excel_data))
+                            .route("/excel/sheets", web::post().to(import::get_excel_sheets))
                     )
             )
             // Add health check route at root level as well
