@@ -861,11 +861,14 @@ fn get_table_description(table_name: &str) -> Option<String> {
 
 // Run the API server
 async fn run_api_server(config: Config) -> anyhow::Result<()> {
+    println!("Attempting to connect to database: {}", &config.database_url);
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&config.database_url)
         .await
         .context("Failed to connect to database")?;
+    
+    println!("Database connection successful!");
     
     let state = Arc::new(ApiState {
         db: pool,
