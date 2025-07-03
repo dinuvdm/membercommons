@@ -302,15 +302,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - 📋 API marketplace for third-party integrations
 - 📋 Multi-language support
 
-
-Python 3.7
-
-   conda create -n gemini-env python=3.9
-   conda activate gemini-env
-   <!-- pip install -q -U google-genai -->
-
-   npm install -g @google/gemini-cli
-
 ---
 
 **Built with ❤️ for the Innovation Bond community**
