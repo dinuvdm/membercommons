@@ -200,6 +200,12 @@ class DatabaseAdmin {
 
         this.displayTables(mockTables);
         
+        // Override the count info for mock data
+        const tablesCountInfo = document.getElementById('tables-count-info');
+        if (tablesCountInfo) {
+            tablesCountInfo.innerHTML = `<strong>Mock data</strong> - Expected SuiteCRM tables (actual count available when connected to Azure database)`;
+        }
+        
         document.getElementById('tables-result').innerHTML = `
             <div class="error-message">
                 Note: These are expected tables based on the SuiteCRM schema. 
@@ -210,7 +216,15 @@ class DatabaseAdmin {
 
     displayTables(tables) {
         const tablesList = document.getElementById('tables-list');
+        const tablesCountInfo = document.getElementById('tables-count-info');
         const first10Tables = tables.slice(0, 10);
+        
+        // Update the count info
+        if (tablesCountInfo) {
+            const totalCount = tables.length;
+            const displayedCount = first10Tables.length;
+            tablesCountInfo.innerHTML = `<strong>${totalCount} total tables found</strong> in the actual Azure database (showing first ${displayedCount})`;
+        }
         
         tablesList.innerHTML = first10Tables.map(table => `
             <div class="table-item">
@@ -222,7 +236,7 @@ class DatabaseAdmin {
             </div>
         `).join('');
 
-        this.showSuccess(`Displaying first ${first10Tables.length} tables`, 'tables-result');
+        this.showSuccess(`Displaying first ${first10Tables.length} of ${tables.length} total tables from Azure database`, 'tables-result');
     }
 
     async checkTable(tableName) {

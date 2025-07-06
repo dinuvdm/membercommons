@@ -242,7 +242,7 @@
     <div class="container">
         <div class="header">
             <h1>Database Admin Panel</h1>
-            <p>Test PostgreSQL connection and explore database tables.<br>
+            <p><strong>Azure PostgreSQL Database Connection</strong> - Test live connection and explore actual database tables.<br>
                 You can create your Azure database from our <a href="https://github.com/localsite/membercommons/tree/main/sql">SQL create scripts</a>, then add your local IP to the Azure firewall settings.<br>
                 Here's a page where you can <a href="../../project/edit.html">experiment with posting a row</a> in the Azure projects table.
             </p>
@@ -277,7 +277,7 @@
         <div class="card">
             <h2 class="card-title">Database Tables</h2>
             <p style="color: var(--text-secondary); margin-bottom: 16px;">
-                First 10 tables from the database schema
+                <span id="tables-count-info">First 10 tables from the actual Azure database schema</span>
             </p>
             
             <div id="tables-result"></div>

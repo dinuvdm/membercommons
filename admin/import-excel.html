@@ -502,7 +502,6 @@
                 
                 analyzeBtn.disabled = false;
                 hideSection(resultsSection);
-                clearMessages();
                 
                 // Automatically analyze file and show preview
                 autoAnalyzeAndPreview();
@@ -531,7 +530,7 @@
                 }
             } catch (error) {
                 console.error('Auto-analyze error:', error);
-                showMessage('Auto-preview failed. Use the manual controls below.', 'warning');
+                showMessage('Auto-preview failed. Use the manual controls below.', 'warning', false);
             }
         }
 
@@ -627,9 +626,9 @@
                 }
             } catch (error) {
                 console.error('Preview error:', error);
-                showMessage(`Cannot connect to API server on port 8081. Error: ${error.message}`, 'error');
+                showMessage(`Cannot connect to API server on port 8081. Error: ${error.message}`, 'error', false);
                 // Show what the user needs to do
-                showMessage('To use preview: 1) Start Rust server with "cargo run serve" 2) Ensure it\'s running on port 8081', 'info');
+                showMessage('To use preview: 1) Start Rust server with "cargo run serve" 2) Ensure it\'s running on port 8081', 'warning', false);
             } finally {
                 hideLoading(previewBtn, 'Refresh Preview');
             }
@@ -808,19 +807,32 @@
             content.innerHTML = html;
         }
 
-        function showMessage(message, type = 'info') {
+        function showMessage(message, type = 'info', clearPrevious = true) {
+            // Only clear previous messages for success/info, not for errors/warnings
+            if (clearPrevious && (type === 'success' || type === 'info')) {
+                statusMessages.innerHTML = '';
+            }
+            
+            // Add separator line if there are existing messages and this is an error/warning
+            if ((type === 'error' || type === 'warning') && statusMessages.children.length > 0) {
+                const separator = document.createElement('hr');
+                separator.style.cssText = 'margin: 16px 0; border: none; border-top: 1px solid var(--border-medium); opacity: 0.5;';
+                statusMessages.appendChild(separator);
+            }
+            
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type}`;
             alertDiv.textContent = message;
             
             statusMessages.appendChild(alertDiv);
             
-            // Auto-remove after 5 seconds
+            // Auto-remove after timeout (longer for errors/warnings)
+            const timeout = (type === 'error' || type === 'warning') ? 10000 : 5000;
             setTimeout(() => {
                 if (alertDiv.parentNode) {
                     alertDiv.parentNode.removeChild(alertDiv);
                 }
-            }, 5000);
+            }, timeout);
         }
 
         function clearMessages() {
