@@ -38,6 +38,7 @@ log = "0.4"
 
 # Configuration
 dotenv = "0.15"
+url = "2.5"
 
 # UUID Generation
 uuid = { version = "1.7", features = ["v4", "serde"] }

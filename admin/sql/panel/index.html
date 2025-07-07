@@ -244,7 +244,8 @@
             <h1>Database Admin Panel</h1>
             <p><strong>Azure PostgreSQL Database Connection</strong> - Test live connection and explore actual database tables.<br>
                 You can create your Azure database from our <a href="https://github.com/localsite/membercommons/tree/main/sql">SQL create scripts</a>, then add your local IP to the Azure firewall settings.<br>
-                Here's a page where you can <a href="../../project/edit.html">experiment with posting a row</a> in the Azure projects table.
+                Here's a page where you can <a href="../../../project/edit.html">experiment with posting a row</a> in the Azure projects table.<br>
+                <a href="../../import-excel.html">Import Excel data</a> into the projects table.
             </p>
         </div>
 
@@ -263,9 +264,13 @@
                     <span class="loading-spinner" id="connection-spinner" style="display: none;"></span>
                     Test Connection
                 </button>
-                <button class="btn btn-secondary" id="list-tables">
-                    <span class="loading-spinner" id="tables-spinner" style="display: none;"></span>
-                    List Tables
+                <button class="btn btn-secondary" id="list-10-tables">
+                    <span class="loading-spinner" id="tables-10-spinner" style="display: none;"></span>
+                    List 10 Tables
+                </button>
+                <button class="btn btn-secondary" id="list-all-tables">
+                    <span class="loading-spinner" id="tables-all-spinner" style="display: none;"></span>
+                    List All Tables
                 </button>
                 <button class="btn btn-secondary" id="clear-log">Clear Log</button>
             </div>
@@ -302,7 +307,7 @@
     </div>
 
 
-    <script src="../../config/settings.js"></script>
+    <script src="../../../config/settings.js"></script>
     <script src="db-admin.js"></script>
     <script>
         // Load README without logging to keep the interface clean

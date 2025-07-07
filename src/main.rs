@@ -10,6 +10,7 @@ use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Row, Column, ValueRef};
 use std::sync::Arc;
 use std::collections::HashMap;
 use uuid::Uuid;
+use url::Url;
 
 mod import;
 
@@ -115,6 +116,21 @@ struct QueryRequest {
     query: String,
 }
 
+#[derive(Serialize)]
+struct EnvDatabaseConfig {
+    server: String,
+    database: String,
+    username: String,
+    port: u16,
+    ssl: bool,
+}
+
+#[derive(Serialize)]
+struct EnvConfigResponse {
+    database: Option<EnvDatabaseConfig>,
+    gemini_api_key_present: bool,
+}
+
 // Health check endpoint
 async fn health_check(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
     match sqlx::query("SELECT 1").fetch_one(&data.db).await {
@@ -128,6 +144,40 @@ async fn health_check(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
             "error": e.to_string()
         }))),
     }
+}
+
+// Get environment configuration
+async fn get_env_config() -> Result<HttpResponse> {
+    let mut database_config = None;
+    
+    // Parse DATABASE_URL if available
+    if let Ok(database_url) = std::env::var("DATABASE_URL") {
+        if let Ok(url) = Url::parse(&database_url) {
+            let server = format!("{}:{}", 
+                url.host_str().unwrap_or("unknown"), 
+                url.port().unwrap_or(5432)
+            );
+            let database = url.path().trim_start_matches('/').to_string();
+            let username = url.username().to_string();
+            let ssl = database_url.contains("sslmode=require");
+            
+            database_config = Some(EnvDatabaseConfig {
+                server,
+                database,
+                username,
+                port: url.port().unwrap_or(5432),
+                ssl,
+            });
+        }
+    }
+    
+    // Check if Gemini API key is present (but don't expose the actual key)
+    let gemini_api_key_present = std::env::var("GEMINI_API_KEY").is_ok();
+    
+    Ok(HttpResponse::Ok().json(EnvConfigResponse {
+        database: database_config,
+        gemini_api_key_present,
+    }))
 }
 
 // Get list of tables with row counts
@@ -183,8 +233,12 @@ async fn db_test_connection(data: web::Data<Arc<ApiState>>) -> Result<HttpRespon
 }
 
 // List database tables with detailed info
-async fn db_list_tables(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
-    match get_database_tables(&data.db).await {
+async fn db_list_tables(
+    data: web::Data<Arc<ApiState>>,
+    query: web::Query<std::collections::HashMap<String, String>>,
+) -> Result<HttpResponse> {
+    let limit = query.get("limit").and_then(|s| s.parse::<i32>().ok());
+    match get_database_tables(&data.db, limit).await {
         Ok(tables) => Ok(HttpResponse::Ok().json(DatabaseResponse {
             success: true,
             message: Some(format!("Found {} tables", tables.len())),
@@ -737,8 +791,26 @@ async fn test_db_connection(pool: &Pool<Postgres>) -> Result<ConnectionInfo, sql
     })
 }
 
-async fn get_database_tables(pool: &Pool<Postgres>) -> Result<Vec<TableInfoDetailed>, sqlx::Error> {
-    let rows = sqlx::query(
+async fn get_database_tables(pool: &Pool<Postgres>, limit: Option<i32>) -> Result<Vec<TableInfoDetailed>, sqlx::Error> {
+    let query = if let Some(limit_val) = limit {
+        format!(
+            r#"
+            SELECT 
+                table_name,
+                (
+                    SELECT reltuples::bigint 
+                    FROM pg_class 
+                    WHERE relname = table_name
+                ) as estimated_rows
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+                AND table_type = 'BASE TABLE'
+            ORDER BY table_name
+            LIMIT {}
+            "#,
+            limit_val
+        )
+    } else {
         r#"
         SELECT 
             table_name,
@@ -751,9 +823,10 @@ async fn get_database_tables(pool: &Pool<Postgres>) -> Result<Vec<TableInfoDetai
         WHERE table_schema = 'public' 
             AND table_type = 'BASE TABLE'
         ORDER BY table_name
-        LIMIT 10
-        "#,
-    )
+        "#.to_string()
+    };
+    
+    let rows = sqlx::query(&query)
     .fetch_all(pool)
     .await?;
 
@@ -909,6 +982,10 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                             .route("/excel", web::post().to(import::import_excel_data))
                             .route("/excel/preview", web::post().to(import::preview_excel_data))
                             .route("/excel/sheets", web::post().to(import::get_excel_sheets))
+                    )
+                    .service(
+                        web::scope("/config")
+                            .route("/env", web::get().to(get_env_config))
                     )
             )
             // Add health check route at root level as well

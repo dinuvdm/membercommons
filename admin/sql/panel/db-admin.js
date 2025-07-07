@@ -6,13 +6,29 @@ class DatabaseAdmin {
             ? CONFIG.API.BASE_URL 
             : 'http://localhost:8081/api';
         this.log = [];
+        this.envConfig = null;
         this.init();
     }
 
-    init() {
+    async init() {
         this.setupEventListeners();
+        await this.loadEnvConfig();
         this.displayConfig();
         this.addLog('Database Admin Panel initialized');
+    }
+
+    async loadEnvConfig() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/config/env`);
+            if (response.ok) {
+                this.envConfig = await response.json();
+                this.addLog('Environment configuration loaded from .env');
+            } else {
+                this.addLog(`Could not load .env config: HTTP ${response.status}`);
+            }
+        } catch (error) {
+            this.addLog(`Failed to load .env config: ${error.message}`);
+        }
     }
 
     setupEventListeners() {
@@ -22,9 +38,14 @@ class DatabaseAdmin {
             testConnectionBtn.addEventListener('click', () => this.testConnection());
         }
 
-        const listTablesBtn = document.getElementById('list-tables');
-        if (listTablesBtn) {
-            listTablesBtn.addEventListener('click', () => this.listTables());
+        const list10TablesBtn = document.getElementById('list-10-tables');
+        if (list10TablesBtn) {
+            list10TablesBtn.addEventListener('click', () => this.listTables(10));
+        }
+
+        const listAllTablesBtn = document.getElementById('list-all-tables');
+        if (listAllTablesBtn) {
+            listAllTablesBtn.addEventListener('click', () => this.listTables());
         }
 
         const clearLogBtn = document.getElementById('clear-log');
@@ -55,11 +76,15 @@ class DatabaseAdmin {
             return;
         }
         
-        if (typeof CONFIG !== 'undefined' && CONFIG.DATABASE) {
+        // Prioritize .env config, fallback to settings.js config
+        if (this.envConfig && this.envConfig.database) {
+            const config = this.envConfig.database;
+            configDisplay.innerHTML = `<div class="config-item"><strong>Source:</strong> .env file</div><div class="config-item"><strong>Server:</strong> ${config.server}</div><div class="config-item"><strong>Database:</strong> ${config.database}</div><div class="config-item"><strong>Username:</strong> ${config.username}</div><div class="config-item"><strong>Port:</strong> ${config.port}</div><div class="config-item"><strong>SSL:</strong> ${config.ssl ? 'Enabled' : 'Disabled'}</div><div class="config-item"><strong>API Endpoint:</strong> ${this.apiBaseUrl}</div>`;
+        } else if (typeof CONFIG !== 'undefined' && CONFIG.DATABASE) {
             const config = CONFIG.DATABASE;
-            configDisplay.innerHTML = `<div class="config-item"><strong>Server:</strong> ${config.SERVER}</div><div class="config-item"><strong>Database:</strong> ${config.DATABASE}</div><div class="config-item"><strong>Username:</strong> ${config.USERNAME}</div><div class="config-item"><strong>Port:</strong> ${config.PORT}</div><div class="config-item"><strong>SSL:</strong> ${config.SSL ? 'Enabled' : 'Disabled'}</div><div class="config-item"><strong>Connection:</strong> ${config.CONNECTION_INFO}</div><div class="config-item"><strong>API Endpoint:</strong> ${this.apiBaseUrl}</div>`;
+            configDisplay.innerHTML = `<div class="config-item"><strong>Source:</strong> settings.js</div><div class="config-item"><strong>Server:</strong> ${config.SERVER}</div><div class="config-item"><strong>Database:</strong> ${config.DATABASE}</div><div class="config-item"><strong>Username:</strong> ${config.USERNAME}</div><div class="config-item"><strong>Port:</strong> ${config.PORT}</div><div class="config-item"><strong>SSL:</strong> ${config.SSL ? 'Enabled' : 'Disabled'}</div><div class="config-item"><strong>Connection:</strong> ${config.CONNECTION_INFO}</div><div class="config-item"><strong>API Endpoint:</strong> ${this.apiBaseUrl}</div>`;
         } else {
-            configDisplay.innerHTML = `<div class="config-error"><strong>⚠️ Configuration not loaded</strong><br>Make sure settings.js is properly included and accessible.<br><br><strong>Fallback API URL:</strong> ${this.apiBaseUrl}</div>`;
+            configDisplay.innerHTML = `<div class="config-error"><strong>⚠️ Configuration not loaded</strong><br>Neither .env nor settings.js configuration found.<br><br><strong>API URL:</strong> ${this.apiBaseUrl}</div>`;
         }
     }
 
@@ -156,18 +181,24 @@ class DatabaseAdmin {
         document.getElementById('connection-result').innerHTML += helpMessage;
     }
 
-    async listTables() {
-        this.setLoading('list-tables', true);
-        this.addLog('Fetching database tables...');
+    async listTables(limit = null) {
+        const buttonId = limit ? 'list-10-tables' : 'list-all-tables';
+        this.setLoading(buttonId, true);
+        const logMessage = limit ? `Fetching first ${limit} database tables...` : 'Fetching all database tables...';
+        this.addLog(logMessage);
         
         try {
-            const response = await this.makeRequest('/db/tables', {
+            const endpoint = limit ? `/db/tables?limit=${limit}` : '/db/tables';
+            const response = await this.makeRequest(endpoint, {
                 method: 'GET'
             });
 
-            if (response.success && response.tables) {
-                this.displayTables(response.tables);
-                this.addLog(`✅ Found ${response.tables.length} tables`);
+            if (response.success && response.data && response.data.tables) {
+                this.displayTables(response.data.tables);
+                const foundMessage = limit ? 
+                    `✅ Found ${response.data.tables.length} tables (showing first ${Math.min(limit, response.data.tables.length)})` :
+                    `✅ Found ${response.data.tables.length} tables (showing all)`;
+                this.addLog(foundMessage);
             } else {
                 throw new Error(response.error || 'Failed to fetch tables');
             }
@@ -178,7 +209,7 @@ class DatabaseAdmin {
             // Show mock data for demonstration
             this.showMockTables();
         } finally {
-            this.setLoading('list-tables', false);
+            this.setLoading(buttonId, false);
         }
     }
 
@@ -214,19 +245,21 @@ class DatabaseAdmin {
         `;
     }
 
-    displayTables(tables) {
+    displayTables(tables, totalCount = null) {
         const tablesList = document.getElementById('tables-list');
         const tablesCountInfo = document.getElementById('tables-count-info');
-        const first10Tables = tables.slice(0, 10);
         
         // Update the count info
         if (tablesCountInfo) {
-            const totalCount = tables.length;
-            const displayedCount = first10Tables.length;
-            tablesCountInfo.innerHTML = `<strong>${totalCount} total tables found</strong> in the actual Azure database (showing first ${displayedCount})`;
+            const actualTotal = totalCount || tables.length;
+            const displayedCount = tables.length;
+            const countText = actualTotal === displayedCount ? 
+                `<strong>${actualTotal} total tables found</strong> in the actual Azure database (showing all)` :
+                `<strong>${actualTotal} total tables found</strong> in the actual Azure database (showing ${displayedCount})`;
+            tablesCountInfo.innerHTML = countText;
         }
         
-        tablesList.innerHTML = first10Tables.map(table => `
+        tablesList.innerHTML = tables.map(table => `
             <div class="table-item">
                 <div class="table-name">${table.name}</div>
                 <div class="table-info">
@@ -236,7 +269,12 @@ class DatabaseAdmin {
             </div>
         `).join('');
 
-        this.showSuccess(`Displaying first ${first10Tables.length} of ${tables.length} total tables from Azure database`, 'tables-result');
+        const actualTotal = totalCount || tables.length;
+        const displayedCount = tables.length;
+        const successText = actualTotal === displayedCount ? 
+            `Displaying all ${displayedCount} tables from Azure database` :
+            `Displaying ${displayedCount} of ${actualTotal} total tables from Azure database`;
+        this.showSuccess(successText, 'tables-result');
     }
 
     async checkTable(tableName) {
@@ -325,7 +363,19 @@ class DatabaseAdmin {
 
     setLoading(buttonId, isLoading) {
         const button = document.getElementById(buttonId);
-        const spinner = document.getElementById(`${buttonId.includes('connection') ? 'connection' : 'tables'}-spinner`);
+        let spinnerId;
+        
+        if (buttonId.includes('connection')) {
+            spinnerId = 'connection-spinner';
+        } else if (buttonId === 'list-10-tables') {
+            spinnerId = 'tables-10-spinner';
+        } else if (buttonId === 'list-all-tables') {
+            spinnerId = 'tables-all-spinner';
+        } else {
+            spinnerId = 'tables-spinner'; // fallback
+        }
+        
+        const spinner = document.getElementById(spinnerId);
         
         if (button) {
             if (isLoading) {
