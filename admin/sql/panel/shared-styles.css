@@ -31,7 +31,6 @@ code {
 .readme-content h3,
 .readme-content h4 {
     color: var(--text-primary);
-    margin-top: 24px;
     margin-bottom: 12px;
 }
 

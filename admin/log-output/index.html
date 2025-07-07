@@ -179,7 +179,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.min.js"></script>
     <script src="../../js/navigation.js"></script>
-    <script src="../../config/settings.js"></script>
     <script src="../../admin/sql/panel/db-admin.js"></script>
     <script>
         // Application State for this page
@@ -223,54 +222,50 @@
                 }
             }, 100);
 
-            // Wait for dbAdmin to initialize
-            function initializeLogOutput() {
-                if (!window.dbAdmin) {
-                    setTimeout(initializeLogOutput, 100);
-                    return;
-                }
-
-                // Override addLog to display in our log output
-                const originalAddLog = window.dbAdmin.addLog.bind(window.dbAdmin);
-                window.dbAdmin.addLog = function(message) {
-                    originalAddLog(message);
+            // Setup logging output to capture displayFile logs
+            function setupLogging() {
+                // Override console.log to capture logs from fileDisplaySystem
+                const originalConsoleLog = console.log;
+                console.log = function(message) {
+                    originalConsoleLog.apply(console, arguments);
                     
-                    // Also display in our log output
-                    const logOutput = document.getElementById('log-output');
-                    if (logOutput) {
-                        logOutput.textContent = this.log.join('\n');
-                        logOutput.scrollTop = logOutput.scrollHeight;
+                    // Display logs in our log output if they're from fileDisplaySystem
+                    if (typeof message === 'string' && message.includes('[')) {
+                        const logOutput = document.getElementById('log-output');
+                        if (logOutput) {
+                            const currentLogs = logOutput.textContent;
+                            logOutput.textContent = currentLogs ? currentLogs + '\n' + message : message;
+                            logOutput.scrollTop = logOutput.scrollHeight;
+                        }
                     }
                 };
-
-                // Setup button handlers
-                const reloadBtn = document.getElementById('reload-readme');
-                const clearBtn = document.getElementById('clear-log');
-                
-                if (reloadBtn) {
-                    reloadBtn.addEventListener('click', function() {
-                        displayFile("README.md", "readmeDiv", "_parent");
-                    });
-                }
-
-                if (clearBtn) {
-                    clearBtn.addEventListener('click', function() {
-                        if (window.dbAdmin) {
-                            window.dbAdmin.clearLog();
-                            const logOutput = document.getElementById('log-output');
-                            if (logOutput) {
-                                logOutput.textContent = '';
-                            }
-                        }
-                    });
-                }
-
-                // Load README with logging
-                displayFile("README.md", "readmeDiv", "_parent");
             }
 
-            // Start log output initialization
-            initializeLogOutput();
+            // Setup button handlers
+            const reloadBtn = document.getElementById('reload-readme');
+            const clearBtn = document.getElementById('clear-log');
+            
+            if (reloadBtn) {
+                reloadBtn.addEventListener('click', function() {
+                    displayFile("../../README.md", "readmeDiv", "_parent");
+                });
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function() {
+                    const logOutput = document.getElementById('log-output');
+                    if (logOutput) {
+                        logOutput.textContent = '';
+                    }
+                    if (window.fileDisplaySystem) {
+                        window.fileDisplaySystem.log = [];
+                    }
+                });
+            }
+
+            // Initialize logging and load README
+            setupLogging();
+            displayFile("README.md", "readmeDiv", "_parent");
         });
     </script>
 </body>

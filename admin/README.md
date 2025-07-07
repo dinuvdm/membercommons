@@ -1,5 +1,5 @@
 Always use a virtualenv to protect your OS.
-Here's we'll use one virtualenv for an http server, and another for Claude Code CLL.
+We use one virtualenv for an http server on port 8887, and another for Claude Code CLL.
 
 In your webroot, run a webserver within a virtual environment. On Macs:
 
@@ -37,5 +37,8 @@ Start Claude Code CLI:
 
 	npx @anthropic-ai/claude-code
 
+Inside the claude cmd window, start your local Rust API server by running:
+
+	cargo run serve
 
 View the website locally at: [localhost:8887/membercommons](http://localhost:8887/membercommons/)
