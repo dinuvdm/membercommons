@@ -53,10 +53,10 @@ pub async fn import_excel_data(
         Err(e) => {
             return Ok(HttpResponse::BadRequest().json(ImportResponse {
                 success: false,
-                message: format!("Failed to read Excel file: {}", e),
+                message: format!("Failed to read Excel file at '{}': {}", req.file_path, e),
                 records_processed: None,
                 records_inserted: None,
-                errors: vec![e.to_string()],
+                errors: vec![format!("File path: {} - {}", req.file_path, e.to_string())],
             }));
         }
     };
@@ -91,15 +91,16 @@ pub async fn import_excel_data(
 pub async fn preview_excel_data(
     req: web::Json<ImportRequest>,
 ) -> Result<HttpResponse> {
+    println!("Preview request - file_path: {}, sheet_name: {:?}", req.file_path, req.sheet_name);
     let records = match read_excel_file(&req.file_path, req.sheet_name.as_deref()) {
         Ok(data) => data,
         Err(e) => {
             return Ok(HttpResponse::BadRequest().json(ImportResponse {
                 success: false,
-                message: format!("Failed to read Excel file: {}", e),
+                message: format!("Failed to read Excel file at '{}': {}", req.file_path, e),
                 records_processed: None,
                 records_inserted: None,
-                errors: vec![e.to_string()],
+                errors: vec![format!("File path: {} - {}", req.file_path, e.to_string())],
             }));
         }
     };
@@ -120,7 +121,10 @@ pub async fn get_excel_sheets(
     req: web::Json<serde_json::Value>,
 ) -> Result<HttpResponse> {
     let file_path = match req.get("file_path").and_then(|v| v.as_str()) {
-        Some(path) => path,
+        Some(path) => {
+            println!("Sheets request - file_path: {}", path);
+            path
+        },
         None => {
             return Ok(HttpResponse::BadRequest().json(serde_json::json!({
                 "success": false,
@@ -136,13 +140,14 @@ pub async fn get_excel_sheets(
         }))),
         Err(e) => Ok(HttpResponse::BadRequest().json(serde_json::json!({
             "success": false,
-            "message": format!("Failed to read Excel file: {}", e)
+            "message": format!("Failed to read Excel file at '{}': {}", file_path, e)
         })))
     }
 }
 
 fn read_excel_file(file_path: &str, sheet_name: Option<&str>) -> Result<Vec<ProjectRecord>, Box<dyn std::error::Error>> {
-    let mut workbook: Xlsx<_> = open_workbook(file_path)?;
+    let mut workbook: Xlsx<_> = open_workbook(file_path)
+        .map_err(|e| format!("File not found at: {} - {}", file_path, e))?;
     
     let sheet_name = match sheet_name {
         Some(name) => name.to_string(),
@@ -221,7 +226,8 @@ fn read_excel_file(file_path: &str, sheet_name: Option<&str>) -> Result<Vec<Proj
 }
 
 fn get_excel_sheet_names(file_path: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let workbook: Xlsx<_> = open_workbook(file_path)?;
+    let workbook: Xlsx<_> = open_workbook(file_path)
+        .map_err(|e| format!("File not found at: {} - {}", file_path, e))?;
     Ok(workbook.sheet_names().clone())
 }
 

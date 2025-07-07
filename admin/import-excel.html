@@ -377,6 +377,32 @@
         .error-item:last-child {
             border-bottom: none;
         }
+
+        .message-log {
+            max-height: 400px;
+            overflow-y: auto;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-light);
+        }
+
+        .message-log:empty {
+            display: none;
+        }
+
+        .message-log .alert {
+            margin-bottom: 12px;
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message-log .alert:last-child {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
@@ -394,7 +420,16 @@
         <div class="card">
             <h2>1. Select Excel File</h2>
             <div class="form-group">
-                <label class="form-label">Choose Excel File (.xlsx)</label>
+                <label class="form-label">Choose Excel File</label>
+                <select id="fileSelect" class="form-select">
+                    <option value="preferences/projects/DFC-ActiveProjects.xlsx" selected>DFC Active Projects</option>
+                    <option value="custom">Choose File...</option>
+                </select>
+            </div>
+
+            <!-- Custom file upload (hidden by default) -->
+            <div class="form-group hidden" id="customFileSection">
+                <label class="form-label">Upload Excel File (.xlsx)</label>
                 <div class="file-input-wrapper">
                     <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" />
                     <div class="file-input-display" id="fileDisplay">
@@ -413,7 +448,7 @@
                 </select>
             </div>
 
-            <div class="btn-group">
+            <div class="btn-group hidden" id="analyzeSection">
                 <button id="analyzeBtn" class="btn btn-primary" disabled>
                     Analyze File
                 </button>
@@ -446,7 +481,7 @@
         </div>
 
         <!-- Status Messages -->
-        <div id="statusMessages"></div>
+        <div id="statusMessages" class="message-log"></div>
     </div>
 
     <script>
@@ -455,12 +490,16 @@
         let selectedFile = null;
         let selectedSheet = null;
         let previewDataResult = null;
+        let customFiles = {}; // Store custom file objects
 
         // DOM elements
+        const fileSelect = document.getElementById('fileSelect');
+        const customFileSection = document.getElementById('customFileSection');
         const fileInput = document.getElementById('excelFile');
         const fileDisplay = document.getElementById('fileDisplay');
         const sheetSelection = document.getElementById('sheetSelection');
         const sheetSelect = document.getElementById('sheetSelect');
+        const analyzeSection = document.getElementById('analyzeSection');
         const analyzeBtn = document.getElementById('analyzeBtn');
         const previewBtn = document.getElementById('previewBtn');
         const importBtn = document.getElementById('importBtn');
@@ -469,7 +508,8 @@
         const statusMessages = document.getElementById('statusMessages');
 
         // Event listeners
-        fileInput.addEventListener('change', handleFileSelect);
+        fileSelect.addEventListener('change', handleFileDropdownChange);
+        fileInput.addEventListener('change', handleCustomFileSelect);
         sheetSelect.addEventListener('change', handleSheetSelect);
         analyzeBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -484,13 +524,74 @@
             importData();
         });
 
-        function handleFileSelect(event) {
+        function handleFileDropdownChange(event) {
+            const value = event.target.value;
+            
+            if (value === 'custom') {
+                // Show custom file upload section
+                showSection(customFileSection);
+                showSection(analyzeSection);
+                hideSection(sheetSelection);
+                hideSection(previewSection);
+                hideSection(resultsSection);
+                selectedFile = null;
+            } else if (value.startsWith('custom_')) {
+                // This is a previously uploaded custom file
+                // Find the file object in our custom files storage
+                const fileName = value.replace('custom_', '');
+                const customFile = customFiles[fileName];
+                if (customFile) {
+                    selectedFile = customFile;
+                    hideSection(customFileSection);
+                    hideSection(analyzeSection);
+                    hideSection(resultsSection);
+                    analyzeCustomFile();
+                }
+            } else {
+                // Hide custom file upload and use predefined file
+                hideSection(customFileSection);
+                hideSection(analyzeSection);
+                selectedFile = value;
+                hideSection(resultsSection);
+                
+                // Automatically analyze predefined file and show preview
+                autoAnalyzeAndPreview();
+            }
+        }
+
+        function handleCustomFileSelect(event) {
             const file = event.target.files[0];
             if (file) {
                 selectedFile = file;
                 
-                // Update display
+                // Clear previous sheet selection
+                selectedSheet = null;
+                sheetSelect.innerHTML = '<option value="">Loading sheets...</option>';
+                hideSection(sheetSelection);
+                hideSection(previewSection);
+                hideSection(resultsSection);
+                
+                // Add the new file to the dropdown
                 const fileName = file.name;
+                const fileValue = `custom_${fileName}`;
+                
+                // Check if this file is already in the dropdown
+                let existingOption = Array.from(fileSelect.options).find(option => option.value === fileValue);
+                if (!existingOption) {
+                    // Add new option before "Choose File..."
+                    const newOption = document.createElement('option');
+                    newOption.value = fileValue;
+                    newOption.textContent = fileName;
+                    newOption.selected = true;
+                    
+                    // Insert before the "Choose File..." option (last option)
+                    fileSelect.insertBefore(newOption, fileSelect.lastElementChild);
+                } else {
+                    // Select the existing option
+                    existingOption.selected = true;
+                }
+                
+                // Update display
                 const fileSize = (file.size / 1024 / 1024).toFixed(2);
                 
                 fileDisplay.innerHTML = `
@@ -501,10 +602,10 @@
                 `;
                 
                 analyzeBtn.disabled = false;
-                hideSection(resultsSection);
                 
-                // Automatically analyze file and show preview
-                autoAnalyzeAndPreview();
+                // For custom files, we'll need to use client-side Excel reading
+                // since we can't send File objects to the server API
+                analyzeCustomFile();
             }
         }
 
@@ -555,7 +656,11 @@
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            file_path: 'preferences/projects/DFC-ActiveProjects.xlsx'
+                            file_path: (() => {
+                                const path = typeof selectedFile === 'string' ? selectedFile : 'preferences/projects/DFC-ActiveProjects.xlsx';
+                                console.log('Sheets request using file path:', path, 'selectedFile:', selectedFile, 'type:', typeof selectedFile);
+                                return path;
+                            })()
                         })
                     });
 
@@ -565,6 +670,18 @@
                         populateSheetSelect(result.sheets);
                         showSection(sheetSelection);
                         showMessage('File analyzed successfully', 'success');
+                        
+                        // Auto-select first sheet and trigger preview
+                        if (result.sheets.length > 0) {
+                            selectedSheet = result.sheets[0];
+                            sheetSelect.value = selectedSheet;
+                            handleSheetSelect({ target: { value: selectedSheet } });
+                            
+                            // Auto-preview the data
+                            setTimeout(() => {
+                                previewData();
+                            }, 500);
+                        }
                         return;
                     }
                 } catch (apiError) {
@@ -581,6 +698,18 @@
                     populateSheetSelect(result.sheets);
                     showSection(sheetSelection);
                     showMessage('File analyzed successfully - found ' + result.sheets.length + ' sheet(s)', 'success');
+                    
+                    // Auto-select first sheet and trigger preview
+                    if (result.sheets.length > 0) {
+                        selectedSheet = result.sheets[0];
+                        sheetSelect.value = selectedSheet;
+                        handleSheetSelect({ target: { value: selectedSheet } });
+                        
+                        // Auto-preview the data
+                        setTimeout(() => {
+                            previewData();
+                        }, 500);
+                    }
                 }
                 
             } catch (error) {
@@ -606,7 +735,11 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        file_path: 'preferences/projects/DFC-ActiveProjects.xlsx',
+                        file_path: (() => {
+                            const path = typeof selectedFile === 'string' ? selectedFile : 'preferences/projects/DFC-ActiveProjects.xlsx';
+                            console.log('Preview request using file path:', path, 'selectedFile:', selectedFile, 'type:', typeof selectedFile);
+                            return path;
+                        })(),
                         sheet_name: selectedSheet,
                         table_name: 'projects'
                     })
@@ -650,7 +783,11 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        file_path: 'preferences/projects/DFC-ActiveProjects.xlsx',
+                        file_path: (() => {
+                            const path = typeof selectedFile === 'string' ? selectedFile : 'preferences/projects/DFC-ActiveProjects.xlsx';
+                            console.log('Import request using file path:', path, 'selectedFile:', selectedFile, 'type:', typeof selectedFile);
+                            return path;
+                        })(),
                         sheet_name: selectedSheet,
                         table_name: 'projects'
                     })
@@ -751,6 +888,14 @@
             }
 
             content.innerHTML = html;
+            
+            // Set checkbox state after DOM update (since innerHTML doesn't preserve checked state)
+            setTimeout(() => {
+                const headerCheckbox = document.getElementById('firstRowHeaders');
+                if (headerCheckbox && hasHeaderRow) {
+                    headerCheckbox.checked = true;
+                }
+            }, 0);
         }
 
         function displayResults(result) {
@@ -807,32 +952,28 @@
             content.innerHTML = html;
         }
 
-        function showMessage(message, type = 'info', clearPrevious = true) {
-            // Only clear previous messages for success/info, not for errors/warnings
-            if (clearPrevious && (type === 'success' || type === 'info')) {
-                statusMessages.innerHTML = '';
-            }
-            
-            // Add separator line if there are existing messages and this is an error/warning
-            if ((type === 'error' || type === 'warning') && statusMessages.children.length > 0) {
-                const separator = document.createElement('hr');
-                separator.style.cssText = 'margin: 16px 0; border: none; border-top: 1px solid var(--border-medium); opacity: 0.5;';
-                statusMessages.appendChild(separator);
-            }
+        function showMessage(message, type = 'info', clearPrevious = false) {
+            // Add timestamp to message
+            const timestamp = new Date().toLocaleTimeString();
+            const timestampedMessage = `[${timestamp}] ${message}`;
             
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type}`;
-            alertDiv.textContent = message;
+            alertDiv.textContent = timestampedMessage;
             
+            // Append new message to the bottom of the log
             statusMessages.appendChild(alertDiv);
             
-            // Auto-remove after timeout (longer for errors/warnings)
-            const timeout = (type === 'error' || type === 'warning') ? 10000 : 5000;
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.parentNode.removeChild(alertDiv);
-                }
-            }, timeout);
+            // Keep only the last 20 messages to prevent memory issues
+            while (statusMessages.children.length > 20) {
+                statusMessages.removeChild(statusMessages.firstChild);
+            }
+            
+            // Ensure the log container is visible
+            statusMessages.style.display = 'block';
+            
+            // Auto-scroll to the bottom to show the newest message
+            statusMessages.scrollTop = statusMessages.scrollHeight;
         }
 
         function clearMessages() {
@@ -861,7 +1002,10 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            showMessage('Excel import tool loaded. Select a file to begin.', 'info');
+            showMessage('Excel import tool loaded. DFC Active Projects file is pre-selected.', 'info');
+            // Auto-load the default file on page load
+            selectedFile = 'preferences/projects/DFC-ActiveProjects.xlsx';
+            autoAnalyzeAndPreview();
         });
     </script>
 </body>
