@@ -6,6 +6,7 @@
     <title>Excel Data Import - MemberCommons Admin</title>
     <link rel="icon" type="image/x-icon" href="../img/logo/neighborhood/favicon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-primary: #F9FAFB;
@@ -603,9 +604,113 @@
                 
                 analyzeBtn.disabled = false;
                 
+                // Store the file for later use
+                customFiles[fileName] = file;
+                
                 // For custom files, we'll need to use client-side Excel reading
                 // since we can't send File objects to the server API
                 analyzeCustomFile();
+            }
+        }
+
+        async function analyzeCustomFile() {
+            if (!selectedFile || typeof selectedFile === 'string') return;
+            
+            showMessage('Analyzing custom Excel file...', 'info');
+            
+            // Check if XLSX library is available
+            if (typeof XLSX === 'undefined') {
+                showMessage('Excel processing library not available. Please reload the page.', 'error');
+                return;
+            }
+            
+            try {
+                const arrayBuffer = await selectedFile.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                
+                const sheetNames = workbook.SheetNames;
+                populateSheetSelect(sheetNames);
+                showSection(sheetSelection);
+                showMessage(`File analyzed successfully - found ${sheetNames.length} sheet(s)`, 'success');
+                
+                // Auto-select first sheet and trigger preview
+                if (sheetNames.length > 0) {
+                    selectedSheet = sheetNames[0];
+                    sheetSelect.value = selectedSheet;
+                    handleSheetSelect({ target: { value: selectedSheet } });
+                    
+                    // Auto-preview the data
+                    setTimeout(() => {
+                        previewCustomFileData();
+                    }, 500);
+                }
+                
+            } catch (error) {
+                showMessage('Error analyzing custom file: ' + error.message, 'error');
+            }
+        }
+
+        async function previewCustomFileData() {
+            if (!selectedFile || typeof selectedFile === 'string' || !selectedSheet) return;
+            
+            showLoading(previewBtn, 'Loading Preview...');
+            
+            // Check if XLSX library is available
+            if (typeof XLSX === 'undefined') {
+                showMessage('Excel processing library not available. Please reload the page.', 'error');
+                hideLoading(previewBtn, 'Refresh Preview');
+                return;
+            }
+            
+            try {
+                const arrayBuffer = await selectedFile.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const worksheet = workbook.Sheets[selectedSheet];
+                
+                if (!worksheet) {
+                    throw new Error(`Sheet "${selectedSheet}" not found in file`);
+                }
+                
+                // Convert to JSON (first 6 rows - 1 header + 5 data rows)
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+                    header: 1,
+                    range: 0,
+                    raw: false
+                });
+                
+                if (jsonData.length === 0) {
+                    showMessage('No data found in the selected sheet', 'warning');
+                    return;
+                }
+                
+                // Convert array format to object format for display
+                const headers = jsonData[0] || [];
+                const dataRows = jsonData.slice(1, 6); // Get first 5 data rows
+                
+                const previewRecords = dataRows.map(row => {
+                    const record = {};
+                    headers.forEach((header, index) => {
+                        record[header || `Column ${index + 1}`] = row[index] || '';
+                    });
+                    return record;
+                });
+                
+                // Create result object similar to API response
+                const result = {
+                    success: true,
+                    preview: previewRecords,
+                    total_records: dataRows.length
+                };
+                
+                previewDataResult = result;
+                displayPreview(result);
+                showSection(previewSection);
+                showMessage(`Preview loaded: ${result.total_records} records found`, 'success');
+                
+            } catch (error) {
+                showMessage('Error previewing custom file: ' + error.message, 'error');
+            } finally {
+                hideLoading(previewBtn, 'Refresh Preview');
             }
         }
 
@@ -722,6 +827,12 @@
         async function previewData() {
             if (!selectedSheet) {
                 showMessage('Please select a sheet first', 'warning');
+                return;
+            }
+
+            // If it's a custom file (File object), use client-side preview
+            if (selectedFile && typeof selectedFile !== 'string') {
+                previewCustomFileData();
                 return;
             }
 
