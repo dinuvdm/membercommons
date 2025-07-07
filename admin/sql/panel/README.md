@@ -19,7 +19,7 @@ The database configuration is already set up in the Rust backend (`src/main.rs`)
 - Default PostgreSQL connection settings
 
 The backend automatically loads database credentials from:
-- `DATABASE_URL` environment variable
+- `DATABASE_URL` environment variable set in your custom .env file.
 - Or falls back to: `postgres://user:password@localhost/suitecrm`
 
 ### 2. Backend Server ✅ **Already Implemented**
@@ -35,19 +35,28 @@ All database admin endpoints have been integrated into the main Rust backend:
 
 **Start the server:**
 ```bash
-cargo run -- serve
+cargo run serve
 ```
 
 The server will start on `http://127.0.0.1:8081` by default.
 
 ### 3. Access Admin Panel
 
-1. Open `sql/admin/index.html` in your web browser
-2. Or serve it via HTTP server:
+1. Open `admin/sql/panel` in your web browser
+2. Or serve it via HTTP server. We recommend a [model.earth port 8887](https://model.earth/localsite/start/steps/) webroot setup:
+
+   ```bash
+   # From the webroot
+   python -m http.server 8887
+   # Then visit: http://localhost:8887/membercommons/admin/sql/panel/
+   ```
+
+Or start with your local repo as the project root:
+
    ```bash
    # From the project root
    python -m http.server 3000
-   # Then visit: http://localhost:3000/sql/admin/
+   # Then visit: http://localhost:3000/admin/sql/panel/
    ```
 
 ## Features
