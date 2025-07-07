@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="../img/logo/neighborhood/favicon.png">
+    <title>Admin Dashboard - MemberCommons</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css">
+    
+    <style>
+        :root {
+            --bg-primary: #F9FAFB;
+            --bg-secondary: #FFFFFF;
+            --bg-tertiary: #F3F4F6;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --accent-green: #10B981;
+            --accent-blue: #3B82F6;
+            --accent-orange: #F59E0B;
+            --accent-purple: #8B5CF6;
+            --border-light: #E5E7EB;
+            --border-medium: #D1D5DB;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .admin-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 32px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-light);
+        }
+
+        .admin-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .admin-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .admin-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            font-size: 24px;
+        }
+
+        .admin-card-icon.database {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .admin-card-icon.excel {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .admin-card-icon.logs {
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        .admin-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .admin-card p {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .admin-card-features {
+            margin-bottom: 24px;
+        }
+
+        .admin-card-features ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .admin-card-features li {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .admin-card-features li:before {
+            content: "✓";
+            color: var(--accent-green);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .admin-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 24px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-light);
+        }
+
+        .admin-link:hover {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        .admin-link i {
+            margin-left: 8px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .status-badge.active {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        .breadcrumb {
+            margin-bottom: 24px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .breadcrumb a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 28px;
+            }
+            
+            .admin-card {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="../index.html">← Back to MemberCommons</a>
+        </div>
+
+        <div class="header">
+            <h1>🔧 Admin Dashboard</h1>
+            <p>Administrative tools for managing the MemberCommons platform, database operations, data import, and system monitoring.</p>
+        </div>
+
+        <div class="admin-grid">
+            <!-- Database Admin Panel -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-icon database">
+                        <i data-feather="database"></i>
+                    </div>
+                    <div>
+                        <h3>Database Admin Panel</h3>
+                        <span class="status-badge active">Active</span>
+                    </div>
+                </div>
+                <p>Manage Azure PostgreSQL database connections, test queries, and explore table structures with real-time data.</p>
+                <div class="admin-card-features">
+                    <ul>
+                        <li>Live database connection testing</li>
+                        <li>Table browsing with row counts</li>
+                        <li>Safe query execution</li>
+                        <li>Connection diagnostics</li>
+                    </ul>
+                </div>
+                <a href="sql/panel/" class="admin-link">
+                    Open Database Panel
+                    &nbsp; <i data-feather="external-link"></i>
+                </a>
+            </div>
+
+            <!-- Excel Import Tool -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-icon excel">
+                        <i data-feather="upload"></i>
+                    </div>
+                    <div>
+                        <h3>Excel Data Import</h3>
+                        <span class="status-badge active">Active</span>
+                    </div>
+                </div>
+                <p>Import project data from Excel files directly into the Azure database with preview and validation features.</p>
+                <div class="admin-card-features">
+                    <ul>
+                        <li>Excel file analysis and preview</li>
+                        <li>Multiple sheet support</li>
+                        <li>Data validation and mapping</li>
+                        <li>Batch import to projects table</li>
+                    </ul>
+                </div>
+                <a href="import-excel.html" class="admin-link">
+                    Open Import Tool
+                    &nbsp; <i data-feather="external-link"></i>
+                </a>
+            </div>
+
+            <!-- Log Output Monitor -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-icon logs">
+                        <i data-feather="monitor"></i>
+                    </div>
+                    <div>
+                        <h3>Log Output Monitor</h3>
+                        <span class="status-badge active">Active</span>
+                    </div>
+                </div>
+                <p>Real-time monitoring of system operations with detailed logging for file processing and API interactions.</p>
+                <div class="admin-card-features">
+                    <ul>
+                        <li>Real-time activity logging</li>
+                        <li>File processing monitoring</li>
+                        <li>API interaction tracking</li>
+                        <li>README.md loading demonstration</li>
+                    </ul>
+                </div>
+                <a href="log-output/" class="admin-link">
+                    Open Log Monitor
+                    &nbsp; <i data-feather="external-link"></i>
+                </a>
+            </div>
+        </div>
+
+        <div style="margin-top: 48px; padding: 24px; background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-light);">
+            <h3 style="margin-bottom: 16px; color: var(--text-primary);">🛡️ Admin Access Information</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 12px;">
+                These tools provide administrative access to sensitive system operations. Use with caution in production environments.
+            </p>
+            <p style="color: var(--text-secondary); font-size: 14px;">
+                <strong>Database:</strong> Connected to Azure PostgreSQL • 
+                <strong>API Server:</strong> Rust backend on port 8081 • 
+                <strong>Status:</strong> All systems operational
+            </p>
+        </div>
+
+        <div style="margin-top: 48px; padding: 24px; background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-light);">
+            <h3 style="margin-bottom: 16px; color: var(--text-primary);">🛡️ Run Webserver Locally</h3>
+            <div id="readmeDiv" class="card readme-content">
+                <p style="color: var(--text-secondary); font-style: italic;">
+                    Loading README.md...
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Formatting for pre code in readme -->
+    <link rel="stylesheet" href="../admin/sql/panel/shared-styles.css">
+    <script src="../js/common.js"></script>
+
+    
+
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+
+        // Add some interactivity
+        document.querySelectorAll('.admin-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.borderColor = 'var(--accent-blue)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.borderColor = 'var(--border-light)';
+            });
+        });
+
+        // Load README with logging
+        displayFile("README.md", "readmeDiv", "_parent");
+    </script>
+</body>
+</html>

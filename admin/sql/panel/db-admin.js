@@ -188,19 +188,21 @@ class DatabaseAdmin {
         this.addLog(logMessage);
         
         try {
-            const endpoint = limit ? `/db/tables?limit=${limit}` : '/db/tables';
-            const response = await this.makeRequest(endpoint, {
+            // Try the same endpoint that project/edit.html uses successfully
+            const response = await this.makeRequest('/tables', {
                 method: 'GET'
             });
 
-            if (response.success && response.data && response.data.tables) {
-                this.displayTables(response.data.tables);
+            if (response.tables) {
+                // Limit results if requested
+                const tables = limit ? response.tables.slice(0, limit) : response.tables;
+                this.displayTables(tables, response.tables.length);
                 const foundMessage = limit ? 
-                    `✅ Found ${response.data.tables.length} tables (showing first ${Math.min(limit, response.data.tables.length)})` :
-                    `✅ Found ${response.data.tables.length} tables (showing all)`;
+                    `✅ Found ${response.tables.length} tables (showing first ${Math.min(limit, response.tables.length)})` :
+                    `✅ Found ${response.tables.length} tables (showing all)`;
                 this.addLog(foundMessage);
             } else {
-                throw new Error(response.error || 'Failed to fetch tables');
+                throw new Error('Invalid response format');
             }
         } catch (error) {
             this.showError(`Failed to list tables: ${error.message}`, 'tables-result');
@@ -263,7 +265,7 @@ class DatabaseAdmin {
             <div class="table-item">
                 <div class="table-name">${table.name}</div>
                 <div class="table-info">
-                    ${table.rows ? `Rows: ${table.rows}` : 'Rows: Unknown'}
+                    ${table.row_count !== undefined ? `Rows: ${table.row_count}` : (table.rows ? `Rows: ${table.rows}` : 'Rows: Unknown')}
                     ${table.description ? `<br>${table.description}` : ''}
                 </div>
             </div>
