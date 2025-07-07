@@ -170,7 +170,7 @@ class DatabaseAdmin {
 <div style="margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
     <h4>Connection Troubleshooting:</h4>
     <ol style="margin: 8px 0 0 20px; color: var(--text-secondary);">
-        <li>Make sure the Rust backend server is running: <code>cargo run -- serve</code></li>
+        <li>Make sure the Rust backend server is running: <code>cargo run serve</code></li>
         <li>Verify the server is listening on port 8081</li>
         <li>Check that your Azure PostgreSQL credentials are correct</li>
         <li>Ensure your IP is allowed in Azure PostgreSQL firewall rules</li>
