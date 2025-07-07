@@ -958,55 +958,83 @@
                 
                 // Check if first row might be headers
                 const firstRow = previewRows[0];
-                const hasHeaderRow = firstRow && Object.values(firstRow).some(val => 
+                const headers = Object.keys(firstRow);
+                
+                // Check if this looks like server data (ProjectRecord fields) or raw Excel data
+                const isServerData = headers.some(header => 
+                    header === 'fiscal_year' || header === 'project_number' || 
+                    header === 'project_type' || header === 'project_name'
+                );
+                
+                const hasHeaderRow = isServerData || (firstRow && Object.values(firstRow).some(val => 
                     val && typeof val === 'string' && 
                     (val.toLowerCase().includes('year') || 
                      val.toLowerCase().includes('name') || 
                      val.toLowerCase().includes('type') ||
                      val.toLowerCase().includes('project') ||
-                     val.toLowerCase().includes('description'))
-                );
+                     val.toLowerCase().includes('description') ||
+                     val.toLowerCase().includes('fiscal') ||
+                     val.toLowerCase().includes('number') ||
+                     val.toLowerCase().includes('framework') ||
+                     val.toLowerCase().includes('region') ||
+                     val.toLowerCase().includes('country'))
+                ));
                 
                 if (hasHeaderRow) {
                     html += '<div class="alert alert-info" style="margin-bottom: 10px;">First row appears to contain column headers</div>';
-                }
-                
-                // Display all rows as data (let user decide if first row is headers)
-                html += '<tbody>';
-                previewRows.forEach((record, index) => {
-                    const rowClass = (hasHeaderRow && index === 0) ? 'style="font-weight: bold; background-color: var(--bg-tertiary);"' : '';
-                    html += `<tr ${rowClass}>`;
-                    html += `<td style="font-weight: bold; background-color: var(--bg-tertiary);">Row ${index + 1}</td>`;
                     
-                    const headers = Object.keys(record);
+                    // Display first row as table headers
+                    html += '<thead><tr>';
+                    html += '<th style="font-weight: bold; background-color: var(--bg-tertiary);">Row</th>';
                     headers.forEach(header => {
-                        const value = record[header];
-                        const displayValue = value ? String(value).substring(0, 50) + (String(value).length > 50 ? '...' : '') : '';
-                        html += `<td>${displayValue}</td>`;
+                        // Convert server field names to readable headers
+                        const displayHeader = isServerData ? 
+                            header.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                            header;
+                        html += `<th>${displayHeader}</th>`;
                     });
-                    html += '</tr>';
-                });
-                html += '</tbody></table>';
-                
-                if (hasHeaderRow) {
-                    html += '<div style="margin-top: 10px;"><input type="checkbox" id="firstRowHeaders" checked> <label for="firstRowHeaders">First row contains column headers</label></div>';
+                    html += '</tr></thead>';
+                    
+                    // Display data rows
+                    html += '<tbody>';
+                    const dataRows = isServerData ? previewRows : previewRows.slice(1);
+                    const startRowNumber = isServerData ? 1 : 2;
+                    
+                    dataRows.forEach((record, index) => {
+                        html += '<tr>';
+                        html += `<td style="font-weight: bold; background-color: var(--bg-tertiary);">Row ${index + startRowNumber}</td>`;
+                        headers.forEach(header => {
+                            const value = record[header];
+                            const displayValue = value ? String(value).substring(0, 50) + (String(value).length > 50 ? '...' : '') : '';
+                            html += `<td>${displayValue}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                    html += '</tbody>';
                 } else {
-                    html += '<div style="margin-top: 10px;"><input type="checkbox" id="firstRowHeaders"> <label for="firstRowHeaders">First row contains column headers</label></div>';
+                    // No headers detected, show all rows as data
+                    html += '<tbody>';
+                    previewRows.forEach((record, index) => {
+                        html += '<tr>';
+                        html += `<td style="font-weight: bold; background-color: var(--bg-tertiary);">Row ${index + 1}</td>`;
+                        headers.forEach(header => {
+                            const value = record[header];
+                            const displayValue = value ? String(value).substring(0, 50) + (String(value).length > 50 ? '...' : '') : '';
+                            html += `<td>${displayValue}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                    html += '</tbody>';
                 }
+                html += '</table>';
+                
+                html += `<div style="margin-top: 10px;"><input type="checkbox" id="firstRowHeaders" ${hasHeaderRow ? 'checked' : ''}> <label for="firstRowHeaders">First row contains column headers</label></div>`;
                 
             } else {
                 html += '<div class="alert alert-warning">No data found in the selected sheet.</div>';
             }
 
             content.innerHTML = html;
-            
-            // Set checkbox state after DOM update (since innerHTML doesn't preserve checked state)
-            setTimeout(() => {
-                const headerCheckbox = document.getElementById('firstRowHeaders');
-                if (headerCheckbox && hasHeaderRow) {
-                    headerCheckbox.checked = true;
-                }
-            }, 0);
         }
 
         function displayResults(result) {
