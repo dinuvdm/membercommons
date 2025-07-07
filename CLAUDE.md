@@ -134,11 +134,11 @@ const API_BASE = 'http://localhost:8081/api'; // Backend URL
 The frontend can be served in two different configurations:
 
 1. **Direct Repo Serving**: Web server points directly to the MemberCommons repository root
-   - URLs: `http://localhost:8888/admin/import-excel.html`
+   - URLs: `http://localhost:8888/admin/import-data.html`
    - File paths: `preferences/projects/DFC-ActiveProjects.xlsx`
 
 2. **Webroot Container**: Repository is placed inside a webroot folder
-   - URLs: `http://localhost:8887/membercommons/admin/import-excel.html`
+   - URLs: `http://localhost:8887/membercommons/admin/import-data.html`
    - File paths: `membercommons/preferences/projects/DFC-ActiveProjects.xlsx`
    - Browser relative paths: `../preferences/projects/DFC-ActiveProjects.xlsx`
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel Data Import - MemberCommons Admin</title>
+    <title>Data Import - MemberCommons Admin</title>
     <link rel="icon" type="image/x-icon" href="../img/logo/neighborhood/favicon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -413,17 +413,18 @@
         </a>
 
         <div class="header">
-            <h1>Excel Data Import</h1>
-            <p>Import project data from Excel files into the MemberCommons database</p>
+            <h1>📊 Data Import</h1>
+            <p>Import project data from Excel files or individual data from CSV files into the MemberCommons database</p>
         </div>
 
         <!-- File Selection -->
         <div class="card">
-            <h2>1. Select Excel File</h2>
+            <h2>1. Select Data File</h2>
             <div class="form-group">
-                <label class="form-label">Choose Excel File</label>
+                <label class="form-label">Choose Data File</label>
                 <select id="fileSelect" class="form-select">
-                    <option value="../preferences/projects/DFC-ActiveProjects.xlsx" selected>DFC Active Projects</option>
+                    <option value="../preferences/projects/DFC-ActiveProjects.xlsx" selected>DFC Active Projects (Excel → projects table)</option>
+                    <option value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh5-bIR4hC1f9H3NtDCNT19hZXnqz8WRrBwTuLGnZiA5PWhFILUv2nS2FKE2TZ4dZ-RnJkZwHx1t2Y/pub?gid=1054734503&single=true&output=csv">Google Sheets - Individuals (CSV → accounts table)</option>
                     <option value="custom">Choose File...</option>
                 </select>
             </div>
@@ -671,7 +672,7 @@
                     throw new Error(`Sheet "${selectedSheet}" not found in file`);
                 }
                 
-                // Convert to JSON (first 6 rows - 1 header + 5 data rows)
+                // Convert to JSON (first 6 rows total - header + 5 data rows or just 5 data rows)
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
                     header: 1,
                     range: 0,
@@ -770,22 +771,33 @@
                     }
                     return;
                 } catch (clientError) {
-                    console.log('Client-side analysis failed, trying API fallback:', clientError.message);
+                    console.log('Client-side analysis failed:', clientError.message);
+                    
+                    // For CSV files, don't try API fallback - they must be processed client-side
+                    if (typeof selectedFile === 'string' && isCSVFile(selectedFile)) {
+                        console.error('CSV file analysis failed, no API fallback available');
+                        showMessage(`CSV file analysis failed: ${clientError.message}`, 'error');
+                        throw clientError;
+                    }
+                    
+                    console.log('Trying API fallback for Excel file...');
                     showMessage('Client-side analysis failed, trying API...', 'warning', false);
                     
                     try {
-                        // Fallback to API
+                        // Fallback to API (Excel files only)
+                        // Convert browser path to server path for API calls
+                        let apiPath = typeof selectedFile === 'string' ? selectedFile : '../preferences/projects/DFC-ActiveProjects.xlsx';
+                        if (apiPath.startsWith('../')) {
+                            apiPath = apiPath.substring(3);
+                        }
+                        
                         const response = await fetch(`${API_BASE}/import/excel/sheets`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                             },
                             body: JSON.stringify({
-                                file_path: (() => {
-                                    const path = typeof selectedFile === 'string' ? selectedFile : '../preferences/projects/DFC-ActiveProjects.xlsx';
-                                    console.log('Sheets request using file path:', path, 'selectedFile:', selectedFile, 'type:', typeof selectedFile);
-                                    return path;
-                                })()
+                                file_path: apiPath
                             })
                         });
 
@@ -858,25 +870,39 @@
                 // Try client-side Excel processing first
                 await previewDataClientSide();
             } catch (clientError) {
-                console.log('Client-side preview failed, trying API fallback:', clientError.message);
+                console.log('Client-side preview failed:', clientError.message);
+                
+                // For CSV files, don't try API fallback - they must be processed client-side
+                if (typeof selectedFile === 'string' && isCSVFile(selectedFile)) {
+                    console.error('CSV file processing failed, no API fallback available');
+                    showMessage(`CSV file processing failed: ${clientError.message}`, 'error');
+                    throw clientError;
+                }
+                
+                console.log('Trying API fallback for Excel file...');
                 showMessage('Client-side preview failed, trying API...', 'warning', false);
                 
                 try {
-                    // Fallback to API
+                    // Fallback to API (Excel files only)
                     console.log('Attempting to connect to:', `${API_BASE}/import/excel/preview`);
+                    
+                    // Convert browser path to server path for API calls
+                    let apiPath = typeof selectedFile === 'string' ? selectedFile : '../preferences/projects/DFC-ActiveProjects.xlsx';
+                    if (apiPath.startsWith('../')) {
+                        apiPath = apiPath.substring(3);
+                    }
+                    
+                    const targetTable = getImportTableForFile(selectedFile);
+                    
                     const response = await fetch(`${API_BASE}/import/excel/preview`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            file_path: (() => {
-                                const path = typeof selectedFile === 'string' ? selectedFile : '../preferences/projects/DFC-ActiveProjects.xlsx';
-                                console.log('Preview request using file path:', path, 'selectedFile:', selectedFile, 'type:', typeof selectedFile);
-                                return path;
-                            })(),
+                            file_path: apiPath,
                             sheet_name: selectedSheet,
-                            table_name: 'projects'
+                            table_name: targetTable
                         })
                     });
 
@@ -902,6 +928,48 @@
             }
         }
 
+        // CSV parsing utility functions
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n').filter(line => line.trim());
+            const result = [];
+            
+            for (let line of lines) {
+                const row = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                
+                row.push(current.trim());
+                result.push(row);
+            }
+            
+            return result;
+        }
+
+        function isCSVFile(filePath) {
+            return filePath.includes('output=csv') || filePath.endsWith('.csv');
+        }
+
+        function getImportTableForFile(filePath) {
+            if (isCSVFile(filePath)) {
+                return 'accounts'; // CSV files go to accounts table
+            } else {
+                return 'projects'; // Excel files go to projects table
+            }
+        }
+
         async function previewDataClientSide() {
             try {
                 console.log('=== CLIENT-SIDE PREVIEW START ===');
@@ -916,9 +984,10 @@
 
                 let workbook;
 
-                // Handle different file sources - following preferences.html pattern
+                let jsonData = [];
+                
+                // Handle different file sources - CSV vs Excel
                 if (typeof selectedFile === 'string') {
-                    // Predefined file - fetch it directly like preferences.html does
                     console.log('Fetching predefined file:', selectedFile);
                     console.log('Full fetch URL will be:', new URL(selectedFile, window.location.href).href);
                     
@@ -930,41 +999,80 @@
                         throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
                     }
                     
-                    const arrayBuffer = await response.arrayBuffer();
-                    console.log('ArrayBuffer size:', arrayBuffer.byteLength);
-                    
-                    workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                    console.log('Workbook loaded, sheet names:', workbook.SheetNames);
+                    if (isCSVFile(selectedFile)) {
+                        // Handle CSV file
+                        console.log('Processing as CSV file');
+                        const csvText = await response.text();
+                        console.log('CSV text length:', csvText.length);
+                        
+                        jsonData = parseCSV(csvText);
+                        console.log('Parsed CSV rows:', jsonData.length);
+                        
+                    } else {
+                        // Handle Excel file
+                        console.log('Processing as Excel file');
+                        const arrayBuffer = await response.arrayBuffer();
+                        console.log('ArrayBuffer size:', arrayBuffer.byteLength);
+                        
+                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                        console.log('Workbook loaded, sheets:', workbook.SheetNames);
+                        
+                        // Check if workbook was loaded successfully
+                        if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+                            throw new Error('No sheets found in Excel file');
+                        }
+
+                        // Use the selected sheet or default to first sheet
+                        const sheetToUse = selectedSheet || workbook.SheetNames[0];
+                        if (!workbook.Sheets[sheetToUse]) {
+                            throw new Error(`Sheet "${sheetToUse}" not found. Available sheets: ${workbook.SheetNames.join(', ')}`);
+                        }
+
+                        // Convert sheet to JSON using the same method as preferences.html
+                        const worksheet = workbook.Sheets[sheetToUse];
+                        jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    }
                     
                 } else if (selectedFile instanceof File) {
-                    // Custom uploaded file
+                    // Custom uploaded file (Excel only for now)
                     console.log('Processing uploaded file:', selectedFile.name);
                     const arrayBuffer = await selectedFile.arrayBuffer();
-                    workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    
+                    if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+                        throw new Error('No sheets found in Excel file');
+                    }
+
+                    const sheetToUse = selectedSheet || workbook.SheetNames[0];
+                    if (!workbook.Sheets[sheetToUse]) {
+                        throw new Error(`Sheet "${sheetToUse}" not found. Available sheets: ${workbook.SheetNames.join(', ')}`);
+                    }
+
+                    const worksheet = workbook.Sheets[sheetToUse];
+                    jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
                 } else if (customFiles[selectedFile]) {
-                    // File from customFiles storage
+                    // File from customFiles storage (Excel only for now)
                     console.log('Processing custom file from storage:', selectedFile);
                     const arrayBuffer = await customFiles[selectedFile].arrayBuffer();
-                    workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    
+                    if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+                        throw new Error('No sheets found in Excel file');
+                    }
+
+                    const sheetToUse = selectedSheet || workbook.SheetNames[0];
+                    if (!workbook.Sheets[sheetToUse]) {
+                        throw new Error(`Sheet "${sheetToUse}" not found. Available sheets: ${workbook.SheetNames.join(', ')}`);
+                    }
+
+                    const worksheet = workbook.Sheets[sheetToUse];
+                    jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
                 } else {
                     console.error('Invalid file selection - selectedFile:', selectedFile);
                     throw new Error('Invalid file selection');
                 }
-
-                // Check if workbook was loaded successfully
-                if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
-                    throw new Error('No sheets found in Excel file');
-                }
-
-                // Use the selected sheet or default to first sheet
-                const sheetToUse = selectedSheet || workbook.SheetNames[0];
-                if (!workbook.Sheets[sheetToUse]) {
-                    throw new Error(`Sheet "${sheetToUse}" not found. Available sheets: ${workbook.SheetNames.join(', ')}`);
-                }
-
-                // Convert sheet to JSON using the same method as preferences.html
-                const worksheet = workbook.Sheets[sheetToUse];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                 
                 if (jsonData.length === 0) {
                     throw new Error('No data found in sheet');
@@ -976,7 +1084,7 @@
                 const headers = hasHeaders ? jsonData[0] : jsonData[0].map((_, i) => `Column ${i + 1}`);
                 const dataRows = hasHeaders ? jsonData.slice(1) : jsonData;
 
-                // Take first 5 rows for preview
+                // Take first 5 rows for preview (5 data rows when headers detected)
                 const previewRows = dataRows.slice(0, 5);
 
                 // Format data for display - ensure all headers have values
@@ -988,6 +1096,14 @@
                     return rowData;
                 });
 
+                // Determine sheet name for result object
+                let sheetName;
+                if (typeof selectedFile === 'string' && isCSVFile(selectedFile)) {
+                    sheetName = 'Data'; // CSV files have one implicit sheet
+                } else {
+                    sheetName = selectedSheet || 'Sheet1'; // Excel files use selected sheet
+                }
+
                 // Create result object similar to API response
                 const result = {
                     success: true,
@@ -996,7 +1112,7 @@
                     preview: formattedData,
                     headers: headers,
                     source: 'client-side',
-                    sheet_name: sheetToUse
+                    sheet_name: sheetName
                 };
 
                 console.log('Client-side preview successful:', result);
@@ -1016,6 +1132,12 @@
             console.log('=== CLIENT-SIDE ANALYSIS START ===');
             console.log('selectedFile:', selectedFile, 'type:', typeof selectedFile);
             
+            // Handle CSV files differently - they don't have sheets
+            if (typeof selectedFile === 'string' && isCSVFile(selectedFile)) {
+                console.log('CSV file detected, returning default sheet name');
+                return ['Data']; // CSV files have one implicit "sheet"
+            }
+            
             if (!window.XLSX) {
                 console.error('XLSX library not available');
                 throw new Error('XLSX library not loaded');
@@ -1025,8 +1147,8 @@
 
             // Handle different file sources - same as previewDataClientSide
             if (typeof selectedFile === 'string') {
-                // Predefined file - fetch it directly
-                console.log('Fetching predefined file for analysis:', selectedFile);
+                // Predefined Excel file - fetch it directly
+                console.log('Fetching predefined Excel file for analysis:', selectedFile);
                 const response = await fetch(selectedFile);
                 
                 if (!response.ok) {
@@ -1060,9 +1182,19 @@
         }
 
         async function importData() {
-            if (!selectedSheet || !previewDataResult) return;
+            if (!previewDataResult) return;
+            
+            // Determine target table based on file type
+            const targetTable = getImportTableForFile(selectedFile);
+            const recordType = targetTable === 'accounts' ? 'individuals' : 'projects';
+            
+            // For CSV files, sheet selection is not required
+            if (!isCSVFile(selectedFile) && !selectedSheet) {
+                showMessage('Please select a sheet first', 'error');
+                return;
+            }
 
-            if (!confirm(`Import ${previewDataResult.total_records} records into the projects table?`)) {
+            if (!confirm(`Import ${previewDataResult.total_records} records into the ${targetTable} table as ${recordType}?`)) {
                 return;
             }
 
@@ -1087,8 +1219,8 @@
                             console.log('Import request - original selectedFile:', selectedFile, 'converted path for API:', path);
                             return path;
                         })(),
-                        sheet_name: selectedSheet,
-                        table_name: 'projects'
+                        sheet_name: isCSVFile(selectedFile) ? null : selectedSheet,
+                        table_name: targetTable
                     })
                 });
 
@@ -1134,12 +1266,12 @@
             
             let html = `
                 <div class="alert alert-info">
-                    <strong>Preview:</strong> Showing first 5 rows of ${data.total_records} records
+                    <strong>Preview:</strong> Showing first 5 data rows of ${data.total_records} records
                 </div>
             `;
 
             if (data.preview && data.preview.length > 0) {
-                // Show first 5 rows maximum
+                // Show appropriate number of rows based on whether headers are detected
                 const previewRows = data.preview.slice(0, 5);
                 
                 html += '<table class="preview-table">';
@@ -1221,8 +1353,8 @@
                     
                     // Display data rows
                     html += '<tbody>';
-                    const dataRows = isServerData ? previewRows : previewRows.slice(1);
-                    const startRowNumber = isServerData ? 1 : 2;
+                    const dataRows = previewRows; // Show all preview rows as data
+                    const startRowNumber = 1; // Always start numbering from 1
                     
                     dataRows.forEach((record, index) => {
                         html += '<tr>';
