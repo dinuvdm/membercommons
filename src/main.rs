@@ -2,7 +2,7 @@
 use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer, Result, middleware};
 use anyhow::Context;
-use chrono::Utc;
+use chrono::{Utc, NaiveDate};
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -180,8 +180,45 @@ async fn get_env_config() -> Result<HttpResponse> {
     }))
 }
 
-// Get list of tables with row counts
+// Get list of tables with row counts - returns real database tables with accurate counts
 async fn get_tables(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
+    match get_database_tables(&data.db, None).await {
+        Ok(tables) => {
+            let mut table_info = Vec::new();
+            
+            // Get actual row counts for each table
+            for table in tables {
+                let query = format!("SELECT COUNT(*) FROM {}", table.name);
+                match sqlx::query(&query).fetch_one(&data.db).await {
+                    Ok(row) => {
+                        let count: i64 = row.get(0);
+                        table_info.push(TableInfo {
+                            name: table.name.clone(),
+                            row_count: count,
+                        });
+                    }
+                    Err(_) => {
+                        // Table might not be accessible, use estimated count
+                        table_info.push(TableInfo {
+                            name: table.name.clone(),
+                            row_count: table.rows.unwrap_or(0),
+                        });
+                    }
+                }
+            }
+            
+            Ok(HttpResponse::Ok().json(json!({ "tables": table_info })))
+        }
+        Err(e) => {
+            Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Failed to fetch tables: {}", e)
+            })))
+        }
+    }
+}
+
+// Get list of mock tables - returns hardcoded placeholder data
+async fn get_tables_mock() -> Result<HttpResponse> {
     let tables = vec![
         "users", "accounts", "contacts", "opportunities", "activities",
         "campaigns", "documents", "events", "roles", "projects",
@@ -189,27 +226,12 @@ async fn get_tables(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
         "tags", "taggables"
     ];
     
-    let mut table_info = Vec::new();
-    
-    for table_name in tables {
-        let query = format!("SELECT COUNT(*) FROM {}", table_name);
-        match sqlx::query(&query).fetch_one(&data.db).await {
-            Ok(row) => {
-                let count: i64 = row.get(0);
-                table_info.push(TableInfo {
-                    name: table_name.to_string(),
-                    row_count: count,
-                });
-            }
-            Err(_) => {
-                // Table might not exist yet
-                table_info.push(TableInfo {
-                    name: table_name.to_string(),
-                    row_count: 0,
-                });
-            }
+    let table_info: Vec<TableInfo> = tables.iter().map(|table_name| {
+        TableInfo {
+            name: table_name.to_string(),
+            row_count: 0, // Mock data shows 0 rows
         }
-    }
+    }).collect();
     
     Ok(HttpResponse::Ok().json(json!({ "tables": table_info })))
 }
@@ -317,6 +339,15 @@ async fn create_project(
     let id = Uuid::new_v4();
     let now = Utc::now();
     
+    // Parse date strings into NaiveDate
+    let start_date = req.estimated_start_date.as_ref()
+        .and_then(|s| if s.is_empty() { None } else { Some(s) })
+        .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+    
+    let end_date = req.estimated_end_date.as_ref()
+        .and_then(|s| if s.is_empty() { None } else { Some(s) })
+        .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+    
     let result = sqlx::query(
         r#"
         INSERT INTO projects (
@@ -330,8 +361,8 @@ async fn create_project(
     .bind(&req.name)
     .bind(&req.description)
     .bind(&req.status)
-    .bind(&req.estimated_start_date)
-    .bind(&req.estimated_end_date)
+    .bind(start_date)
+    .bind(end_date)
     .bind(now)
     .bind(now)
     .bind("1") // Default user ID
@@ -969,6 +1000,7 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                 web::scope("/api")
                     .route("/health", web::get().to(health_check))
                     .route("/tables", web::get().to(get_tables))
+                    .route("/tables/mock", web::get().to(get_tables_mock))
                     .route("/projects", web::post().to(create_project))
                     .service(
                         web::scope("/db")

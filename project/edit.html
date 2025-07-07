@@ -92,8 +92,8 @@
                 name: formData.get('name'),
                 description: formData.get('description'),
                 status: formData.get('status'),
-                estimated_start_date: formData.get('estimated_start_date'),
-                estimated_end_date: formData.get('estimated_end_date')
+                estimated_start_date: formData.get('estimated_start_date') || null,
+                estimated_end_date: formData.get('estimated_end_date') || null
             };
             
             try {
