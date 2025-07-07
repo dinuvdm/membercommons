@@ -40,6 +40,23 @@ pub struct ProjectRecord {
     pub project_profile_url: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DataImportRequest {
+    pub data: Vec<HashMap<String, serde_json::Value>>,
+    pub headers: Vec<String>,
+    pub table_name: String,
+    pub source: String,
+    pub file_source: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DataImportResponse {
+    pub success: bool,
+    pub message: String,
+    pub imported_count: Option<usize>,
+    pub errors: Vec<String>,
+}
+
 /// Import Excel data into the projects table
 pub async fn import_excel_data(
     pool: web::Data<std::sync::Arc<crate::ApiState>>,
@@ -308,6 +325,122 @@ async fn insert_project_record(
     .bind(now)
     .bind("excel-import") // Creator identifier
     .bind("excel-import") // Modifier identifier
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Import JSON data directly into specified table
+pub async fn import_data(
+    pool: web::Data<std::sync::Arc<crate::ApiState>>,
+    req: web::Json<DataImportRequest>,
+) -> Result<HttpResponse> {
+    let mut errors = Vec::new();
+    let mut imported_count = 0;
+    
+    println!("Data import request - table: {}, source: {}, records: {}", 
+        req.table_name, req.source, req.data.len());
+    
+    match req.table_name.as_str() {
+        "accounts" => {
+            for (index, record) in req.data.iter().enumerate() {
+                match import_account_record(&pool.db, record).await {
+                    Ok(()) => imported_count += 1,
+                    Err(e) => {
+                        let error_msg = format!("Row {}: {}", index + 1, e);
+                        println!("Import error: {}", error_msg);
+                        errors.push(error_msg);
+                    }
+                }
+            }
+        }
+        "projects" => {
+            // Future: Handle projects import via JSON data
+            errors.push("Projects table import via JSON data not yet implemented".to_string());
+        }
+        _ => {
+            errors.push(format!("Unsupported table: {}", req.table_name));
+        }
+    }
+    
+    let success = errors.is_empty() || (imported_count > 0 && errors.len() < req.data.len());
+    let message = if success {
+        if errors.is_empty() {
+            format!("Successfully imported {} records into {}", imported_count, req.table_name)
+        } else {
+            format!("Imported {} of {} records into {} (some errors occurred)", 
+                imported_count, req.data.len(), req.table_name)
+        }
+    } else {
+        format!("Failed to import data into {}", req.table_name)
+    };
+    
+    Ok(HttpResponse::Ok().json(DataImportResponse {
+        success,
+        message,
+        imported_count: Some(imported_count),
+        errors,
+    }))
+}
+
+/// Helper function to import a single account record
+async fn import_account_record(
+    pool: &Pool<Postgres>,
+    record: &HashMap<String, serde_json::Value>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let id = Uuid::new_v4();
+    let now = Utc::now().naive_utc();
+    
+    // Extract fields from the record
+    let name = record.get("Name")
+        .or_else(|| record.get("name"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("Unknown");
+    
+    let email = record.get("Email")
+        .or_else(|| record.get("email"))
+        .and_then(|v| v.as_str());
+    
+    let phone = record.get("Phone")
+        .or_else(|| record.get("phone"))
+        .and_then(|v| v.as_str());
+    
+    let website = record.get("Website")
+        .or_else(|| record.get("website"))
+        .and_then(|v| v.as_str());
+    
+    let industry = record.get("Industry")
+        .or_else(|| record.get("industry"))
+        .or_else(|| record.get("Sector"))
+        .or_else(|| record.get("sector"))
+        .and_then(|v| v.as_str());
+    
+    // Set account type based on available data
+    let account_type = if email.is_some() || phone.is_some() {
+        Some("Customer")
+    } else {
+        Some("Prospect")
+    };
+    
+    sqlx::query(
+        r#"
+        INSERT INTO accounts (
+            id, name, account_type, industry, phone_office, website,
+            date_entered, date_modified, created_by, modified_user_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        "#
+    )
+    .bind(id)
+    .bind(name)
+    .bind(account_type)
+    .bind(industry)
+    .bind(phone)
+    .bind(website)
+    .bind(now)
+    .bind(now)
+    .bind("csv-import") // Creator identifier
+    .bind("csv-import") // Modifier identifier
     .execute(pool)
     .await?;
 

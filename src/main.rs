@@ -1014,6 +1014,7 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                             .route("/excel", web::post().to(import::import_excel_data))
                             .route("/excel/preview", web::post().to(import::preview_excel_data))
                             .route("/excel/sheets", web::post().to(import::get_excel_sheets))
+                            .route("/data", web::post().to(import::import_data))
                     )
                     .service(
                         web::scope("/config")
