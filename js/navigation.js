@@ -98,32 +98,17 @@ class NavigationSystem {
 
     async loadConfig() {
         try {
-            // Try multiple potential paths for the config file
-            const possiblePaths = [
-                './config/navigation.json',
-                '../config/navigation.json',
-                '../../config/navigation.json',
-                '/config/navigation.json'
-            ];
+            // Calculate path to repo root based on current page depth
+            const currentPath = window.location.pathname;
+            const pathSegments = currentPath.split('/').filter(segment => segment && segment !== 'index.html');
+            const depth = pathSegments.length - 1; // Subtract 1 since we're already in a directory
+            const upLevels = '../'.repeat(depth);
+            const configPath = `${upLevels}config/navigation.json`;
             
-            let response = null;
-            let lastError = null;
+            const response = await fetch(configPath);
             
-            for (const path of possiblePaths) {
-                try {
-                    response = await fetch(path);
-                    if (response.ok) {
-                        break;
-                    }
-                    lastError = new Error(`HTTP ${response.status}: ${response.statusText}`);
-                } catch (error) {
-                    lastError = error;
-                    continue;
-                }
-            }
-            
-            if (!response || !response.ok) {
-                throw lastError || new Error('Navigation config not found in any expected location');
+            if (!response.ok) {
+                throw new Error(`Failed to load navigation config: HTTP ${response.status}: ${response.statusText}`);
             }
             
             this.config = await response.json();
