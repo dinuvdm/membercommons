@@ -423,7 +423,7 @@
             <div class="form-group">
                 <label class="form-label">Choose Excel File</label>
                 <select id="fileSelect" class="form-select">
-                    <option value="preferences/projects/DFC-ActiveProjects.xlsx" selected>DFC Active Projects</option>
+                    <option value="../preferences/projects/DFC-ActiveProjects.xlsx" selected>DFC Active Projects</option>
                     <option value="custom">Choose File...</option>
                 </select>
             </div>
@@ -721,7 +721,7 @@
                 // First, try to get sheet info and auto-select first sheet
                 await analyzeFile();
                 
-                // If we have sheets available, auto-select the first one and preview
+                // If we have sheets available, auto-select the first one (analyzeFile already handles preview)
                 if (sheetSelect.options.length > 1) { // More than just "Select a sheet..."
                     selectedSheet = sheetSelect.options[1].value; // First actual sheet
                     sheetSelect.value = selectedSheet;
@@ -729,10 +729,7 @@
                     // Trigger the change event
                     handleSheetSelect({ target: { value: selectedSheet } });
                     
-                    // Auto-preview the data
-                    setTimeout(() => {
-                        previewData();
-                    }, 500);
+                    // Note: No need to call previewData() here since analyzeFile() already triggers it
                 }
             } catch (error) {
                 console.error('Auto-analyze error:', error);
@@ -753,44 +750,68 @@
             showLoading(analyzeBtn, 'Analyzing...');
             
             try {
-                // Try to connect to API server first, fallback to known sheets
+                // Try client-side analysis first
                 try {
-                    const response = await fetch(`${API_BASE}/import/excel/sheets`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            file_path: (() => {
-                                const path = typeof selectedFile === 'string' ? selectedFile : 'preferences/projects/DFC-ActiveProjects.xlsx';
-                                console.log('Sheets request using file path:', path, 'selectedFile:', selectedFile, 'type:', typeof selectedFile);
-                                return path;
-                            })()
-                        })
-                    });
-
-                    const result = await response.json();
+                    const sheets = await analyzeFileClientSide();
+                    populateSheetSelect(sheets);
+                    showSection(sheetSelection);
+                    showMessage('File analyzed successfully (client-side)', 'success');
                     
-                    if (result.success) {
-                        populateSheetSelect(result.sheets);
-                        showSection(sheetSelection);
-                        showMessage('File analyzed successfully', 'success');
+                    // Auto-select first sheet and trigger preview
+                    if (sheets.length > 0) {
+                        selectedSheet = sheets[0];
+                        sheetSelect.value = selectedSheet;
+                        handleSheetSelect({ target: { value: selectedSheet } });
                         
-                        // Auto-select first sheet and trigger preview
-                        if (result.sheets.length > 0) {
-                            selectedSheet = result.sheets[0];
-                            sheetSelect.value = selectedSheet;
-                            handleSheetSelect({ target: { value: selectedSheet } });
-                            
-                            // Auto-preview the data
-                            setTimeout(() => {
-                                previewData();
-                            }, 500);
-                        }
-                        return;
+                        // Auto-preview the data
+                        setTimeout(() => {
+                            previewData();
+                        }, 500);
                     }
-                } catch (apiError) {
-                    console.log('API not available, using fallback:', apiError.message);
+                    return;
+                } catch (clientError) {
+                    console.log('Client-side analysis failed, trying API fallback:', clientError.message);
+                    showMessage('Client-side analysis failed, trying API...', 'warning', false);
+                    
+                    try {
+                        // Fallback to API
+                        const response = await fetch(`${API_BASE}/import/excel/sheets`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                file_path: (() => {
+                                    const path = typeof selectedFile === 'string' ? selectedFile : '../preferences/projects/DFC-ActiveProjects.xlsx';
+                                    console.log('Sheets request using file path:', path, 'selectedFile:', selectedFile, 'type:', typeof selectedFile);
+                                    return path;
+                                })()
+                            })
+                        });
+
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            populateSheetSelect(result.sheets);
+                            showSection(sheetSelection);
+                            showMessage('File analyzed successfully (API)', 'success');
+                            
+                            // Auto-select first sheet and trigger preview
+                            if (result.sheets.length > 0) {
+                                selectedSheet = result.sheets[0];
+                                sheetSelect.value = selectedSheet;
+                                handleSheetSelect({ target: { value: selectedSheet } });
+                                
+                                // Auto-preview the data
+                                setTimeout(() => {
+                                    previewData();
+                                }, 500);
+                            }
+                            return;
+                        }
+                    } catch (apiError) {
+                        console.log('Both client-side and API analysis failed:', apiError.message);
+                    }
                 }
                 
                 // Fallback: Since we know this is the DFC ActiveProjects file, populate with known sheets
@@ -804,16 +825,11 @@
                     showSection(sheetSelection);
                     showMessage('File analyzed successfully - found ' + result.sheets.length + ' sheet(s)', 'success');
                     
-                    // Auto-select first sheet and trigger preview
+                    // Auto-select first sheet (no auto-preview to avoid duplicate)
                     if (result.sheets.length > 0) {
                         selectedSheet = result.sheets[0];
                         sheetSelect.value = selectedSheet;
                         handleSheetSelect({ target: { value: selectedSheet } });
-                        
-                        // Auto-preview the data
-                        setTimeout(() => {
-                            previewData();
-                        }, 500);
                     }
                 }
                 
@@ -839,43 +855,208 @@
             showLoading(previewBtn, 'Loading Preview...');
             
             try {
-                console.log('Attempting to connect to:', `${API_BASE}/import/excel/preview`);
-                const response = await fetch(`${API_BASE}/import/excel/preview`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        file_path: (() => {
-                            const path = typeof selectedFile === 'string' ? selectedFile : 'preferences/projects/DFC-ActiveProjects.xlsx';
-                            console.log('Preview request using file path:', path, 'selectedFile:', selectedFile, 'type:', typeof selectedFile);
-                            return path;
-                        })(),
-                        sheet_name: selectedSheet,
-                        table_name: 'projects'
-                    })
-                });
-
-                console.log('Response status:', response.status);
-                const result = await response.json();
-                console.log('API Response:', result);
+                // Try client-side Excel processing first
+                await previewDataClientSide();
+            } catch (clientError) {
+                console.log('Client-side preview failed, trying API fallback:', clientError.message);
+                showMessage('Client-side preview failed, trying API...', 'warning', false);
                 
-                if (result.success) {
-                    previewDataResult = result;
-                    displayPreview(result);
-                    showSection(previewSection);
-                    showMessage(`Preview loaded: ${result.total_records} records found`, 'success');
-                } else {
-                    showMessage(result.message || 'Failed to preview data', 'error');
+                try {
+                    // Fallback to API
+                    console.log('Attempting to connect to:', `${API_BASE}/import/excel/preview`);
+                    const response = await fetch(`${API_BASE}/import/excel/preview`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            file_path: (() => {
+                                const path = typeof selectedFile === 'string' ? selectedFile : '../preferences/projects/DFC-ActiveProjects.xlsx';
+                                console.log('Preview request using file path:', path, 'selectedFile:', selectedFile, 'type:', typeof selectedFile);
+                                return path;
+                            })(),
+                            sheet_name: selectedSheet,
+                            table_name: 'projects'
+                        })
+                    });
+
+                    console.log('Response status:', response.status);
+                    const result = await response.json();
+                    console.log('API Response:', result);
+                    
+                    if (result.success) {
+                        previewDataResult = result;
+                        displayPreview(result);
+                        showSection(previewSection);
+                        showMessage(`API preview loaded: ${result.total_records} records found`, 'success');
+                    } else {
+                        showMessage(result.message || 'Failed to preview data', 'error');
+                    }
+                } catch (apiError) {
+                    console.error('Both client-side and API preview failed:', apiError);
+                    showMessage(`Preview failed. Client error: ${clientError.message}. API error: ${apiError.message}`, 'error', false);
+                    showMessage('To use API preview: 1) Start Rust server with "cargo run serve" 2) Ensure it\'s running on port 8081', 'warning', false);
                 }
-            } catch (error) {
-                console.error('Preview error:', error);
-                showMessage(`Cannot connect to API server on port 8081. Error: ${error.message}`, 'error', false);
-                // Show what the user needs to do
-                showMessage('To use preview: 1) Start Rust server with "cargo run serve" 2) Ensure it\'s running on port 8081', 'warning', false);
             } finally {
                 hideLoading(previewBtn, 'Refresh Preview');
             }
+        }
+
+        async function previewDataClientSide() {
+            try {
+                console.log('=== CLIENT-SIDE PREVIEW START ===');
+                console.log('selectedFile:', selectedFile, 'type:', typeof selectedFile);
+                console.log('selectedSheet:', selectedSheet);
+                
+                if (!window.XLSX) {
+                    console.error('XLSX library not available');
+                    throw new Error('XLSX library not loaded');
+                }
+                console.log('XLSX library available:', !!window.XLSX);
+
+                let workbook;
+
+                // Handle different file sources - following preferences.html pattern
+                if (typeof selectedFile === 'string') {
+                    // Predefined file - fetch it directly like preferences.html does
+                    console.log('Fetching predefined file:', selectedFile);
+                    console.log('Full fetch URL will be:', new URL(selectedFile, window.location.href).href);
+                    
+                    const response = await fetch(selectedFile);
+                    console.log('Fetch response status:', response.status, response.statusText);
+                    console.log('Fetch response headers:', [...response.headers.entries()]);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    console.log('ArrayBuffer size:', arrayBuffer.byteLength);
+                    
+                    workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    console.log('Workbook loaded, sheet names:', workbook.SheetNames);
+                    
+                } else if (selectedFile instanceof File) {
+                    // Custom uploaded file
+                    console.log('Processing uploaded file:', selectedFile.name);
+                    const arrayBuffer = await selectedFile.arrayBuffer();
+                    workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                } else if (customFiles[selectedFile]) {
+                    // File from customFiles storage
+                    console.log('Processing custom file from storage:', selectedFile);
+                    const arrayBuffer = await customFiles[selectedFile].arrayBuffer();
+                    workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                } else {
+                    console.error('Invalid file selection - selectedFile:', selectedFile);
+                    throw new Error('Invalid file selection');
+                }
+
+                // Check if workbook was loaded successfully
+                if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+                    throw new Error('No sheets found in Excel file');
+                }
+
+                // Use the selected sheet or default to first sheet
+                const sheetToUse = selectedSheet || workbook.SheetNames[0];
+                if (!workbook.Sheets[sheetToUse]) {
+                    throw new Error(`Sheet "${sheetToUse}" not found. Available sheets: ${workbook.SheetNames.join(', ')}`);
+                }
+
+                // Convert sheet to JSON using the same method as preferences.html
+                const worksheet = workbook.Sheets[sheetToUse];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                if (jsonData.length === 0) {
+                    throw new Error('No data found in sheet');
+                }
+
+                // Determine if first row contains headers (default to true if checkbox doesn't exist yet)
+                const firstRowHeadersElement = document.getElementById('firstRowHeaders');
+                const hasHeaders = firstRowHeadersElement ? firstRowHeadersElement.checked : true;
+                const headers = hasHeaders ? jsonData[0] : jsonData[0].map((_, i) => `Column ${i + 1}`);
+                const dataRows = hasHeaders ? jsonData.slice(1) : jsonData;
+
+                // Take first 5 rows for preview
+                const previewRows = dataRows.slice(0, 5);
+
+                // Format data for display - ensure all headers have values
+                const formattedData = previewRows.map(row => {
+                    const rowData = {};
+                    headers.forEach((header, index) => {
+                        rowData[header || `Column ${index + 1}`] = row[index] || '';
+                    });
+                    return rowData;
+                });
+
+                // Create result object similar to API response
+                const result = {
+                    success: true,
+                    total_records: dataRows.length,
+                    preview_records: formattedData.length,
+                    preview: formattedData,
+                    headers: headers,
+                    source: 'client-side',
+                    sheet_name: sheetToUse
+                };
+
+                console.log('Client-side preview successful:', result);
+
+                previewDataResult = result;
+                displayPreview(result);
+                showSection(previewSection);
+                showMessage(`Client-side preview loaded: ${result.total_records} total records, showing first ${result.preview_records} rows`, 'success');
+                
+            } catch (error) {
+                console.error('Client-side preview failed:', error);
+                throw error; // Re-throw so calling function can handle fallback
+            }
+        }
+
+        async function analyzeFileClientSide() {
+            console.log('=== CLIENT-SIDE ANALYSIS START ===');
+            console.log('selectedFile:', selectedFile, 'type:', typeof selectedFile);
+            
+            if (!window.XLSX) {
+                console.error('XLSX library not available');
+                throw new Error('XLSX library not loaded');
+            }
+
+            let workbook;
+
+            // Handle different file sources - same as previewDataClientSide
+            if (typeof selectedFile === 'string') {
+                // Predefined file - fetch it directly
+                console.log('Fetching predefined file for analysis:', selectedFile);
+                const response = await fetch(selectedFile);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+                }
+                
+                const arrayBuffer = await response.arrayBuffer();
+                workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                
+            } else if (selectedFile instanceof File) {
+                // Custom uploaded file
+                console.log('Processing uploaded file for analysis:', selectedFile.name);
+                const arrayBuffer = await selectedFile.arrayBuffer();
+                workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            } else if (customFiles[selectedFile]) {
+                // File from customFiles storage
+                console.log('Processing custom file from storage for analysis:', selectedFile);
+                const arrayBuffer = await customFiles[selectedFile].arrayBuffer();
+                workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            } else {
+                throw new Error('Invalid file selection');
+            }
+
+            // Check if workbook was loaded successfully
+            if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+                throw new Error('No sheets found in Excel file');
+            }
+
+            console.log('Client-side analysis successful, sheet names:', workbook.SheetNames);
+            return workbook.SheetNames;
         }
 
         async function importData() {
@@ -895,8 +1076,15 @@
                     },
                     body: JSON.stringify({
                         file_path: (() => {
-                            const path = typeof selectedFile === 'string' ? selectedFile : 'preferences/projects/DFC-ActiveProjects.xlsx';
-                            console.log('Import request using file path:', path, 'selectedFile:', selectedFile, 'type:', typeof selectedFile);
+                            let path = typeof selectedFile === 'string' ? selectedFile : 'preferences/projects/DFC-ActiveProjects.xlsx';
+                            
+                            // Convert browser-relative paths to repo-relative paths for API calls
+                            // Remove ../ prefix since Rust server expects paths relative to repo root
+                            if (path.startsWith('../')) {
+                                path = path.substring(3);
+                            }
+                            
+                            console.log('Import request - original selectedFile:', selectedFile, 'converted path for API:', path);
                             return path;
                         })(),
                         sheet_name: selectedSheet,
@@ -966,19 +1154,55 @@
                     header === 'project_type' || header === 'project_name'
                 );
                 
-                const hasHeaderRow = isServerData || (firstRow && Object.values(firstRow).some(val => 
-                    val && typeof val === 'string' && 
-                    (val.toLowerCase().includes('year') || 
-                     val.toLowerCase().includes('name') || 
-                     val.toLowerCase().includes('type') ||
-                     val.toLowerCase().includes('project') ||
-                     val.toLowerCase().includes('description') ||
-                     val.toLowerCase().includes('fiscal') ||
-                     val.toLowerCase().includes('number') ||
-                     val.toLowerCase().includes('framework') ||
-                     val.toLowerCase().includes('region') ||
-                     val.toLowerCase().includes('country'))
-                ));
+                // Better header detection: check if first row values are descriptive text (not data values)
+                const hasHeaderRow = isServerData || (firstRow && (() => {
+                    const values = Object.values(firstRow);
+                    if (values.length === 0) return false;
+                    
+                    // Count how many values look like headers vs data
+                    let headerLikeCount = 0;
+                    let dataLikeCount = 0;
+                    
+                    values.forEach(val => {
+                        if (val === null || val === undefined || val === '') {
+                            return; // Skip empty values
+                        }
+                        
+                        const strVal = String(val).trim();
+                        if (strVal === '') return;
+                        
+                        // Check if it's a number
+                        if (!isNaN(strVal) && !isNaN(parseFloat(strVal))) {
+                            dataLikeCount++;
+                            return;
+                        }
+                        
+                        // Check if it's a boolean-like value
+                        const lowerVal = strVal.toLowerCase();
+                        if (lowerVal === 'true' || lowerVal === 'false' || lowerVal === '1' || lowerVal === '0') {
+                            dataLikeCount++;
+                            return;
+                        }
+                        
+                        // Check if it's a date-like value (basic patterns)
+                        if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(strVal) || 
+                            /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(strVal)) {
+                            dataLikeCount++;
+                            return;
+                        }
+                        
+                        // If it's text with spaces or descriptive words, likely a header
+                        if (strVal.length > 1 && (strVal.includes(' ') || strVal.length > 5)) {
+                            headerLikeCount++;
+                        } else {
+                            // Short single words could be either, but lean toward header
+                            headerLikeCount++;
+                        }
+                    });
+                    
+                    // If most values look like headers, treat first row as headers
+                    return headerLikeCount > dataLikeCount;
+                })());
                 
                 if (hasHeaderRow) {
                     html += '<div class="alert alert-info" style="margin-bottom: 10px;">First row appears to contain column headers</div>';
@@ -1143,7 +1367,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             showMessage('Excel import tool loaded. DFC Active Projects file is pre-selected.', 'info');
             // Auto-load the default file on page load
-            selectedFile = 'preferences/projects/DFC-ActiveProjects.xlsx';
+            selectedFile = '../preferences/projects/DFC-ActiveProjects.xlsx';
             autoAnalyzeAndPreview();
         });
     </script>

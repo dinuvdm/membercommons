@@ -130,6 +130,22 @@ Complete CRM schema based on SuiteCRM/Salesforce structure:
 const API_BASE = 'http://localhost:8081/api'; // Backend URL
 ```
 
+### Web Server Configuration
+The frontend can be served in two different configurations:
+
+1. **Direct Repo Serving**: Web server points directly to the MemberCommons repository root
+   - URLs: `http://localhost:8888/admin/import-excel.html`
+   - File paths: `preferences/projects/DFC-ActiveProjects.xlsx`
+
+2. **Webroot Container**: Repository is placed inside a webroot folder
+   - URLs: `http://localhost:8887/membercommons/admin/import-excel.html`
+   - File paths: `membercommons/preferences/projects/DFC-ActiveProjects.xlsx`
+   - Browser relative paths: `../preferences/projects/DFC-ActiveProjects.xlsx`
+
+Webroot Container (port 8887) is prefered since other repos can then reside in the same webroot.
+
+The Rust backend (port 8081) always expects paths relative to the repository root, regardless of web server configuration. Frontend code should convert browser-relative paths (with `../`) to repo-relative paths when making API calls.
+
 ### Navigation Structure
 ```
 Home
