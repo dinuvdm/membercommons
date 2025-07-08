@@ -11,6 +11,7 @@ class SurveyManager {
             "Worker protection laws should cover gig economy participants",
             "Government should prioritize investments in renewable energy infrastructure",
             "Public funding should support AI research for government efficiency",
+            "AI features in apps should be optional, not automatic.",
             "Digital privacy rights should be strengthened with new legislation",
             "Tech companies should face stricter regulation of data collection",
             "Universal basic income should be piloted in local communities",

@@ -39,6 +39,20 @@ Start Claude Code CLI:
 
 Inside the claude cmd window, start your local Rust API server by running:
 
-	cargo run serve
+	nohup cargo run -- serve > server.log 2>&1 &
+
+The above keeps the server running and also stores logs,
+whereas `cargo run -- serve` doesn't remain running.
 
 View the website locally at: [localhost:8887/membercommons](http://localhost:8887/membercommons/)
+
+<!--
+  # Check if server is running
+  curl http://localhost:8081/api/health
+
+  # Stop the background server
+  lsof -ti:8081 | xargs kill -9
+
+  # View server logs
+  tail -f server.log
+-->

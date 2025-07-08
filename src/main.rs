@@ -37,7 +37,7 @@ impl Config {
                 database_url: std::env::var("DATABASE_URL")
                     .unwrap_or_else(|_| "postgres://user:password@localhost/suitecrm".to_string()),
                 gemini_api_key: std::env::var("GEMINI_API_KEY")
-                    .context("GEMINI_API_KEY not found in environment")?,
+                    .unwrap_or_else(|_| "dummy_key".to_string()),
                 server_host: std::env::var("SERVER_HOST")
                     .unwrap_or_else(|_| "127.0.0.1".to_string()),
                 server_port: std::env::var("SERVER_PORT")
