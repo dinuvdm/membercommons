@@ -57,7 +57,7 @@ View the website locally at: [localhost:8887/membercommons](http://localhost:888
   tail -f server.log
 -->
 
-### Google Gemini
+### Run Google Gemini CLI
 
 	npm install -g @google/gemini-cli
 

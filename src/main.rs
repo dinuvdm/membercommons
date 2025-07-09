@@ -180,6 +180,68 @@ async fn get_env_config() -> Result<HttpResponse> {
     }))
 }
 
+#[derive(Debug, Serialize)]
+struct GeminiTestResponse {
+    success: bool,
+    message: String,
+    api_key_present: bool,
+    api_key_preview: Option<String>,
+    error: Option<String>,
+}
+
+// Test Gemini API configuration
+async fn test_gemini_config(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
+    let api_key_present = !data.config.gemini_api_key.is_empty() && data.config.gemini_api_key != "dummy_key";
+    
+    let api_key_preview = if api_key_present {
+        let key = &data.config.gemini_api_key;
+        if key.len() > 8 {
+            Some(format!("{}...{}", &key[..4], &key[key.len()-4..]))
+        } else {
+            Some("***".to_string())
+        }
+    } else {
+        None
+    };
+    
+    let (success, message, error) = if api_key_present {
+        // Test the API key by making a simple request
+        match test_gemini_api_key(&data.config.gemini_api_key).await {
+            Ok(()) => (true, "Gemini API key is valid and working".to_string(), None),
+            Err(e) => (false, "Gemini API key present but test failed".to_string(), Some(e.to_string())),
+        }
+    } else {
+        (false, "Gemini API key not configured or is dummy value".to_string(), None)
+    };
+    
+    Ok(HttpResponse::Ok().json(GeminiTestResponse {
+        success,
+        message,
+        api_key_present,
+        api_key_preview,
+        error,
+    }))
+}
+
+// Simple function to test Gemini API key
+async fn test_gemini_api_key(api_key: &str) -> anyhow::Result<()> {
+    let client = reqwest::Client::new();
+    let url = format!("https://generativelanguage.googleapis.com/v1/models?key={}", api_key);
+    
+    let response = client
+        .get(&url)
+        .timeout(std::time::Duration::from_secs(10))
+        .send()
+        .await
+        .context("Failed to make request to Gemini API")?;
+    
+    if response.status().is_success() {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!("Gemini API returned error: {}", response.status()))
+    }
+}
+
 // Get list of tables with row counts - returns real database tables with accurate counts
 async fn get_tables(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
     match get_database_tables(&data.db, None).await {
@@ -1019,6 +1081,7 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                     .service(
                         web::scope("/config")
                             .route("/env", web::get().to(get_env_config))
+                            .route("/gemini", web::get().to(test_gemini_config))
                     )
             )
             // Add health check route at root level as well
