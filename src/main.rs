@@ -116,7 +116,7 @@ struct QueryRequest {
     query: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 struct EnvDatabaseConfig {
     server: String,
     database: String,
@@ -128,7 +128,15 @@ struct EnvDatabaseConfig {
 #[derive(Serialize)]
 struct EnvConfigResponse {
     database: Option<EnvDatabaseConfig>,
+    database_connections: Vec<DatabaseConnection>,
     gemini_api_key_present: bool,
+}
+
+#[derive(Serialize)]
+struct DatabaseConnection {
+    name: String,
+    display_name: String,
+    config: EnvDatabaseConfig,
 }
 
 // Health check endpoint
@@ -149,25 +157,58 @@ async fn health_check(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
 // Get environment configuration
 async fn get_env_config() -> Result<HttpResponse> {
     let mut database_config = None;
+    let mut database_connections = Vec::new();
     
-    // Parse DATABASE_URL if available
-    if let Ok(database_url) = std::env::var("DATABASE_URL") {
-        if let Ok(url) = Url::parse(&database_url) {
-            let server = format!("{}:{}", 
-                url.host_str().unwrap_or("unknown"), 
-                url.port().unwrap_or(5432)
-            );
-            let database = url.path().trim_start_matches('/').to_string();
-            let username = url.username().to_string();
-            let ssl = database_url.contains("sslmode=require");
-            
-            database_config = Some(EnvDatabaseConfig {
-                server,
-                database,
-                username,
-                port: url.port().unwrap_or(5432),
-                ssl,
-            });
+    // Scan for all database URLs in environment variables
+    for (key, value) in std::env::vars() {
+        if key.ends_with("_URL") && value.starts_with("postgres://") {
+            if let Ok(url) = Url::parse(&value) {
+                let server = format!("{}:{}", 
+                    url.host_str().unwrap_or("unknown"), 
+                    url.port().unwrap_or(5432)
+                );
+                let database = url.path().trim_start_matches('/').to_string();
+                let username = url.username().to_string();
+                let ssl = value.contains("sslmode=require");
+                
+                let config = EnvDatabaseConfig {
+                    server,
+                    database,
+                    username,
+                    port: url.port().unwrap_or(5432),
+                    ssl,
+                };
+                
+                // Set the default database (DATABASE_URL) as the main config
+                if key == "DATABASE_URL" {
+                    database_config = Some(config.clone());
+                }
+                
+                // Add to connections list with display name
+                let display_name = match key.as_str() {
+                    "DATABASE_URL" => "MemberCommons Database (Default)".to_string(),
+                    "EXIOBASE_URL" => "EXIOBASE Database".to_string(),
+                    _ => {
+                        let name = key.replace("_URL", "").replace("_", " ");
+                        format!("{} Database", name.split_whitespace()
+                            .map(|word| {
+                                let mut chars = word.chars();
+                                match chars.next() {
+                                    Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                                    None => String::new(),
+                                }
+                            })
+                            .collect::<Vec<_>>()
+                            .join(" "))
+                    }
+                };
+                
+                database_connections.push(DatabaseConnection {
+                    name: key,
+                    display_name,
+                    config,
+                });
+            }
         }
     }
     
@@ -176,8 +217,83 @@ async fn get_env_config() -> Result<HttpResponse> {
     
     Ok(HttpResponse::Ok().json(EnvConfigResponse {
         database: database_config,
+        database_connections,
         gemini_api_key_present,
     }))
+}
+
+// Test specific database connection
+async fn test_database_connection(path: web::Path<String>) -> Result<HttpResponse> {
+    let connection_name = path.into_inner();
+    
+    // Get the database URL for this connection
+    let database_url = match std::env::var(&connection_name) {
+        Ok(url) => url,
+        Err(_) => {
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "success": false,
+                "error": format!("Connection '{}' not found in environment variables", connection_name)
+            })));
+        }
+    };
+    
+    // Test the connection
+    match PgPoolOptions::new()
+        .max_connections(1)
+        .connect(&database_url)
+        .await
+    {
+        Ok(pool) => {
+            // Test with a simple query
+            match sqlx::query("SELECT 1").fetch_one(&pool).await {
+                Ok(_) => {
+                    // Parse URL for display info
+                    if let Ok(url) = Url::parse(&database_url) {
+                        let server = format!("{}:{}", 
+                            url.host_str().unwrap_or("unknown"), 
+                            url.port().unwrap_or(5432)
+                        );
+                        let database = url.path().trim_start_matches('/').to_string();
+                        let username = url.username().to_string();
+                        let ssl = database_url.contains("sslmode=require");
+                        
+                        Ok(HttpResponse::Ok().json(json!({
+                            "success": true,
+                            "message": "Database connection successful",
+                            "connection_name": connection_name,
+                            "config": {
+                                "server": server,
+                                "database": database,
+                                "username": username,
+                                "port": url.port().unwrap_or(5432),
+                                "ssl": ssl
+                            }
+                        })))
+                    } else {
+                        Ok(HttpResponse::Ok().json(json!({
+                            "success": true,
+                            "message": "Database connection successful",
+                            "connection_name": connection_name
+                        })))
+                    }
+                }
+                Err(e) => {
+                    Ok(HttpResponse::Ok().json(json!({
+                        "success": false,
+                        "error": format!("Query failed: {}", e),
+                        "connection_name": connection_name
+                    })))
+                }
+            }
+        }
+        Err(e) => {
+            Ok(HttpResponse::Ok().json(json!({
+                "success": false,
+                "error": format!("Connection failed: {}", e),
+                "connection_name": connection_name
+            })))
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -188,6 +304,41 @@ struct GeminiTestResponse {
     api_key_preview: Option<String>,
     error: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+struct GeminiAnalysisRequest {
+    prompt: String,
+    data_context: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize)]
+struct GeminiAnalysisResponse {
+    success: bool,
+    analysis: Option<String>,
+    error: Option<String>,
+    error_details: Option<GeminiErrorDetails>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct GeminiErrorDetails {
+    status_code: u16,
+    error_type: String,
+    raw_response: Option<String>,
+    request_size: usize,
+    timestamp: String,
+    api_endpoint: String,
+}
+
+impl std::fmt::Display for GeminiErrorDetails {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Gemini API {} ({}): {}", 
+               self.error_type, 
+               self.status_code,
+               self.raw_response.as_deref().unwrap_or("No details"))
+    }
+}
+
+impl std::error::Error for GeminiErrorDetails {}
 
 // Test Gemini API configuration
 async fn test_gemini_config(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
@@ -240,6 +391,143 @@ async fn test_gemini_api_key(api_key: &str) -> anyhow::Result<()> {
     } else {
         Err(anyhow::anyhow!("Gemini API returned error: {}", response.status()))
     }
+}
+
+// Analyze data with Gemini AI
+async fn analyze_with_gemini(
+    data: web::Data<Arc<ApiState>>,
+    req: web::Json<GeminiAnalysisRequest>,
+) -> Result<HttpResponse> {
+    let api_key_present = !data.config.gemini_api_key.is_empty() && data.config.gemini_api_key != "dummy_key";
+    
+    if !api_key_present {
+        return Ok(HttpResponse::BadRequest().json(GeminiAnalysisResponse {
+            success: false,
+            analysis: None,
+            error: Some("Gemini API key not configured".to_string()),
+            error_details: None,
+        }));
+    }
+
+    match call_gemini_api(&data.config.gemini_api_key, &req.prompt).await {
+        Ok(analysis) => Ok(HttpResponse::Ok().json(GeminiAnalysisResponse {
+            success: true,
+            analysis: Some(analysis),
+            error: None,
+            error_details: None,
+        })),
+        Err(e) => {
+            // Log detailed error for debugging
+            eprintln!("Gemini API Error: {:?}", e);
+            
+            // Extract GeminiErrorDetails if available
+            let error_details = e.chain()
+                .find_map(|err| err.downcast_ref::<GeminiErrorDetails>())
+                .cloned();
+
+            Ok(HttpResponse::InternalServerError().json(GeminiAnalysisResponse {
+                success: false,
+                analysis: None,
+                error: Some(e.to_string()),
+                error_details,
+            }))
+        }
+    }
+}
+
+// Call Gemini API for text generation
+async fn call_gemini_api(api_key: &str, prompt: &str) -> anyhow::Result<String> {
+    let client = reqwest::Client::new();
+    let url = format!(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={}",
+        api_key
+    );
+    
+    let request_body = json!({
+        "contents": [{
+            "parts": [{
+                "text": prompt
+            }]
+        }],
+        "generationConfig": {
+            "temperature": 0.3,
+            "topK": 40,
+            "topP": 0.95,
+            "maxOutputTokens": 8192,
+        }
+    });
+
+    let request_size = serde_json::to_string(&request_body)
+        .map(|s| s.len())
+        .unwrap_or(0);
+    
+    let start_time = std::time::Instant::now();
+    
+    println!("Making Gemini API request - Size: {} bytes, URL: {}", request_size, url);
+    
+    let response = client
+        .post(&url)
+        .header("Content-Type", "application/json")
+        .json(&request_body)
+        .timeout(std::time::Duration::from_secs(30))
+        .send()
+        .await
+        .context("Failed to make request to Gemini API")?;
+    
+    let duration = start_time.elapsed();
+    let status = response.status();
+    let status_code = status.as_u16();
+    
+    println!("Gemini API response - Status: {}, Duration: {:?}", status, duration);
+    
+    if !status.is_success() {
+        let error_text = response.text().await.unwrap_or_else(|_| "Unable to read error response".to_string());
+        
+        let error_details = GeminiErrorDetails {
+            status_code,
+            error_type: match status_code {
+                400 => "Bad Request".to_string(),
+                401 => "Unauthorized".to_string(),
+                403 => "Forbidden".to_string(),
+                429 => "Rate Limited".to_string(),
+                500 => "Internal Server Error".to_string(),
+                502 => "Bad Gateway".to_string(),
+                503 => "Service Unavailable".to_string(),
+                504 => "Gateway Timeout".to_string(),
+                _ => "Unknown Error".to_string(),
+            },
+            raw_response: Some(error_text.clone()),
+            request_size,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            api_endpoint: url.clone(),
+        };
+        
+        println!("Gemini API Error Details: {:?}", error_details);
+        
+        return Err(anyhow::Error::new(error_details)
+            .context(format!("Gemini API error {}: {}", status, error_text)));
+    }
+    
+    let response_json: serde_json::Value = response.json().await
+        .context("Failed to parse Gemini API response")?;
+    
+    println!("Gemini API response parsed successfully");
+    
+    // Extract the generated text from the response
+    let text = response_json
+        .get("candidates")
+        .and_then(|candidates| candidates.get(0))
+        .and_then(|candidate| candidate.get("content"))
+        .and_then(|content| content.get("parts"))
+        .and_then(|parts| parts.get(0))
+        .and_then(|part| part.get("text"))
+        .and_then(|text| text.as_str())
+        .ok_or_else(|| anyhow::anyhow!("Invalid Gemini API response format. Response: {}", 
+            serde_json::to_string_pretty(&response_json).unwrap_or_else(|_| "Unable to serialize response".to_string())))?;
+    
+    println!("Gemini API text extracted successfully - Length: {} chars", text.len());
+    
+    Ok(text.to_string())
 }
 
 // Get list of tables with row counts - returns real database tables with accurate counts
@@ -1082,6 +1370,11 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                         web::scope("/config")
                             .route("/env", web::get().to(get_env_config))
                             .route("/gemini", web::get().to(test_gemini_config))
+                            .route("/database/{connection_name}", web::get().to(test_database_connection))
+                    )
+                    .service(
+                        web::scope("/gemini")
+                            .route("/analyze", web::post().to(analyze_with_gemini))
                     )
             )
             // Add health check route at root level as well

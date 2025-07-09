@@ -7,12 +7,13 @@ class DatabaseAdmin {
             : 'http://localhost:8081/api';
         this.log = [];
         this.envConfig = null;
+        this.selectedConnection = 'DATABASE_URL'; // Default to DATABASE_URL
         this.init();
     }
 
     async init() {
-        this.setupEventListeners();
         await this.loadEnvConfig();
+        this.setupEventListeners();
         this.displayConfig();
         this.addLog('Database Admin Panel initialized');
     }
@@ -22,7 +23,9 @@ class DatabaseAdmin {
             const response = await fetch(`${this.apiBaseUrl}/config/env`);
             if (response.ok) {
                 this.envConfig = await response.json();
+                console.log('Loaded env config:', this.envConfig);
                 this.addLog('Environment configuration loaded from .env');
+                this.populateConnectionDropdown();
             } else {
                 this.addLog(`Could not load .env config: HTTP ${response.status}`);
             }
@@ -31,8 +34,51 @@ class DatabaseAdmin {
         }
     }
 
+    populateConnectionDropdown() {
+        const databaseSelect = document.getElementById('database-select');
+        console.log('populateConnectionDropdown called', {
+            databaseSelect: !!databaseSelect,
+            envConfig: !!this.envConfig,
+            connections: this.envConfig?.database_connections
+        });
+        
+        if (!databaseSelect || !this.envConfig || !this.envConfig.database_connections) {
+            console.log('Early return from populateConnectionDropdown');
+            return;
+        }
+
+        // Clear existing options
+        databaseSelect.innerHTML = '';
+
+        // Add database connections
+        this.envConfig.database_connections.forEach(connection => {
+            const option = document.createElement('option');
+            option.value = connection.name;
+            option.textContent = connection.display_name;
+            
+            // Select DATABASE_URL as default
+            if (connection.name === 'DATABASE_URL') {
+                option.selected = true;
+                this.selectedConnection = connection.name;
+            }
+            
+            databaseSelect.appendChild(option);
+        });
+
+        this.addLog(`Populated dropdown with ${this.envConfig.database_connections.length} database connections`);
+    }
+
     setupEventListeners() {
         // Only add event listeners if elements exist (allows reuse on different pages)
+        const databaseSelect = document.getElementById('database-select');
+        if (databaseSelect) {
+            databaseSelect.addEventListener('change', (e) => {
+                this.selectedConnection = e.target.value;
+                this.addLog(`Selected database connection: ${e.target.value}`);
+                this.displayConfig();
+            });
+        }
+
         const testConnectionBtn = document.getElementById('test-connection');
         if (testConnectionBtn) {
             testConnectionBtn.addEventListener('click', () => this.testConnection());
@@ -76,7 +122,17 @@ class DatabaseAdmin {
             return;
         }
         
-        // Prioritize .env config, fallback to settings.js config
+        // Show selected connection from .env config
+        if (this.envConfig && this.envConfig.database_connections) {
+            const selectedConn = this.envConfig.database_connections.find(conn => conn.name === this.selectedConnection);
+            if (selectedConn) {
+                const config = selectedConn.config;
+                configDisplay.innerHTML = `<div class="config-item"><strong>Source:</strong> .env file</div><div class="config-item"><strong>Connection:</strong> ${selectedConn.display_name}</div><div class="config-item"><strong>Server:</strong> ${config.server}</div><div class="config-item"><strong>Database:</strong> ${config.database}</div><div class="config-item"><strong>Username:</strong> ${config.username}</div><div class="config-item"><strong>Port:</strong> ${config.port}</div><div class="config-item"><strong>SSL:</strong> ${config.ssl ? 'Enabled' : 'Disabled'}</div><div class="config-item"><strong>API Endpoint:</strong> ${this.apiBaseUrl}</div>`;
+                return;
+            }
+        }
+        
+        // Fallback to default database config
         if (this.envConfig && this.envConfig.database) {
             const config = this.envConfig.database;
             configDisplay.innerHTML = `<div class="config-item"><strong>Source:</strong> .env file</div><div class="config-item"><strong>Server:</strong> ${config.server}</div><div class="config-item"><strong>Database:</strong> ${config.database}</div><div class="config-item"><strong>Username:</strong> ${config.username}</div><div class="config-item"><strong>Port:</strong> ${config.port}</div><div class="config-item"><strong>SSL:</strong> ${config.ssl ? 'Enabled' : 'Disabled'}</div><div class="config-item"><strong>API Endpoint:</strong> ${this.apiBaseUrl}</div>`;
@@ -91,20 +147,20 @@ class DatabaseAdmin {
     async testConnection() {
         this.setLoading('test-connection', true);
         this.updateConnectionStatus('loading');
-        this.addLog('Testing database connection...');
+        this.addLog(`Testing database connection for: ${this.selectedConnection}`);
         
         try {
-            // Try to create a test endpoint for database connection
-            const response = await this.makeRequest('/db/test-connection', {
+            // Test the selected connection using the new endpoint
+            const response = await this.makeRequest(`/config/database/${this.selectedConnection}`, {
                 method: 'GET'
             });
 
             if (response.success) {
                 this.updateConnectionStatus('connected');
-                this.showSuccess('Database connection successful!', 'connection-result');
+                this.showSuccess(`Database connection successful! (${response.connection_name})`, 'connection-result');
                 this.addLog(`✅ Connection successful: ${response.message}`);
-                if (response.server_info) {
-                    this.addLog(`📊 Server info: ${JSON.stringify(response.server_info, null, 2)}`);
+                if (response.config) {
+                    this.addLog(`📊 Server info: ${JSON.stringify(response.config, null, 2)}`);
                 }
             } else {
                 throw new Error(response.error || 'Connection failed');
@@ -114,7 +170,7 @@ class DatabaseAdmin {
             this.showError(`Connection failed: ${error.message}`, 'connection-result');
             this.addLog(`❌ Connection failed: ${error.message}`);
             
-            // Try direct database connection test
+            // Try fallback methods
             await this.tryDirectConnection();
         } finally {
             this.setLoading('test-connection', false);

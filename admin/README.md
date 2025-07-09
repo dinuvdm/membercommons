@@ -42,7 +42,7 @@ Inside the claude cmd window, start your local Rust API server by running:
 	nohup cargo run -- serve > server.log 2>&1 &
 
 The above keeps the server running and also stores logs,
-whereas `cargo run -- serve` doesn't remain running.
+whereas `cargo run -- serve` doesn't remain running inside the CLI.
 
 View the website locally at: [localhost:8887/membercommons](http://localhost:8887/membercommons/)
 

@@ -428,6 +428,11 @@ class FileDisplaySystem {
             header.style.background = 'var(--bg-tertiary)';
             header.style.fontWeight = '600';
         });
+
+        const lists = targetDiv.querySelectorAll('ul, ol');
+        lists.forEach(list => {
+            list.style.marginLeft = '20px';
+        });
     }
 
     showError(message, containerId) {

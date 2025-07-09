@@ -45,12 +45,17 @@ code {
 }
 
 .readme-content h3 {
+    padding-top: 4px;
     font-size: 18px;
 }
 
 .readme-content p {
     margin-bottom: 12px;
     line-height: 1.6;
+}
+.readme-content p strong {
+    margin-top: 20px;
+    display: inline-block;
 }
 
 .readme-content ul,

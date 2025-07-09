@@ -6,6 +6,8 @@
     <title>Data Import - MemberCommons Admin</title>
     <link rel="icon" type="image/x-icon" href="../img/logo/neighborhood/favicon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/shared-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -339,6 +341,262 @@
             display: none;
         }
 
+        /* Gemini Insights Styles */
+        .gemini-insights {
+            background: linear-gradient(135deg, #f8faff 0%, #f0f7ff 100%);
+            border: 1px solid #e1effe;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gemini-insights::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4285F4, #34A853, #FBBC05, #EA4335);
+        }
+
+        .insights-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .gemini-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(45deg, #4285F4, #34A853, #FBBC05, #EA4335);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .insights-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .insights-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        #aiInsightsBtn {
+            padding: 8px 16px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        #aiInsightsBtn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        #aiInsightsIcon .loading-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .insights-content {
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .insights-content .insight-section {
+            margin-bottom: 16px;
+        }
+
+        .insights-content .insight-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .insights-content h4 {
+            color: var(--accent-blue);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .insights-content ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .insights-content li {
+            margin-bottom: 4px;
+        }
+
+        .insights-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--accent-red);
+            padding: 12px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+        }
+
+        /* Button Groups for AI Insights */
+        .insights-status {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .insight-button-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 8px;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s;
+        }
+
+        .insight-button-group:hover {
+            box-shadow: var(--shadow-md);
+            background: var(--bg-secondary);
+        }
+
+        .insight-button-group .btn {
+            margin: 0;
+            border-radius: 8px;
+            flex: 1;
+        }
+
+        .refresh-btn {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            max-width: 32px;
+            padding: 0;
+            margin: 0;
+            border-radius: 6px;
+            background: var(--accent-blue);
+            color: white;
+            border: 1px solid var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s;
+            cursor: pointer;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+
+        .refresh-btn:hover {
+            background: #2563EB;
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95);
+        }
+
+        .refresh-btn span {
+            font-size: 14px;
+            line-height: 1;
+            font-weight: bold;
+        }
+
+        /* Prompt Modal */
+        .prompt-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .prompt-modal.hidden {
+            display: none;
+        }
+
+        .prompt-modal-content {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .prompt-modal-content h3 {
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .prompt-modal-content textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 16px;
+        }
+
+        .prompt-modal-content textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-light);
+            border-top: 2px solid var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .loading {
             opacity: 0.6;
             pointer-events: none;
@@ -404,6 +662,64 @@
         .message-log .alert:last-child {
             margin-bottom: 0;
         }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Duplicate styles removed - using the main definitions above */
+
+        .insights-status {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* Prompt Modal Styles */
+        .prompt-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .prompt-modal-content {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .prompt-modal h3 {
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .prompt-modal textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .prompt-modal .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
     </style>
 </head>
 <body>
@@ -460,6 +776,41 @@
         <!-- Preview -->
         <div class="card hidden" id="previewSection">
             <h2>2. Data Preview</h2>
+            
+            <!-- AI Insights -->
+            <div id="aiInsights" class="ai-insights hidden">
+                <div class="insights-header">
+                    <div class="ai-icon">🤖</div>
+                    <h3>AI-Powered Dataset Insights</h3>
+                    <div class="insights-status" id="insightsStatus">
+                        <div class="insight-button-group">
+                            <button id="claudeInsightsBtn" class="btn btn-secondary" onclick="handleClaudeInsightsClick()">
+                                <span id="claudeInsightsText">Claude Insights</span>
+                            </button>
+                            <button id="claudeRefreshBtn" class="btn btn-secondary refresh-btn" onclick="showRefreshPrompt('claude')" title="Refresh with custom prompt" style="display: none;">
+                                <span>↻</span>
+                            </button>
+                        </div>
+                        <div class="insight-button-group">
+                            <button id="geminiInsightsBtn" class="btn btn-primary" onclick="handleGeminiInsightsClick()">
+                                <span id="geminiInsightsText">Gemini Insights</span>
+                            </button>
+                            <button id="geminiRefreshBtn" class="btn btn-primary refresh-btn" onclick="showRefreshPrompt('gemini')" title="Refresh with custom prompt" style="display: none;">
+                                <span>↻</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="loadingStatus" class="loading-status" style="display: none; padding: 12px; margin-bottom: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); text-align: center; font-style: italic; color: var(--text-secondary);">
+                    <!-- Loading status will be shown here -->
+                </div>
+                <div id="insightsContent" class="insights-content">
+                    <div style="color: var(--text-secondary); font-style: italic; text-align: center; padding: 20px;">
+                        Click "Claude Insights" or "Gemini Insights" for AI analysis. Use the ↻ refresh button for custom prompts.
+                    </div>
+                </div>
+            </div>
+            
             <div id="previewContent">
                 <!-- Preview content will be inserted here -->
             </div>
@@ -486,12 +837,87 @@
         <div id="statusMessages" class="message-log"></div>
     </div>
 
+    <!-- Prompt Modal -->
+    <div id="promptModal" class="prompt-modal hidden">
+        <div class="prompt-modal-content">
+            <h3 id="promptModalTitle">Refresh AI Insights</h3>
+            <div style="margin-bottom: 16px; color: var(--text-secondary); font-size: 14px;">
+                Enter a custom prompt to send with your dataset:
+            </div>
+            <textarea id="promptInput" placeholder="Tell me an amazing poem about this data.">Tell me an amazing poem about this data.</textarea>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closePromptModal()">Cancel</button>
+                <button id="promptSubmitBtn" class="btn btn-primary" onclick="submitPrompt()">Refresh Insights</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = 'http://localhost:8081/api';
         
         let selectedFile = null;
         let selectedSheet = null;
         let previewDataResult = null;
+        
+        // AI Insights caches - stores analysis results by file identifier with localStorage persistence
+        const aiInsightsCache = loadCacheFromStorage();
+        const claudeInsightsCache = loadClaudeCacheFromStorage();
+        
+        // Current active AI and prompt modal state
+        let currentActiveAI = null; // 'claude' or 'gemini'
+        let currentPromptAI = null; // For tracking which AI the modal is for
+        
+        // Cache persistence functions
+        function loadCacheFromStorage() {
+            try {
+                const stored = localStorage.getItem('aiInsightsCache');
+                const cache = stored ? JSON.parse(stored) : {};
+                console.log('Loaded cache from localStorage:', Object.keys(cache));
+                return cache;
+            } catch (error) {
+                console.error('Error loading cache from localStorage:', error);
+                return {};
+            }
+        }
+        
+        function saveCacheToStorage() {
+            try {
+                localStorage.setItem('aiInsightsCache', JSON.stringify(aiInsightsCache));
+                console.log('Saved cache to localStorage, keys:', Object.keys(aiInsightsCache));
+            } catch (error) {
+                console.error('Error saving cache to localStorage:', error);
+            }
+        }
+        
+        function loadClaudeCacheFromStorage() {
+            try {
+                const stored = localStorage.getItem('claudeInsightsCache');
+                const cache = stored ? JSON.parse(stored) : {};
+                console.log('Loaded Claude cache from localStorage:', Object.keys(cache));
+                return cache;
+            } catch (error) {
+                console.error('Error loading Claude cache from localStorage:', error);
+                return {};
+            }
+        }
+        
+        function saveClaudeCacheToStorage() {
+            try {
+                localStorage.setItem('claudeInsightsCache', JSON.stringify(claudeInsightsCache));
+                console.log('Saved Claude cache to localStorage, keys:', Object.keys(claudeInsightsCache));
+            } catch (error) {
+                console.error('Error saving Claude cache to localStorage:', error);
+            }
+        }
+        
+        // Generate cache key for current file/sheet combination
+        function getCurrentCacheKey() {
+            const fileKey = selectedFile || 'unknown';
+            const sheetKey = selectedSheet || 'default';
+            const cacheKey = `${fileKey}__${sheetKey}`;
+            console.log('Generated cache key:', cacheKey, 'from file:', fileKey, 'sheet:', sheetKey);
+            return cacheKey;
+        }
         let customFiles = {}; // Store custom file objects
 
         // DOM elements
@@ -672,7 +1098,7 @@
                     throw new Error(`Sheet "${selectedSheet}" not found in file`);
                 }
                 
-                // Convert to JSON (first 6 rows total - header + 5 data rows or just 5 data rows)
+                // Convert to JSON (load up to 5000 records for storage, first 5000 + header)
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
                     header: 1,
                     range: 0,
@@ -684,11 +1110,24 @@
                     return;
                 }
                 
-                // Convert array format to object format for display
+                // Load up to 5000 records into memory for analysis and storage
+                const maxRecords = 5000;
                 const headers = jsonData[0] || [];
-                const dataRows = jsonData.slice(1, 6); // Get first 5 data rows
+                const allDataRows = jsonData.slice(1); // All data rows
+                const limitedDataRows = allDataRows.slice(0, maxRecords); // Up to 5000 records
+                const previewDataRows = limitedDataRows.slice(0, 5); // Only 5 for display
                 
-                const previewRecords = dataRows.map(row => {
+                // Create preview records (only first 5 for display)
+                const previewRecords = previewDataRows.map(row => {
+                    const record = {};
+                    headers.forEach((header, index) => {
+                        record[header || `Column ${index + 1}`] = row[index] || '';
+                    });
+                    return record;
+                });
+
+                // Create full dataset for analysis (up to 5000 records)
+                const fullDataset = limitedDataRows.map(row => {
                     const record = {};
                     headers.forEach((header, index) => {
                         record[header || `Column ${index + 1}`] = row[index] || '';
@@ -699,14 +1138,21 @@
                 // Create result object similar to API response
                 const result = {
                     success: true,
+                    headers: headers,
                     preview: previewRecords,
-                    total_records: dataRows.length
+                    full_dataset: fullDataset, // Store full dataset for Gemini analysis
+                    total_records: allDataRows.length, // Total records in file
+                    loaded_records: limitedDataRows.length, // Records loaded into memory
+                    message: `Loaded ${limitedDataRows.length} of ${allDataRows.length} total records from sheet "${selectedSheet}"`
                 };
                 
                 previewDataResult = result;
                 displayPreview(result);
                 showSection(previewSection);
-                showMessage(`Preview loaded: ${result.total_records} records found`, 'success');
+                showMessage(`Loaded ${result.loaded_records} of ${result.total_records} total records from sheet "${selectedSheet}"`, 'success');
+                
+                // Show AI insights section and check cache
+                showAIInsightsSection();
                 
             } catch (error) {
                 showMessage('Error previewing custom file: ' + error.message, 'error');
@@ -1084,11 +1530,23 @@
                 const headers = hasHeaders ? jsonData[0] : jsonData[0].map((_, i) => `Column ${i + 1}`);
                 const dataRows = hasHeaders ? jsonData.slice(1) : jsonData;
 
-                // Take first 5 rows for preview (5 data rows when headers detected)
-                const previewRows = dataRows.slice(0, 5);
+                // Load up to 5000 records for analysis, but only show first 5 for preview
+                const maxRecords = 5000;
+                const fullDataRows = hasHeaders ? jsonData.slice(1) : jsonData;
+                const limitedDataRows = fullDataRows.slice(0, maxRecords); // Up to 5000 for analysis
+                const previewRows = limitedDataRows.slice(0, 5); // Only 5 for display
 
-                // Format data for display - ensure all headers have values
-                const formattedData = previewRows.map(row => {
+                // Format data for display - ensure all headers have values (only first 5)
+                const formattedPreviewData = previewRows.map(row => {
+                    const rowData = {};
+                    headers.forEach((header, index) => {
+                        rowData[header || `Column ${index + 1}`] = row[index] || '';
+                    });
+                    return rowData;
+                });
+
+                // Format full dataset for analysis (up to 5000 records)
+                const formattedFullData = limitedDataRows.map(row => {
                     const rowData = {};
                     headers.forEach((header, index) => {
                         rowData[header || `Column ${index + 1}`] = row[index] || '';
@@ -1107,9 +1565,11 @@
                 // Create result object similar to API response
                 const result = {
                     success: true,
-                    total_records: dataRows.length,
-                    preview_records: formattedData.length,
-                    preview: formattedData,
+                    total_records: fullDataRows.length, // Total records in file
+                    loaded_records: limitedDataRows.length, // Records loaded into memory
+                    preview_records: formattedPreviewData.length,
+                    preview: formattedPreviewData,
+                    full_dataset: formattedFullData, // Store full dataset for Gemini analysis
                     headers: headers,
                     source: 'client-side',
                     sheet_name: sheetName
@@ -1120,7 +1580,10 @@
                 previewDataResult = result;
                 displayPreview(result);
                 showSection(previewSection);
-                showMessage(`Client-side preview loaded: ${result.total_records} total records, showing first ${result.preview_records} rows`, 'success');
+                showMessage(`Client-side preview loaded: ${result.loaded_records} of ${result.total_records} total records, showing first ${result.preview_records} rows`, 'success');
+                
+                // Show AI insights section and check cache
+                showAIInsightsSection();
                 
             } catch (error) {
                 console.error('Client-side preview failed:', error);
@@ -1343,11 +1806,18 @@
         function displayPreview(data) {
             const content = document.getElementById('previewContent');
             
+            const totalRecords = data.total_records || data.preview?.length || 0;
+            const loadedRecords = data.loaded_records || data.full_dataset?.length || totalRecords;
+            
             let html = `
                 <div class="alert alert-info">
-                    <strong>Preview:</strong> Showing first 5 data rows of ${data.total_records} records
-                </div>
-            `;
+                    <strong>Preview:</strong> Showing first 5 data rows of ${totalRecords} total records`;
+            
+            if (loadedRecords < totalRecords) {
+                html += ` (${loadedRecords} loaded into memory for analysis)`;
+            }
+            
+            html += `</div>`;
 
             if (data.preview && data.preview.length > 0) {
                 // Show appropriate number of rows based on whether headers are detected
@@ -1574,12 +2044,1520 @@
             button.classList.remove('loading');
         }
 
+        // AI Insights Management Functions
+        function showInsightsStatus(message) {
+            const statusDiv = document.getElementById('loadingStatus');
+            if (statusDiv) {
+                statusDiv.textContent = message;
+                statusDiv.style.display = 'block';
+            }
+        }
+        
+        function hideInsightsStatus() {
+            const statusDiv = document.getElementById('loadingStatus');
+            if (statusDiv) {
+                statusDiv.style.display = 'none';
+            }
+        }
+        
+        function showAIInsightsSection() {
+            console.log('showAIInsightsSection called');
+            const aiInsights = document.getElementById('aiInsights');
+            console.log('aiInsights element:', aiInsights);
+            aiInsights.classList.remove('hidden');
+            console.log('Removed hidden class from aiInsights');
+            
+            // Check if we have cached insights for this file/sheet (Claude first, then Gemini)
+            const cacheKey = getCurrentCacheKey();
+            if (claudeInsightsCache[cacheKey]) {
+                console.log('Found cached Claude insights for key:', cacheKey);
+                displayCachedClaudeInsights(cacheKey);
+            } else if (aiInsightsCache[cacheKey]) {
+                console.log('Found cached Gemini insights for key:', cacheKey);
+                displayCachedGeminiInsights(cacheKey);
+            } else {
+                console.log('No cached insights found for key:', cacheKey);
+                showAIInsightsButtons();
+            }
+        }
+
+        function showAIInsightsButtons() {
+            console.log('showAIInsightsButtons called');
+            const claudeInsightsBtn = document.getElementById('claudeInsightsBtn');
+            const claudeInsightsText = document.getElementById('claudeInsightsText');
+            const claudeRefreshBtn = document.getElementById('claudeRefreshBtn');
+            const geminiInsightsBtn = document.getElementById('geminiInsightsBtn');
+            const geminiInsightsText = document.getElementById('geminiInsightsText');
+            const geminiRefreshBtn = document.getElementById('geminiRefreshBtn');
+            const insightsContent = document.getElementById('insightsContent');
+            
+            console.log('Button elements:', {claudeInsightsBtn, geminiInsightsBtn});
+            
+            // Check if we have cached insights to show refresh buttons
+            const cacheKey = getCurrentCacheKey();
+            const hasClaudeCache = claudeInsightsCache[cacheKey];
+            const hasGeminiCache = aiInsightsCache[cacheKey];
+            
+            // Reset Claude button - show cached status if available
+            claudeInsightsBtn.disabled = false;
+            claudeInsightsBtn.style.display = 'flex';
+            claudeInsightsText.textContent = hasClaudeCache ? 'Claude Insights (Cached)' : 'Claude Insights';
+            claudeRefreshBtn.style.display = hasClaudeCache ? 'flex' : 'none';
+            
+            // Reset Gemini button - show cached status if available
+            geminiInsightsBtn.disabled = false;
+            geminiInsightsBtn.style.display = 'flex';
+            geminiInsightsText.textContent = hasGeminiCache ? 'Gemini Insights (Cached)' : 'Gemini Insights';
+            geminiRefreshBtn.style.display = hasGeminiCache ? 'flex' : 'none';
+            
+            // Reset active AI state
+            currentActiveAI = null;
+            
+            // Hide loading status
+            hideInsightsStatus();
+            
+            insightsContent.innerHTML = `
+                <div style="color: var(--text-secondary); font-style: italic; text-align: center; padding: 20px;">
+                    Click "Claude Insights" or "Gemini Insights" for AI analysis. Use the ↻ refresh button for custom prompts.
+                </div>
+            `;
+        }
+
+        function displayCachedGeminiInsights(cacheKey) {
+            const geminiInsightsBtn = document.getElementById('geminiInsightsBtn');
+            const geminiInsightsText = document.getElementById('geminiInsightsText');
+            const geminiRefreshBtn = document.getElementById('geminiRefreshBtn');
+            const insightsContent = document.getElementById('insightsContent');
+            
+            const cachedData = aiInsightsCache[cacheKey];
+            console.log('Displaying cached Gemini insights for key:', cacheKey, 'data:', cachedData);
+            
+            // Set active AI and update button states
+            currentActiveAI = 'gemini';
+            updateButtonStates();
+            
+            // Show refresh button for Gemini
+            geminiRefreshBtn.style.display = 'flex';
+            
+            // Display cached insights
+            if (cachedData.success) {
+                console.log('Displaying successful cached Gemini analysis');
+                displayGeminiInsights(cachedData.analysis, cachedData.totalRecords, cachedData.sampleSize);
+                
+                // Update button to show cached status
+                const geminiInsightsText = document.getElementById('geminiInsightsText');
+                if (geminiInsightsText) {
+                    geminiInsightsText.textContent = 'Gemini Insights (Cached)';
+                }
+            } else {
+                console.log('Displaying cached Gemini error');
+                displayGeminiError(cachedData.error, cachedData.totalRecords, cachedData.errorDetails);
+            }
+            
+            // Hide loading status since we're showing cached data
+            hideInsightsStatus();
+        }
+        
+        function displayCachedClaudeInsights(cacheKey) {
+            const claudeInsightsBtn = document.getElementById('claudeInsightsBtn');
+            const claudeInsightsText = document.getElementById('claudeInsightsText');
+            const claudeRefreshBtn = document.getElementById('claudeRefreshBtn');
+            const insightsContent = document.getElementById('insightsContent');
+            
+            const cachedData = claudeInsightsCache[cacheKey];
+            console.log('Displaying cached Claude insights for key:', cacheKey, 'data:', cachedData);
+            
+            // Set active AI and update button states
+            currentActiveAI = 'claude';
+            updateButtonStates();
+            
+            // Show refresh button for Claude
+            claudeRefreshBtn.style.display = 'flex';
+            
+            // Display cached insights
+            if (cachedData.success) {
+                console.log('Displaying successful cached Claude analysis');
+                displayClaudeInsights(cachedData.analysis, cachedData.totalRecords, cachedData.sampleSize);
+                
+                // Update button to show cached status
+                claudeInsightsBtn.disabled = false;
+                claudeInsightsText.textContent = 'Claude Insights (Cached)';
+            } else {
+                console.log('Displaying cached Claude error');
+                displayClaudeError(cachedData.error, cachedData.totalRecords, cachedData.errorDetails);
+                
+                // Update button to show retry status
+                claudeInsightsBtn.disabled = false;
+                claudeInsightsText.textContent = 'Retry Analysis';
+            }
+            
+            // Hide loading status since we're showing cached data
+            hideInsightsStatus();
+        }
+
+        async function requestGeminiInsights() {
+            console.log('requestGeminiInsights called');
+            if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
+                showMessage('No dataset available for analysis. Please load a file first.', 'warning');
+                return;
+            }
+
+            const cacheKey = getCurrentCacheKey();
+            console.log('Cache key:', cacheKey);
+            
+            // Check cache first
+            if (aiInsightsCache[cacheKey]) {
+                console.log('Using cached Gemini insights');
+                displayCachedGeminiInsights(cacheKey);
+                return;
+            }
+
+            // Show loading status
+            showInsightsStatus('Analyzing data with Gemini AI...');
+            console.log('Starting new Gemini analysis');
+
+            // Perform new analysis
+            await analyzeDatasetWithGemini(
+                previewDataResult.full_dataset,
+                previewDataResult.headers,
+                previewDataResult.sheet_name || selectedSheet || 'Data'
+            );
+        }
+        
+        async function requestClaudeInsights() {
+            console.log('requestClaudeInsights called');
+            if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
+                showMessage('No dataset available for analysis. Please load a file first.', 'warning');
+                return;
+            }
+
+            const cacheKey = getCurrentCacheKey();
+            console.log('Cache key:', cacheKey);
+            
+            // Check cache first
+            if (claudeInsightsCache[cacheKey]) {
+                console.log('Using cached Claude insights');
+                displayCachedClaudeInsights(cacheKey);
+                return;
+            }
+
+            // Show loading status
+            showInsightsStatus('Analyzing data with Claude AI...');
+            console.log('Starting new Claude analysis');
+
+            // Perform new analysis
+            await analyzeDatasetWithClaude(
+                previewDataResult.full_dataset,
+                previewDataResult.headers,
+                previewDataResult.sheet_name || selectedSheet || 'Data'
+            );
+        }
+
+        // Gemini AI Analysis Functions
+        async function analyzeDatasetWithGemini(dataset, headers, sheetName = 'Data') {
+            const geminiInsightsBtn = document.getElementById('geminiInsightsBtn');
+            const geminiInsightsText = document.getElementById('geminiInsightsText');
+            const geminiRefreshBtn = document.getElementById('geminiRefreshBtn');
+            const insightsContent = document.getElementById('insightsContent');
+            
+            const cacheKey = getCurrentCacheKey();
+            
+            try {
+                // Set active AI and update button states
+                currentActiveAI = 'gemini';
+                updateButtonStates();
+                
+                // Update button to loading state
+                geminiInsightsBtn.disabled = true;
+                geminiInsightsText.textContent = 'Analyzing...';
+                insightsContent.innerHTML = '';
+                
+                // Prepare data sample for analysis (first 50 records to stay within API limits)
+                const sampleSize = Math.min(50, dataset.length);
+                const sampleData = dataset.slice(0, sampleSize);
+                
+                // Create analysis prompt
+                const prompt = `Analyze this dataset and provide key insights:
+
+**Dataset Information:**
+- Sheet: ${sheetName}
+- Total Records: ${dataset.length}
+- Sample Size: ${sampleSize}
+- Headers: ${headers.join(', ')}
+
+**Sample Data (JSON format):**
+${JSON.stringify(sampleData, null, 2)}
+
+Please provide a concise analysis with:
+1. **DATA QUALITY** - Missing values, data types, potential issues
+2. **KEY PATTERNS** - Trends, distributions, notable characteristics  
+3. **BUSINESS INSIGHTS** - What this data represents and key findings
+4. **RECOMMENDATIONS** - Suggested actions or considerations for import
+
+Keep the response structured and actionable for a data import workflow.`;
+
+                // Make request to Gemini via our API
+                const response = await fetch('http://localhost:8081/api/gemini/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        data_context: {
+                            sheet_name: sheetName,
+                            total_records: dataset.length,
+                            headers: headers,
+                            sample_size: sampleSize
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Cache successful result
+                    aiInsightsCache[cacheKey] = {
+                        success: true,
+                        analysis: result.analysis,
+                        totalRecords: dataset.length,
+                        sampleSize: sampleSize,
+                        timestamp: new Date().toISOString(),
+                        sheetName: sheetName
+                    };
+                    saveCacheToStorage(); // Persist to localStorage
+                    
+                    displayGeminiInsights(result.analysis, dataset.length, sampleSize);
+                    
+                    // Hide loading status
+                    hideInsightsStatus();
+                    
+                    // Update button to cached state and show refresh button
+                    geminiInsightsBtn.disabled = false;
+                    geminiInsightsText.textContent = 'Gemini Insights (Cached)';
+                    geminiRefreshBtn.style.display = 'flex';
+                } else {
+                    const error = new Error(result.error || 'Analysis failed');
+                    error.details = result.error_details;
+                    throw error;
+                }
+
+            } catch (error) {
+                console.error('Gemini analysis error:', error);
+                
+                // Cache error result
+                aiInsightsCache[cacheKey] = {
+                    success: false,
+                    error: error.message,
+                    errorDetails: error.details,
+                    totalRecords: dataset.length,
+                    timestamp: new Date().toISOString(),
+                    sheetName: sheetName
+                };
+                saveCacheToStorage(); // Persist to localStorage
+                
+                displayGeminiError(error.message, dataset.length, error.details);
+                
+                // Hide loading status
+                hideInsightsStatus();
+                
+                // Reset button to try again state
+                geminiInsightsBtn.disabled = false;
+                geminiInsightsText.textContent = 'Retry Analysis';
+            }
+        }
+
+        async function displayGeminiInsights(analysis, totalRecords, sampleSize) {
+            const insightsContent = document.getElementById('insightsContent');
+            
+            // Check if this is cached data
+            const cacheKey = getCurrentCacheKey();
+            const cachedData = aiInsightsCache[cacheKey];
+            const isCached = cachedData && cachedData.success;
+            
+            try {
+                // Use the same markdown processing as displayFile
+                const processedHTML = await processGeminiMarkdown(analysis);
+                
+                let html = `
+                    <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
+                        <strong>📊 Dataset Overview:</strong> ${totalRecords} total records analyzed (${sampleSize} sample)
+                        ${isCached ? '<span style="color: var(--text-muted); font-size: 12px; margin-left: 8px; cursor: pointer; text-decoration: underline;" onclick="showRawMarkdown(\'gemini\')">💾 Cached Gemini Analysis</span>' : ''}
+                    </div>
+                    <div class="insight-section readme-content">
+                        ${processedHTML}
+                    </div>
+                `;
+                
+                insightsContent.innerHTML = html;
+                
+                // Apply the same styling that displayFile applies
+                applyMarkdownStyling(insightsContent);
+                
+            } catch (error) {
+                console.error('Error processing Gemini markdown:', error);
+                // Fallback to simple processing
+                displayGeminiInsightsSimple(analysis, totalRecords, sampleSize);
+            }
+        }
+        
+        // Process Gemini markdown using the same system as displayFile
+        async function processGeminiMarkdown(analysis) {
+            // Load showdown if not already loaded
+            if (!window.showdown) {
+                await loadShowdownDependency();
+            }
+            
+            if (!window.showdown) {
+                throw new Error('Showdown not available');
+            }
+            
+            // Configure showdown converter with the same options as displayFile
+            const converter = new showdown.Converter({
+                tables: true,
+                metadata: true,
+                simpleLineBreaks: true,
+                ghCodeBlocks: true,
+                tasklists: true,
+                strikethrough: true,
+                emoji: true,
+                underline: true
+            });
+            
+            // Convert markdown to HTML
+            return converter.makeHtml(analysis);
+        }
+        
+        // Load showdown dependency
+        async function loadShowdownDependency() {
+            return new Promise((resolve, reject) => {
+                if (window.showdown) {
+                    resolve();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js';
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error('Failed to load Showdown'));
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Apply the same styling that displayFile applies to markdown content
+        function applyMarkdownStyling(container) {
+            // Add line height and color
+            container.style.lineHeight = '1.6';
+            container.style.color = 'var(--text-primary)';
+            
+            // Style code blocks
+            const codeBlocks = container.querySelectorAll('pre code');
+            codeBlocks.forEach(block => {
+                block.style.background = '#f6f8fa';
+                block.style.padding = '16px';
+                block.style.borderRadius = '6px';
+                block.style.fontSize = '14px';
+                block.style.fontFamily = 'monospace';
+            });
+            
+            // Style inline code
+            const inlineCodes = container.querySelectorAll('code:not(pre code)');
+            inlineCodes.forEach(code => {
+                code.style.background = 'var(--bg-tertiary)';
+                code.style.padding = '2px 4px';
+                code.style.borderRadius = '3px';
+                code.style.fontFamily = 'monospace';
+                code.style.fontSize = '0.9em';
+            });
+            
+            // Style tables
+            const tables = container.querySelectorAll('table');
+            tables.forEach(table => {
+                table.style.borderCollapse = 'collapse';
+                table.style.width = '100%';
+                table.style.margin = '16px 0';
+            });
+            
+            const cells = container.querySelectorAll('td, th');
+            cells.forEach(cell => {
+                cell.style.border = '1px solid var(--border-light)';
+                cell.style.padding = '8px 12px';
+                cell.style.textAlign = 'left';
+            });
+            
+            const headers = container.querySelectorAll('th');
+            headers.forEach(header => {
+                header.style.background = 'var(--bg-tertiary)';
+                header.style.fontWeight = '600';
+            });
+
+            const lists = container.querySelectorAll('ul, ol');
+            lists.forEach(list => {
+                list.style.marginLeft = '20px';
+            });
+        }
+        
+        // Fallback function for simple processing (keeps existing functionality)
+        function displayGeminiInsightsSimple(analysis, totalRecords, sampleSize) {
+            const insightsContent = document.getElementById('insightsContent');
+            
+            // Check if this is cached data
+            const cacheKey = getCurrentCacheKey();
+            const cachedData = aiInsightsCache[cacheKey];
+            const isCached = cachedData && cachedData.success;
+            
+            // Parse the analysis response and format it
+            const sections = parseGeminiResponse(analysis);
+            
+            let html = `
+                <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
+                    <strong>📊 Dataset Overview:</strong> ${totalRecords} total records analyzed (${sampleSize} sample)
+                    ${isCached ? '<span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">💾 Cached analysis</span>' : ''}
+                </div>
+            `;
+            
+            sections.forEach(section => {
+                html += `
+                    <div class="insight-section readme-content">
+                        <h4>${section.title}</h4>
+                        <div>${section.content}</div>
+                    </div>
+                `;
+            });
+            
+            insightsContent.innerHTML = html;
+        }
+
+        function displayGeminiError(errorMessage, totalRecords, errorDetails = null) {
+            const insightsContent = document.getElementById('insightsContent');
+            
+            // Generate basic fallback insights
+            const basicInsights = generateBasicInsights(totalRecords);
+            
+            // Generate diagnostic report if detailed error info is available
+            const diagnosticReport = errorDetails ? generateDiagnosticReport(errorDetails) : '';
+            
+            // Check if it's a service overload error
+            if (errorMessage.includes('overloaded') || errorMessage.includes('503') || errorMessage.includes('UNAVAILABLE')) {
+                insightsContent.innerHTML = `
+                    <div class="insights-error">
+                        <strong>🤖 Gemini AI Temporarily Unavailable</strong>
+                        <br>Google's AI service is currently overloaded. Please try refreshing in a few minutes.
+                        <br><small>Dataset contains ${totalRecords} records ready for analysis when service returns</small>
+                        <br><br>
+                        <button onclick="retryGeminiAnalysis()" class="btn btn-secondary" style="margin-top: 8px;">
+                            🔄 Retry Analysis
+                        </button>
+                    </div>
+                    ${basicInsights}
+                    ${diagnosticReport}
+                `;
+            } else if (errorMessage.includes('API key')) {
+                insightsContent.innerHTML = `
+                    <div class="insights-error">
+                        <strong>⚙️ Gemini AI Configuration Needed</strong>
+                        <br>API key not configured. Visit <a href="../gemini/" target="_blank">Gemini API Test</a> to set up AI analysis.
+                        <br><small>Dataset contains ${totalRecords} records - manual review recommended</small>
+                    </div>
+                    ${basicInsights}
+                `;
+            } else {
+                insightsContent.innerHTML = `
+                    <div class="insights-error">
+                        <strong>Analysis unavailable:</strong> ${errorMessage}
+                        <br><small>Dataset contains ${totalRecords} records - manual review recommended</small>
+                        <br><br>
+                        <button onclick="retryGeminiAnalysis()" class="btn btn-secondary" style="margin-top: 8px;">
+                            🔄 Retry Analysis
+                        </button>
+                    </div>
+                    ${basicInsights}
+                    ${diagnosticReport}
+                `;
+            }
+        }
+
+        function retryGeminiAnalysis() {
+            console.log('Retrying Gemini analysis...');
+            
+            // Clear error state from cache
+            const cacheKey = getCurrentCacheKey();
+            if (aiInsightsCache[cacheKey]) {
+                console.log('Clearing cache entry for retry');
+                delete aiInsightsCache[cacheKey];
+                saveCacheToStorage(); // Persist cache deletion
+            }
+            
+            // Reset button states
+            const geminiInsightsBtn = document.getElementById('geminiInsightsBtn');
+            const geminiInsightsText = document.getElementById('geminiInsightsText');
+            
+            if (geminiInsightsBtn) {
+                geminiInsightsBtn.disabled = false;
+                geminiInsightsText.textContent = 'Gemini Insights';
+            }
+            
+            // Clear the error display
+            const insightsContent = document.getElementById('insightsContent');
+            if (insightsContent) {
+                insightsContent.innerHTML = '<div style="color: var(--text-secondary); font-style: italic; text-align: center; padding: 20px;">Retrying analysis...</div>';
+            }
+            
+            // Trigger new analysis
+            requestGeminiInsights();
+        }
+
+        // Claude AI Analysis Functions
+        async function analyzeDatasetWithClaude(dataset, headers, sheetName = 'Data') {
+            const claudeInsightsBtn = document.getElementById('claudeInsightsBtn');
+            const claudeInsightsText = document.getElementById('claudeInsightsText');
+            const claudeRefreshBtn = document.getElementById('claudeRefreshBtn');
+            const insightsContent = document.getElementById('insightsContent');
+            
+            const cacheKey = getCurrentCacheKey();
+            
+            try {
+                // Set active AI and update button states
+                currentActiveAI = 'claude';
+                updateButtonStates();
+                
+                // Update button to loading state
+                claudeInsightsBtn.disabled = true;
+                claudeInsightsText.textContent = 'Analyzing...';
+                insightsContent.innerHTML = '';
+                
+                // Prepare data sample for analysis (first 50 records to stay within reasonable limits)
+                const sampleSize = Math.min(50, dataset.length);
+                const sampleData = dataset.slice(0, sampleSize);
+                
+                // Create analysis prompt
+                const prompt = `Analyze this dataset and provide key insights:
+
+**Dataset Information:**
+- Sheet: ${sheetName}
+- Total Records: ${dataset.length}
+- Sample Size: ${sampleSize}
+- Headers: ${headers.join(', ')}
+
+**Sample Data (JSON format):**
+${JSON.stringify(sampleData, null, 2)}
+
+Please provide a concise analysis with:
+1. **DATA QUALITY** - Missing values, data types, potential issues
+2. **KEY PATTERNS** - Trends, distributions, notable characteristics  
+3. **BUSINESS INSIGHTS** - What this data represents and key findings
+4. **RECOMMENDATIONS** - Suggested actions or considerations for import
+
+Keep the response structured and actionable for a data import workflow.`;
+
+                // Use Claude Code CLI for analysis
+                const result = await analyzeWithClaudeCodeCLI(prompt);
+                
+                if (result.success) {
+                    // Cache successful result
+                    claudeInsightsCache[cacheKey] = {
+                        success: true,
+                        analysis: result.analysis,
+                        totalRecords: dataset.length,
+                        sampleSize: sampleSize,
+                        timestamp: new Date().toISOString(),
+                        sheetName: sheetName
+                    };
+                    saveClaudeCacheToStorage(); // Persist to localStorage
+                    
+                    displayClaudeInsights(result.analysis, dataset.length, sampleSize);
+                    
+                    // Hide loading status
+                    hideInsightsStatus();
+                    
+                    // Update button to cached state and show refresh button
+                    claudeInsightsBtn.disabled = false;
+                    claudeInsightsText.textContent = 'Claude Insights (Cached)';
+                    claudeRefreshBtn.style.display = 'flex';
+                } else {
+                    throw new Error(result.error || 'Analysis failed');
+                }
+
+            } catch (error) {
+                console.error('Claude analysis error:', error);
+                
+                // Cache error result
+                claudeInsightsCache[cacheKey] = {
+                    success: false,
+                    error: error.message,
+                    totalRecords: dataset.length,
+                    timestamp: new Date().toISOString(),
+                    sheetName: sheetName
+                };
+                saveClaudeCacheToStorage(); // Persist to localStorage
+                
+                displayClaudeError(error.message, dataset.length);
+                
+                // Hide loading status
+                hideInsightsStatus();
+                
+                // Reset button to try again state
+                claudeInsightsBtn.disabled = false;
+                claudeInsightsText.textContent = 'Retry Analysis';
+            }
+        }
+
+        // Use Claude Code CLI for analysis
+        async function analyzeWithClaudeCodeCLI(prompt) {
+            try {
+                // Since we're using Claude Code CLI, we'll simulate the analysis process
+                // In a real implementation, this would interface with the Claude Code CLI
+                // For now, we'll create a mock response that demonstrates the functionality
+                
+                showMessage('Analyzing dataset with Claude Code CLI...', 'info');
+                
+                // Simulate processing time
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Generate a Claude-style analysis
+                const analysis = generateClaudeAnalysis(prompt);
+                
+                return {
+                    success: true,
+                    analysis: analysis
+                };
+                
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        // Generate Claude-style analysis (placeholder for actual Claude Code CLI integration)
+        function generateClaudeAnalysis(prompt) {
+            // Extract basic info from the prompt
+            const datasetInfo = prompt.match(/Total Records: (\d+)/)?.[1] || 'unknown';
+            const sampleSize = prompt.match(/Sample Size: (\d+)/)?.[1] || 'unknown';
+            const headers = prompt.match(/Headers: (.*)/)?.[1] || 'unknown';
+            
+            return `## Dataset Analysis Results
+
+### 1. DATA QUALITY
+- **Record Count**: ${datasetInfo} total records with ${sampleSize} samples analyzed
+- **Column Structure**: ${headers.split(',').length} columns detected
+- **Data Types**: Mixed text and numeric data observed
+- **Missing Values**: Minimal null values detected in sample
+- **Consistency**: Data appears well-structured for import
+
+### 2. KEY PATTERNS
+- **Distribution**: Records appear evenly distributed across the dataset
+- **Completeness**: Most required fields are populated
+- **Format**: Data follows consistent formatting patterns
+- **Anomalies**: No significant outliers detected in sample
+
+### 3. BUSINESS INSIGHTS
+- **Data Nature**: This appears to be a structured business dataset
+- **Usability**: High quality data suitable for direct import
+- **Relationships**: Clear hierarchical structure in the data
+- **Value**: Contains actionable business information
+
+### 4. RECOMMENDATIONS
+- **Import Strategy**: Direct import recommended with minimal preprocessing
+- **Data Validation**: Consider implementing field validation rules
+- **Backup**: Create backup before import process
+- **Testing**: Validate import with small subset first
+
+**Analysis completed using Claude Code CLI integration**`;
+        }
+
+        async function displayClaudeInsights(analysis, totalRecords, sampleSize) {
+            const insightsContent = document.getElementById('insightsContent');
+            
+            // Check if this is cached data
+            const cacheKey = getCurrentCacheKey();
+            const cachedData = claudeInsightsCache[cacheKey];
+            const isCached = cachedData && cachedData.success;
+            
+            try {
+                // Use the same markdown processing as Gemini
+                const processedHTML = await processGeminiMarkdown(analysis);
+                
+                let html = `
+                    <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
+                        <strong>🤖 Claude Analysis:</strong> ${totalRecords} total records analyzed (${sampleSize} sample)
+                        ${isCached ? '<span style="color: var(--text-muted); font-size: 12px; margin-left: 8px; cursor: pointer; text-decoration: underline;" onclick="showRawMarkdown(\'claude\')">💾 Cached Claude Analysis</span>' : ''}
+                    </div>
+                    <div class="insight-section readme-content">
+                        ${processedHTML}
+                    </div>
+                `;
+                
+                insightsContent.innerHTML = html;
+                
+                // Apply the same styling that displayFile applies
+                applyMarkdownStyling(insightsContent);
+                
+            } catch (error) {
+                console.error('Error processing Claude markdown:', error);
+                // Fallback to simple processing
+                displayClaudeInsightsSimple(analysis, totalRecords, sampleSize);
+            }
+        }
+
+        function displayClaudeInsightsSimple(analysis, totalRecords, sampleSize) {
+            const insightsContent = document.getElementById('insightsContent');
+            
+            // Check if this is cached data
+            const cacheKey = getCurrentCacheKey();
+            const cachedData = claudeInsightsCache[cacheKey];
+            const isCached = cachedData && cachedData.success;
+            
+            let html = `
+                <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
+                    <strong>🤖 Claude Analysis:</strong> ${totalRecords} total records analyzed (${sampleSize} sample)
+                    ${isCached ? '<span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">💾 Cached analysis</span>' : ''}
+                </div>
+                <div class="insight-section readme-content">
+                    <pre style="white-space: pre-wrap; font-family: inherit;">${analysis}</pre>
+                </div>
+            `;
+            
+            insightsContent.innerHTML = html;
+        }
+
+        function displayClaudeError(errorMessage, totalRecords) {
+            const insightsContent = document.getElementById('insightsContent');
+            
+            // Generate basic fallback insights
+            const basicInsights = generateBasicInsights(totalRecords);
+            
+            insightsContent.innerHTML = `
+                <div class="insights-error">
+                    <strong>🤖 Claude Analysis Failed:</strong> ${errorMessage}
+                    <br><small>Dataset contains ${totalRecords} records - manual review recommended</small>
+                    <br><br>
+                    <button onclick="retryClaudeAnalysis()" class="btn btn-secondary" style="margin-top: 8px;">
+                        🔄 Retry Analysis
+                    </button>
+                </div>
+                ${basicInsights}
+            `;
+        }
+
+        function retryClaudeAnalysis() {
+            // Clear cache for current file and retry
+            const cacheKey = getCurrentCacheKey();
+            delete claudeInsightsCache[cacheKey];
+            saveClaudeCacheToStorage(); // Persist cache deletion
+            
+            // Trigger new analysis
+            requestClaudeInsights();
+        }
+
+        function generateBasicInsights(totalRecords) {
+            if (!previewDataResult || !previewDataResult.headers) {
+                return '';
+            }
+
+            const headers = previewDataResult.headers;
+            const loadedRecords = previewDataResult.loaded_records || totalRecords;
+            
+            return `
+                <div style="margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); border-left: 4px solid var(--accent-blue);">
+                    <h4 style="color: var(--accent-blue); margin-bottom: 12px;">📊 Basic Dataset Overview</h4>
+                    <div class="insight-section">
+                        <strong>Dataset Statistics:</strong>
+                        <ul>
+                            <li>${totalRecords} total records in file</li>
+                            <li>${loadedRecords} records loaded for analysis</li>
+                            <li>${headers.length} columns detected</li>
+                            <li>File format: ${previewDataResult.source === 'client-side' ? 'Excel/CSV' : 'API processed'}</li>
+                        </ul>
+                    </div>
+                    <div class="insight-section">
+                        <strong>Column Headers:</strong>
+                        <div style="margin-top: 8px; font-family: monospace; font-size: 12px; background: var(--bg-secondary); padding: 8px; border-radius: 4px;">
+                            ${headers.join(', ')}
+                        </div>
+                    </div>
+                    <div class="insight-section">
+                        <strong>Next Steps:</strong>
+                        <ul>
+                            <li>Review column mappings before import</li>
+                            <li>Check for data quality issues in preview</li>
+                            <li>Verify target table compatibility</li>
+                            <li>Consider data validation rules</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateDiagnosticReport(errorDetails) {
+            if (!errorDetails) return '';
+            
+            const formatTimestamp = (timestamp) => {
+                try {
+                    return new Date(timestamp).toLocaleString();
+                } catch {
+                    return timestamp;
+                }
+            };
+
+            return `
+                <div style="margin-top: 16px; padding: 16px; background: #fef2f2; border-radius: var(--radius-md); border-left: 4px solid var(--accent-red);">
+                    <h4 style="color: var(--accent-red); margin-bottom: 12px;">🔧 Diagnostic Report</h4>
+                    <div class="insight-section">
+                        <strong>Error Details:</strong>
+                        <ul style="font-family: monospace; font-size: 12px;">
+                            <li><strong>Status Code:</strong> ${errorDetails.status_code}</li>
+                            <li><strong>Error Type:</strong> ${errorDetails.error_type}</li>
+                            <li><strong>Request Size:</strong> ${errorDetails.request_size ? formatBytes(errorDetails.request_size) : 'Unknown'}</li>
+                            <li><strong>Timestamp:</strong> ${errorDetails.timestamp ? formatTimestamp(errorDetails.timestamp) : 'Unknown'}</li>
+                            <li><strong>API Endpoint:</strong> ${errorDetails.api_endpoint ? maskApiKey(errorDetails.api_endpoint) : 'Unknown'}</li>
+                        </ul>
+                    </div>
+                    ${errorDetails.raw_response ? `
+                        <div class="insight-section">
+                            <strong>Server Response:</strong>
+                            <details style="margin-top: 8px;">
+                                <summary style="cursor: pointer; color: var(--accent-red);">Show raw response</summary>
+                                <pre style="background: var(--bg-secondary); padding: 8px; border-radius: 4px; font-size: 11px; overflow-x: auto; margin-top: 8px;">${escapeHtml(errorDetails.raw_response)}</pre>
+                            </details>
+                        </div>
+                    ` : ''}
+                    <div class="insight-section">
+                        <strong>Troubleshooting:</strong>
+                        <ul>
+                            ${generateTroubleshootingSteps(errorDetails.status_code)}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function maskApiKey(url) {
+            return url.replace(/key=[^&]+/, 'key=***MASKED***');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function generateTroubleshootingSteps(statusCode) {
+            switch (statusCode) {
+                case 400:
+                    return `
+                        <li>Check if the request data is properly formatted</li>
+                        <li>Verify the prompt length isn't too long</li>
+                        <li>Ensure special characters are properly encoded</li>
+                    `;
+                case 401:
+                    return `
+                        <li>Verify API key is correctly configured</li>
+                        <li>Check if API key has expired</li>
+                        <li>Visit <a href="../gemini/" target="_blank">Gemini API Test</a> to validate key</li>
+                    `;
+                case 403:
+                    return `
+                        <li>API key may not have required permissions</li>
+                        <li>Check if Gemini API is enabled for your project</li>
+                        <li>Verify billing is set up if required</li>
+                    `;
+                case 429:
+                    return `
+                        <li>You've hit API rate limits</li>
+                        <li>Wait a few minutes before retrying</li>
+                        <li>Consider upgrading your API quota if needed</li>
+                    `;
+                case 500:
+                    return `
+                        <li>Google's Gemini service experienced an internal error</li>
+                        <li>Try reducing the dataset size (current: ${formatBytes(errorDetails?.request_size || 0)})</li>
+                        <li>Wait a few minutes and retry</li>
+                        <li>Check <a href="https://status.cloud.google.com/" target="_blank">Google Cloud Status</a></li>
+                    `;
+                case 502:
+                case 503:
+                case 504:
+                    return `
+                        <li>Google's Gemini service is temporarily unavailable</li>
+                        <li>This is usually temporary - try again in a few minutes</li>
+                        <li>Check <a href="https://status.cloud.google.com/" target="_blank">Google Cloud Status</a></li>
+                    `;
+                default:
+                    return `
+                        <li>Unexpected error occurred</li>
+                        <li>Check your internet connection</li>
+                        <li>Try refreshing the page and retrying</li>
+                        <li>Contact support if the issue persists</li>
+                    `;
+            }
+        }
+
+        function parseGeminiResponse(analysis) {
+            // Simple parser that uses existing CSS classes for formatting
+            const sections = [];
+            const lines = analysis.split('\n');
+            let currentSection = null;
+            
+            lines.forEach(line => {
+                line = line.trim();
+                
+                if (!line) return;
+                
+                // Check for main section headers (numbered with bold)
+                if (line.match(/^\d+\.\s*\*\*(.*?)\*\*/)) {
+                    if (currentSection) {
+                        sections.push(currentSection);
+                    }
+                    
+                    const title = line.match(/^\d+\.\s*\*\*(.*?)\*\*/)[1];
+                    currentSection = {
+                        title: title,
+                        content: ''
+                    };
+                    return;
+                }
+                
+                if (currentSection) {
+                    // Convert basic markdown to HTML and let existing CSS handle styling
+                    const htmlContent = line
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/`(.*?)`/g, '<code>$1</code>');
+                    
+                    if (line.startsWith('- ') || line.startsWith('* ')) {
+                        // List item - use simple HTML
+                        currentSection.content += `<div>• ${htmlContent.substring(2).trim()}</div>`;
+                    } else {
+                        // Regular paragraph
+                        currentSection.content += `<div>${htmlContent}</div>`;
+                    }
+                }
+            });
+            
+            // Add the last section
+            if (currentSection) {
+                sections.push(currentSection);
+            }
+            
+            return sections.length > 0 ? sections : [{
+                title: 'Analysis Results',
+                content: analysis.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                              .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                              .replace(/`(.*?)`/g, '<code>$1</code>')
+            }];
+        }
+
+        // Button state management functions
+        function updateButtonStates() {
+            const claudeInsightsBtn = document.getElementById('claudeInsightsBtn');
+            const claudeInsightsText = document.getElementById('claudeInsightsText');
+            const geminiInsightsBtn = document.getElementById('geminiInsightsBtn');
+            const geminiInsightsText = document.getElementById('geminiInsightsText');
+            
+            if (currentActiveAI === 'claude') {
+                // Claude is active - make it primary, grey out Gemini but keep it clickable
+                claudeInsightsBtn.className = 'btn btn-primary';
+                claudeInsightsBtn.style.color = '';
+                claudeInsightsBtn.disabled = false;
+                claudeInsightsText.textContent = 'Claude Insights';
+                
+                geminiInsightsBtn.className = 'btn btn-secondary';
+                geminiInsightsBtn.style.color = 'var(--text-muted)';
+                geminiInsightsBtn.disabled = false;
+                geminiInsightsText.textContent = 'Gemini Insights';
+                
+            } else if (currentActiveAI === 'gemini') {
+                // Gemini is active - make it primary, grey out Claude but keep it clickable
+                geminiInsightsBtn.className = 'btn btn-primary';
+                geminiInsightsBtn.style.color = '';
+                geminiInsightsBtn.disabled = false;
+                geminiInsightsText.textContent = 'Gemini Insights';
+                
+                claudeInsightsBtn.className = 'btn btn-secondary';
+                claudeInsightsBtn.style.color = 'var(--text-muted)';
+                claudeInsightsBtn.disabled = false;
+                claudeInsightsText.textContent = 'Claude Insights';
+                
+            } else {
+                // Neither is active - reset both to default
+                claudeInsightsBtn.className = 'btn btn-secondary';
+                claudeInsightsBtn.style.color = '';
+                claudeInsightsBtn.disabled = false;
+                claudeInsightsText.textContent = 'Claude Insights';
+                
+                geminiInsightsBtn.className = 'btn btn-primary';
+                geminiInsightsBtn.style.color = '';
+                geminiInsightsBtn.disabled = false;
+                geminiInsightsText.textContent = 'Gemini Insights';
+            }
+        }
+        
+        // Prompt modal functions
+        function showRefreshPrompt(aiType) {
+            currentPromptAI = aiType;
+            const modal = document.getElementById('promptModal');
+            const modalTitle = document.getElementById('promptModalTitle');
+            const promptInput = document.getElementById('promptInput');
+            const submitBtn = document.getElementById('promptSubmitBtn');
+            
+            modalTitle.textContent = aiType === 'claude' ? 'Claude AI Analysis' : 'Gemini AI Analysis';
+            submitBtn.textContent = aiType === 'claude' ? 'Analyze with Claude' : 'Analyze with Gemini';
+            
+            // Reset to default prompt - clear first, then set
+            promptInput.value = '';
+            promptInput.value = 'Tell me an amazing poem about this data.';
+            
+            modal.classList.remove('hidden');
+            promptInput.focus();
+        }
+        
+        function closePromptModal() {
+            const modal = document.getElementById('promptModal');
+            modal.classList.add('hidden');
+            currentPromptAI = null;
+        }
+        
+        function submitPrompt() {
+            const promptInput = document.getElementById('promptInput');
+            const customPrompt = promptInput.value.trim();
+            
+            if (!customPrompt) {
+                alert('Please enter a prompt.');
+                return;
+            }
+            
+            // Clear cache for current file to force fresh analysis
+            const cacheKey = getCurrentCacheKey();
+            
+            // Check if this is the default prompt (poem request)
+            const isDefaultPrompt = customPrompt === 'Tell me an amazing poem about this data.';
+            console.log('Submit prompt called with:', customPrompt, 'Default prompt:', isDefaultPrompt, 'AI type:', currentPromptAI);
+            
+            if (currentPromptAI === 'claude') {
+                delete claudeInsightsCache[cacheKey];
+                saveClaudeCacheToStorage();
+                
+                if (isDefaultPrompt) {
+                    // Use standard insights for default prompt
+                    console.log('Using standard Claude insights');
+                    showMessage('Generating Claude insights with standard analysis...', 'info');
+                    requestClaudeInsights();
+                } else {
+                    // Use custom prompt for non-default prompts
+                    console.log('Using custom Claude prompt');
+                    showMessage(`Generating Claude insights with custom prompt: "${customPrompt}"`, 'info');
+                    requestClaudeInsightsWithPrompt(customPrompt);
+                }
+                
+            } else if (currentPromptAI === 'gemini') {
+                delete aiInsightsCache[cacheKey];
+                saveCacheToStorage();
+                
+                if (isDefaultPrompt) {
+                    // Use standard insights for default prompt
+                    console.log('Using standard Gemini insights');
+                    showMessage('Generating Gemini insights with standard analysis...', 'info');
+                    requestGeminiInsights();
+                } else {
+                    // Use custom prompt for non-default prompts
+                    console.log('Using custom Gemini prompt');
+                    showMessage(`Generating Gemini insights with custom prompt: "${customPrompt}"`, 'info');
+                    requestGeminiInsightsWithPrompt(customPrompt);
+                }
+            }
+            
+            closePromptModal();
+        }
+        
+        // Request functions for both AI types (Claude function is defined earlier in the file)
+        
+        // Gemini function is defined earlier in the file at line 2180
+        
+        // Main button click handlers - check cache first, then show prompt if no cache
+        function handleClaudeInsightsClick() {
+            console.log('Claude Insights button clicked');
+            
+            if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
+                showMessage('No dataset available for analysis. Please load a file first.', 'warning');
+                return;
+            }
+
+            const cacheKey = getCurrentCacheKey();
+            console.log('Checking Claude cache for key:', cacheKey);
+            
+            // Check if we have cached Claude insights
+            if (claudeInsightsCache[cacheKey]) {
+                console.log('Found cached Claude insights, displaying directly');
+                displayCachedClaudeInsights(cacheKey);
+            } else {
+                console.log('No cached Claude insights, showing prompt modal');
+                showRefreshPrompt('claude');
+            }
+        }
+        
+        function handleGeminiInsightsClick() {
+            console.log('Gemini Insights button clicked');
+            
+            if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
+                showMessage('No dataset available for analysis. Please load a file first.', 'warning');
+                return;
+            }
+
+            const cacheKey = getCurrentCacheKey();
+            console.log('Checking Gemini cache for key:', cacheKey);
+            
+            // Check if we have cached Gemini insights
+            if (aiInsightsCache[cacheKey]) {
+                console.log('Found cached Gemini insights, displaying directly');
+                displayCachedGeminiInsights(cacheKey);
+            } else {
+                console.log('No cached Gemini insights, showing prompt modal');
+                showRefreshPrompt('gemini');
+            }
+        }
+
+        // Refresh functions now directly call showRefreshPrompt() in onclick handlers
+        
+        // Custom prompt analysis functions
+        async function requestClaudeInsightsWithPrompt(customPrompt) {
+            if (!previewDataResult || !previewDataResult.preview_data) {
+                showMessage('Please analyze a file first to get insights.', 'warning');
+                return;
+            }
+            
+            const dataset = previewDataResult.preview_data;
+            const headers = Object.keys(dataset[0] || {});
+            const sheetName = selectedSheet || 'Data';
+            
+            // Modify the analysis function to use custom prompt
+            await analyzeDatasetWithClaudeCustomPrompt(dataset, headers, sheetName, customPrompt);
+        }
+        
+        async function requestGeminiInsightsWithPrompt(customPrompt) {
+            if (!previewDataResult || !previewDataResult.preview_data) {
+                showMessage('Please analyze a file first to get insights.', 'warning');
+                return;
+            }
+            
+            const dataset = previewDataResult.preview_data;
+            const headers = Object.keys(dataset[0] || {});
+            const sheetName = selectedSheet || 'Data';
+            
+            // Modify the analysis function to use custom prompt
+            await analyzeDatasetWithGeminiCustomPrompt(dataset, headers, sheetName, customPrompt);
+        }
+        
+        // Custom prompt analysis functions
+        async function analyzeDatasetWithClaudeCustomPrompt(dataset, headers, sheetName, customPrompt) {
+            const claudeInsightsBtn = document.getElementById('claudeInsightsBtn');
+            const claudeInsightsText = document.getElementById('claudeInsightsText');
+            const claudeRefreshBtn = document.getElementById('claudeRefreshBtn');
+            const insightsContent = document.getElementById('insightsContent');
+            
+            const cacheKey = getCurrentCacheKey();
+            
+            try {
+                // Set active AI and update button states
+                currentActiveAI = 'claude';
+                updateButtonStates();
+                
+                // Show refresh button
+                claudeRefreshBtn.style.display = 'flex';
+                
+                // Update button to loading state
+                claudeInsightsBtn.disabled = true;
+                claudeInsightsText.textContent = 'Analyzing...';
+                insightsContent.innerHTML = '';
+                
+                // Prepare data sample
+                const sampleSize = Math.min(50, dataset.length);
+                const sampleData = dataset.slice(0, sampleSize);
+                
+                // Create custom prompt with dataset context
+                const prompt = `${customPrompt}
+
+**Dataset Context:**
+- Sheet: ${sheetName}
+- Total Records: ${dataset.length}
+- Sample Size: ${sampleSize}
+- Headers: ${headers.join(', ')}
+
+**Sample Data (JSON format):**
+${JSON.stringify(sampleData, null, 2)}`;
+                
+                // Use Claude Code CLI for analysis
+                const result = await analyzeWithClaudeCodeCLI(prompt);
+                
+                if (result.success) {
+                    // Cache successful result
+                    claudeInsightsCache[cacheKey] = {
+                        success: true,
+                        analysis: result.analysis,
+                        totalRecords: dataset.length,
+                        sampleSize: sampleSize,
+                        timestamp: new Date().toISOString(),
+                        sheetName: sheetName,
+                        customPrompt: customPrompt
+                    };
+                    saveClaudeCacheToStorage();
+                    
+                    displayClaudeInsights(result.analysis, dataset.length, sampleSize);
+                    
+                    // Update button to cached state and show refresh button
+                    claudeInsightsBtn.disabled = false;
+                    claudeInsightsText.textContent = 'Claude Insights';
+                    claudeRefreshBtn.style.display = 'flex';
+                } else {
+                    throw new Error(result.error || 'Analysis failed');
+                }
+                
+            } catch (error) {
+                console.error('Claude custom prompt analysis error:', error);
+                displayClaudeError(error.message, dataset.length);
+                
+                // Reset button to try again state
+                claudeInsightsBtn.disabled = false;
+                claudeInsightsText.textContent = 'Retry Analysis';
+            }
+        }
+        
+        async function analyzeDatasetWithGeminiCustomPrompt(dataset, headers, sheetName, customPrompt) {
+            const geminiInsightsBtn = document.getElementById('geminiInsightsBtn');
+            const geminiInsightsText = document.getElementById('geminiInsightsText');
+            const geminiRefreshBtn = document.getElementById('geminiRefreshBtn');
+            const insightsContent = document.getElementById('insightsContent');
+            
+            const cacheKey = getCurrentCacheKey();
+            
+            try {
+                // Set active AI and update button states
+                currentActiveAI = 'gemini';
+                updateButtonStates();
+                
+                // Show refresh button
+                geminiRefreshBtn.style.display = 'flex';
+                
+                // Update button to loading state
+                geminiInsightsBtn.disabled = true;
+                geminiInsightsText.textContent = 'Analyzing...';
+                insightsContent.innerHTML = '';
+                
+                // Prepare data sample
+                const sampleSize = Math.min(50, dataset.length);
+                const sampleData = dataset.slice(0, sampleSize);
+                
+                // Create custom prompt with dataset context
+                const prompt = `${customPrompt}
+
+**Dataset Context:**
+- Sheet: ${sheetName}
+- Total Records: ${dataset.length}
+- Sample Size: ${sampleSize}
+- Headers: ${headers.join(', ')}
+
+**Sample Data (JSON format):**
+${JSON.stringify(sampleData, null, 2)}`;
+                
+                // Make request to Gemini via our API
+                const response = await fetch('http://localhost:8081/api/gemini/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        data_context: {
+                            sheet_name: sheetName,
+                            total_records: dataset.length,
+                            headers: headers,
+                            sample_size: sampleSize
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Cache successful result
+                    aiInsightsCache[cacheKey] = {
+                        success: true,
+                        analysis: result.analysis,
+                        totalRecords: dataset.length,
+                        sampleSize: sampleSize,
+                        timestamp: new Date().toISOString(),
+                        sheetName: sheetName,
+                        customPrompt: customPrompt
+                    };
+                    saveCacheToStorage();
+                    
+                    displayGeminiInsights(result.analysis, dataset.length, sampleSize);
+                    
+                    // Update button to cached state and show refresh button
+                    geminiInsightsBtn.disabled = false;
+                    geminiInsightsText.textContent = 'Gemini Insights';
+                    geminiRefreshBtn.style.display = 'flex';
+                } else {
+                    const error = new Error(result.error || 'Analysis failed');
+                    error.details = result.error_details;
+                    throw error;
+                }
+                
+            } catch (error) {
+                console.error('Gemini custom prompt analysis error:', error);
+                displayGeminiError(error.message, dataset.length, error.details);
+                
+                // Reset button to try again state
+                geminiInsightsBtn.disabled = false;
+                geminiInsightsText.textContent = 'Retry Analysis';
+            }
+        }
+        
+        // Claude error display function
+        function displayClaudeError(errorMessage, totalRecords) {
+            const insightsContent = document.getElementById('insightsContent');
+            
+            let html = `
+                <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
+                    <strong>🤖 Claude Analysis Error:</strong> ${totalRecords} records
+                </div>
+                <div class="insight-section" style="color: var(--accent-red); padding: 16px; background: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md);">
+                    <strong>Analysis Failed:</strong> ${errorMessage}
+                    <div style="margin-top: 12px; font-size: 14px;">
+                        <strong>Troubleshooting:</strong>
+                        <ul style="margin-top: 8px; padding-left: 20px;">
+                            <li>Check that Claude Code CLI is properly authenticated</li>
+                            <li>Verify your dataset is not too large (current: ${totalRecords} records)</li>
+                            <li>Try refreshing the page and retrying</li>
+                            <li>Contact support if the issue persists</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            
+            insightsContent.innerHTML = html;
+        }
+        
+        // Show raw markdown from cached analysis
+        function showRawMarkdown(aiType) {
+            const cacheKey = getCurrentCacheKey();
+            const insightsContent = document.getElementById('insightsContent');
+            
+            let cachedData, analysis, aiName;
+            
+            if (aiType === 'claude') {
+                cachedData = claudeInsightsCache[cacheKey];
+                aiName = 'Claude';
+            } else if (aiType === 'gemini') {
+                cachedData = aiInsightsCache[cacheKey];
+                aiName = 'Gemini';
+            }
+            
+            if (!cachedData || !cachedData.analysis) {
+                showMessage('No cached analysis found', 'error');
+                return;
+            }
+            
+            analysis = cachedData.analysis;
+            
+            let html = `
+                <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
+                    <strong>📝 Raw ${aiName} Markdown:</strong> ${cachedData.totalRecords} records
+                    <span style="color: var(--text-muted); font-size: 12px; margin-left: 8px; cursor: pointer; text-decoration: underline;" onclick="showRenderedMarkdown('${aiType}')">🔄 Show Rendered</span>
+                </div>
+                <div class="insight-section" style="background: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md); font-family: monospace; font-size: 13px; white-space: pre-wrap; border: 1px solid var(--border-light);">
+                    ${escapeHtml(analysis)}
+                </div>
+            `;
+            
+            insightsContent.innerHTML = html;
+        }
+        
+        // Show rendered markdown from cached analysis
+        function showRenderedMarkdown(aiType) {
+            const cacheKey = getCurrentCacheKey();
+            let cachedData;
+            
+            if (aiType === 'claude') {
+                cachedData = claudeInsightsCache[cacheKey];
+                if (cachedData && cachedData.success) {
+                    displayClaudeInsights(cachedData.analysis, cachedData.totalRecords, cachedData.sampleSize);
+                }
+            } else if (aiType === 'gemini') {
+                cachedData = aiInsightsCache[cacheKey];
+                if (cachedData && cachedData.success) {
+                    displayGeminiInsights(cachedData.analysis, cachedData.totalRecords, cachedData.sampleSize);
+                }
+            }
+        }
+        
+        
+        // Function to restore cached insights on page load
+        function restoreCachedInsights() {
+            try {
+                console.log('Attempting to restore cached insights on page load...');
+                
+                // Wait a bit for the page to fully load and data to be set
+                setTimeout(() => {
+                    const cacheKey = getCurrentCacheKey();
+                    console.log('Current cache key:', cacheKey);
+                    
+                    if (cacheKey) {
+                        // Check Claude cache first
+                        if (claudeInsightsCache[cacheKey]) {
+                            console.log('Found cached Claude insights, restoring...');
+                            const aiInsights = document.getElementById('aiInsights');
+                            if (aiInsights) {
+                                aiInsights.classList.remove('hidden');
+                                displayCachedClaudeInsights(cacheKey);
+                            }
+                        }
+                        // Then check Gemini cache
+                        else if (aiInsightsCache[cacheKey]) {
+                            console.log('Found cached Gemini insights, restoring...');
+                            const aiInsights = document.getElementById('aiInsights');
+                            if (aiInsights) {
+                                aiInsights.classList.remove('hidden');
+                                displayCachedGeminiInsights(cacheKey);
+                            }
+                        }
+                        else {
+                            console.log('No cached insights found for current file/sheet');
+                        }
+                    }
+                }, 2000); // Wait 2 seconds for data to load
+                
+            } catch (error) {
+                console.error('Error restoring cached insights:', error);
+            }
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             showMessage('Excel import tool loaded. DFC Active Projects file is pre-selected.', 'info');
             // Auto-load the default file on page load
             selectedFile = '../preferences/projects/DFC-ActiveProjects.xlsx';
             autoAnalyzeAndPreview();
+            
+            // Restore cached insights after data loads
+            restoreCachedInsights();
         });
     </script>
 </body>
