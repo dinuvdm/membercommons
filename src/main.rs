@@ -311,12 +311,25 @@ struct GeminiAnalysisRequest {
     data_context: Option<serde_json::Value>,
 }
 
+#[derive(Debug, Deserialize)]
+struct ClaudeAnalysisRequest {
+    prompt: String,
+    dataset_info: Option<serde_json::Value>,
+}
+
 #[derive(Debug, Serialize)]
 struct GeminiAnalysisResponse {
     success: bool,
     analysis: Option<String>,
     error: Option<String>,
     error_details: Option<GeminiErrorDetails>,
+}
+
+#[derive(Debug, Serialize)]
+struct ClaudeAnalysisResponse {
+    success: bool,
+    analysis: Option<String>,
+    error: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -435,6 +448,27 @@ async fn analyze_with_gemini(
     }
 }
 
+// Analyze data with Claude Code CLI
+async fn analyze_with_claude_cli(
+    req: web::Json<ClaudeAnalysisRequest>,
+) -> Result<HttpResponse> {
+    match call_claude_code_cli(&req.prompt, &req.dataset_info).await {
+        Ok(analysis) => Ok(HttpResponse::Ok().json(ClaudeAnalysisResponse {
+            success: true,
+            analysis: Some(analysis),
+            error: None,
+        })),
+        Err(e) => {
+            eprintln!("Claude Code CLI Error: {:?}", e);
+            Ok(HttpResponse::InternalServerError().json(ClaudeAnalysisResponse {
+                success: false,
+                analysis: None,
+                error: Some(e.to_string()),
+            }))
+        }
+    }
+}
+
 // Call Gemini API for text generation
 async fn call_gemini_api(api_key: &str, prompt: &str) -> anyhow::Result<String> {
     let client = reqwest::Client::new();
@@ -528,6 +562,43 @@ async fn call_gemini_api(api_key: &str, prompt: &str) -> anyhow::Result<String> 
     println!("Gemini API text extracted successfully - Length: {} chars", text.len());
     
     Ok(text.to_string())
+}
+
+// Call Claude Code CLI for dataset analysis
+async fn call_claude_code_cli(prompt: &str, dataset_info: &Option<serde_json::Value>) -> anyhow::Result<String> {
+    use std::process::Command;
+    
+    // Build the full prompt with dataset context
+    let full_prompt = if let Some(dataset) = dataset_info {
+        format!("{}\n\nDataset Context:\n{}", prompt, serde_json::to_string_pretty(dataset)?)
+    } else {
+        prompt.to_string()
+    };
+    
+    println!("Executing Claude Code CLI analysis...");
+    
+    // Execute claude command with the prompt directly
+    let output = Command::new("claude")
+        .arg("--print")
+        .arg(&full_prompt)
+        .output()
+        .context("Failed to execute claude command. Make sure Claude Code CLI is installed and accessible.")?;
+    
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(anyhow::anyhow!("Claude Code CLI failed: {}", stderr));
+    }
+    
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let analysis = stdout.trim().to_string();
+    
+    if analysis.is_empty() {
+        return Err(anyhow::anyhow!("Claude Code CLI returned empty response"));
+    }
+    
+    println!("Claude Code CLI analysis completed - Length: {} chars", analysis.len());
+    
+    Ok(analysis)
 }
 
 // Get list of tables with row counts - returns real database tables with accurate counts
@@ -1375,6 +1446,10 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                     .service(
                         web::scope("/gemini")
                             .route("/analyze", web::post().to(analyze_with_gemini))
+                    )
+                    .service(
+                        web::scope("/claude")
+                            .route("/analyze", web::post().to(analyze_with_claude_cli))
                     )
             )
             // Add health check route at root level as well

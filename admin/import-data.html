@@ -801,7 +801,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="loadingStatus" class="loading-status" style="display: none; padding: 12px; margin-bottom: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); text-align: center; font-style: italic; color: var(--text-secondary);">
+                <div id="loadingStatus" class="loading-status" style="display: none; padding: 12px; margin-bottom: 16px; background: var(--accent-blue); border-radius: var(--radius-md); text-align: center; font-style: italic; color: white; font-weight: bold; border: 2px solid var(--accent-green);">
                     <!-- Loading status will be shown here -->
                 </div>
                 <div id="insightsContent" class="insights-content">
@@ -2059,14 +2059,19 @@
         function showInsightsStatus(message) {
             const statusDiv = document.getElementById('loadingStatus');
             if (statusDiv) {
+                console.log('Showing insights status:', message);
                 statusDiv.textContent = message;
                 statusDiv.style.display = 'block';
+                statusDiv.style.visibility = 'visible';
+            } else {
+                console.error('loadingStatus div not found!');
             }
         }
         
         function hideInsightsStatus() {
             const statusDiv = document.getElementById('loadingStatus');
             if (statusDiv) {
+                console.log('Hiding insights status');
                 statusDiv.style.display = 'none';
             }
         }
@@ -2124,7 +2129,7 @@
             // Reset active AI state
             currentActiveAI = null;
             
-            // Hide loading status
+            // Hide loading status when showing buttons
             hideInsightsStatus();
             
             insightsContent.innerHTML = `
@@ -2165,8 +2170,11 @@
                 displayGeminiError(cachedData.error, cachedData.totalRecords, cachedData.errorDetails);
             }
             
-            // Hide loading status since we're showing cached data
-            hideInsightsStatus();
+            // Show status that cached data is loaded, then hide after 5 seconds
+            showInsightsStatus('Cached Gemini analysis loaded successfully');
+            setTimeout(() => {
+                hideInsightsStatus();
+            }, 5000);
         }
         
         function displayCachedClaudeInsights(cacheKey) {
@@ -2202,8 +2210,11 @@
                 claudeInsightsText.textContent = 'Retry Analysis';
             }
             
-            // Hide loading status since we're showing cached data
-            hideInsightsStatus();
+            // Show status that cached data is loaded, then hide after 5 seconds
+            showInsightsStatus('Cached Claude analysis loaded successfully');
+            setTimeout(() => {
+                hideInsightsStatus();
+            }, 5000);
         }
 
         async function requestGeminiInsights() {
@@ -2665,10 +2676,18 @@ Please provide a concise analysis with:
 
 Keep the response structured and actionable for a data import workflow.`;
 
+                // Show status that we're starting Claude Code CLI analysis
+                showInsightsStatus('🔄 Executing Claude Code CLI analysis with standard prompt...');
+                showMessage('Sending dataset to Claude Code CLI for standard analysis...', 'info');
+                
                 // Use Claude Code CLI for analysis
                 const result = await analyzeWithClaudeCodeCLI(prompt, dataset, headers);
                 
                 if (result.success) {
+                    // Show status that new analysis is complete
+                    showInsightsStatus('✅ Claude analysis complete! Choose Save to keep or Cancel to revert.');
+                    showMessage(`Claude analysis completed with standard prompt. Analysis length: ${result.analysis.length} characters`, 'success');
+                    
                     // Store in pending analysis (don't save to cache yet)
                     pendingClaudeAnalysis = {
                         success: true,
@@ -2683,9 +2702,6 @@ Keep the response structured and actionable for a data import workflow.`;
                     // Display with Save/Cancel buttons
                     displayClaudeInsights(result.analysis, dataset.length, sampleSize, true);
                     
-                    // Hide loading status
-                    hideInsightsStatus();
-                    
                     // Update button to pending state
                     claudeInsightsBtn.disabled = false;
                     claudeInsightsText.textContent = 'Claude Insights (Pending)';
@@ -2697,6 +2713,10 @@ Keep the response structured and actionable for a data import workflow.`;
 
             } catch (error) {
                 console.error('Claude analysis error:', error);
+                
+                // Show error status
+                showInsightsStatus('❌ Claude analysis failed - see details below');
+                showMessage(`Claude analysis failed with standard prompt: ${error.message}`, 'error');
                 
                 // Cache error result
                 claudeInsightsCache[cacheKey] = {
@@ -3249,7 +3269,7 @@ Please analyze this dataset according to the request above.`;
             
             // Show immediate status message
             showMessage(`Starting ${currentPromptAI === 'claude' ? 'Claude' : 'Gemini'} analysis...`, 'info');
-            showInsightsStatus(`Preparing ${currentPromptAI === 'claude' ? 'Claude' : 'Gemini'} analysis...`);
+            showInsightsStatus(`🚀 Starting NEW ${currentPromptAI === 'claude' ? 'Claude' : 'Gemini'} analysis with custom prompt...`);
             
             // Update button to show it's processing
             const submitBtn = document.getElementById('promptSubmitBtn');
@@ -3267,40 +3287,18 @@ Please analyze this dataset according to the request above.`;
             console.log('Submit prompt called with:', customPrompt, 'Default prompt:', isDefaultPrompt, 'AI type:', currentPromptAI);
             
             if (currentPromptAI === 'claude') {
-                // Don't clear cache here - only clear when user saves the new analysis
-                console.log('Keeping Claude cache until new analysis is saved');
-                
-                if (isDefaultPrompt) {
-                    // Use standard insights for default prompt
-                    console.log('Using standard Claude insights');
-                    showMessage('Generating Claude insights with standard analysis...', 'info');
-                    console.log('About to call requestClaudeInsights()');
-                    requestClaudeInsights();
-                } else {
-                    // Use custom prompt for non-default prompts
-                    console.log('Using custom Claude prompt');
-                    showMessage(`Generating Claude insights with custom prompt: "${customPrompt}"`, 'info');
-                    console.log('About to call requestClaudeInsightsWithPrompt()');
-                    requestClaudeInsightsWithPrompt(customPrompt);
-                }
+                // Always use custom prompt function to force fresh analysis from refresh modal
+                console.log('Using custom Claude prompt from refresh modal - forcing fresh analysis');
+                showMessage(`Generating Claude insights with custom prompt: "${customPrompt}"`, 'info');
+                console.log('About to call requestClaudeInsightsWithPrompt()');
+                requestClaudeInsightsWithPrompt(customPrompt);
                 
             } else if (currentPromptAI === 'gemini') {
-                // Don't clear cache here - only clear when user saves the new analysis
-                console.log('Keeping Gemini cache until new analysis is saved');
-                
-                if (isDefaultPrompt) {
-                    // Use standard insights for default prompt
-                    console.log('Using standard Gemini insights');
-                    showMessage('Generating Gemini insights with standard analysis...', 'info');
-                    console.log('About to call requestGeminiInsights()');
-                    requestGeminiInsights();
-                } else {
-                    // Use custom prompt for non-default prompts
-                    console.log('Using custom Gemini prompt');
-                    showMessage(`Generating Gemini insights with custom prompt: "${customPrompt}"`, 'info');
-                    console.log('About to call requestGeminiInsightsWithPrompt()');
-                    requestGeminiInsightsWithPrompt(customPrompt);
-                }
+                // Always use custom prompt function to force fresh analysis from refresh modal
+                console.log('Using custom Gemini prompt from refresh modal - forcing fresh analysis');
+                showMessage(`Generating Gemini insights with custom prompt: "${customPrompt}"`, 'info');
+                console.log('About to call requestGeminiInsightsWithPrompt()');
+                requestGeminiInsightsWithPrompt(customPrompt);
             }
             
             closePromptModal();
@@ -3314,8 +3312,21 @@ Please analyze this dataset according to the request above.`;
         function handleClaudeInsightsClick() {
             console.log('Claude Insights button clicked');
             
+            // Show immediate status update
+            showMessage('Claude Insights button clicked - checking for existing analysis...', 'info');
+            showInsightsStatus('Checking for cached Claude analysis...');
+            
+            // Test - show a test status for 5 seconds to verify it's working
+            setTimeout(() => {
+                showInsightsStatus('🔍 TEST: Status field is working! This will disappear in 5 seconds...');
+                setTimeout(() => {
+                    hideInsightsStatus();
+                }, 5000);
+            }, 500);
+            
             if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
                 showMessage('No dataset available for analysis. Please load a file first.', 'warning');
+                hideInsightsStatus();
                 return;
             }
 
@@ -3325,9 +3336,16 @@ Please analyze this dataset according to the request above.`;
             // Check if we have cached Claude insights
             if (claudeInsightsCache[cacheKey]) {
                 console.log('Found cached Claude insights, displaying directly');
-                displayCachedClaudeInsights(cacheKey);
+                showMessage('Found cached Claude analysis - displaying results...', 'info');
+                showInsightsStatus('Loading cached Claude analysis...');
+                // Add a small delay to ensure the status is visible
+                setTimeout(() => {
+                    displayCachedClaudeInsights(cacheKey);
+                }, 100);
             } else {
                 console.log('No cached Claude insights, showing prompt modal');
+                showMessage('No cached Claude analysis found - showing prompt for custom analysis...', 'info');
+                showInsightsStatus('Preparing Claude analysis prompt...');
                 showRefreshPrompt('claude');
             }
         }
@@ -3335,8 +3353,21 @@ Please analyze this dataset according to the request above.`;
         function handleGeminiInsightsClick() {
             console.log('Gemini Insights button clicked');
             
+            // Show immediate status update
+            showMessage('Gemini Insights button clicked - checking for existing analysis...', 'info');
+            showInsightsStatus('Checking for cached Gemini analysis...');
+            
+            // Test - show a test status for 5 seconds to verify it's working
+            setTimeout(() => {
+                showInsightsStatus('🔍 TEST: Gemini status field is working! This will disappear in 5 seconds...');
+                setTimeout(() => {
+                    hideInsightsStatus();
+                }, 5000);
+            }, 500);
+            
             if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
                 showMessage('No dataset available for analysis. Please load a file first.', 'warning');
+                hideInsightsStatus();
                 return;
             }
 
@@ -3346,9 +3377,16 @@ Please analyze this dataset according to the request above.`;
             // Check if we have cached Gemini insights
             if (aiInsightsCache[cacheKey]) {
                 console.log('Found cached Gemini insights, displaying directly');
-                displayCachedGeminiInsights(cacheKey);
+                showMessage('Found cached Gemini analysis - displaying results...', 'info');
+                showInsightsStatus('Loading cached Gemini analysis...');
+                // Add a small delay to ensure the status is visible
+                setTimeout(() => {
+                    displayCachedGeminiInsights(cacheKey);
+                }, 100);
             } else {
                 console.log('No cached Gemini insights, showing prompt modal');
+                showMessage('No cached Gemini analysis found - showing prompt for custom analysis...', 'info');
+                showInsightsStatus('Preparing Gemini analysis prompt...');
                 showRefreshPrompt('gemini');
             }
         }
@@ -3361,6 +3399,10 @@ Please analyze this dataset according to the request above.`;
             if (pendingClaudeAnalysis) {
                 const cacheKey = getCurrentCacheKey();
                 console.log('Saving Claude analysis to cache with key:', cacheKey);
+                
+                // Show status that we're saving the new analysis
+                showInsightsStatus('💾 Saving new Claude analysis to cache...');
+                showMessage('Saving new Claude analysis to browser storage', 'success');
                 
                 // Now it's safe to clear the old cache and save the new one
                 delete claudeInsightsCache[cacheKey]; // Remove old version
@@ -3395,6 +3437,10 @@ Please analyze this dataset according to the request above.`;
                 console.log('Canceling Claude analysis, reverting to cached version');
                 console.log('Current cache key:', cacheKey);
                 console.log('Available cache keys:', Object.keys(claudeInsightsCache));
+                
+                // Show status that we're reverting to cached version
+                showInsightsStatus('🔄 Cancelled new analysis - reverting to cached version...');
+                showMessage('New analysis cancelled - restoring previous cached Claude analysis', 'info');
                 
                 // Clear pending analysis
                 pendingClaudeAnalysis = null;
@@ -3440,28 +3486,36 @@ Please analyze this dataset according to the request above.`;
         
         // Custom prompt analysis functions
         async function requestClaudeInsightsWithPrompt(customPrompt) {
-            if (!previewDataResult || !previewDataResult.preview_data) {
+            if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
                 showMessage('Please analyze a file first to get insights.', 'warning');
                 return;
             }
             
-            const dataset = previewDataResult.preview_data;
-            const headers = Object.keys(dataset[0] || {});
-            const sheetName = selectedSheet || 'Data';
+            // Show immediate status update
+            showMessage(`Starting Claude analysis with custom prompt: "${customPrompt.substring(0, 50)}${customPrompt.length > 50 ? '...' : ''}"`, 'info');
+            showInsightsStatus('🔧 Preparing NEW Claude analysis with custom prompt...');
+            
+            const dataset = previewDataResult.full_dataset;
+            const headers = previewDataResult.headers;
+            const sheetName = previewDataResult.sheet_name || selectedSheet || 'Data';
             
             // Modify the analysis function to use custom prompt
             await analyzeDatasetWithClaudeCustomPrompt(dataset, headers, sheetName, customPrompt);
         }
         
         async function requestGeminiInsightsWithPrompt(customPrompt) {
-            if (!previewDataResult || !previewDataResult.preview_data) {
+            if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
                 showMessage('Please analyze a file first to get insights.', 'warning');
                 return;
             }
             
-            const dataset = previewDataResult.preview_data;
-            const headers = Object.keys(dataset[0] || {});
-            const sheetName = selectedSheet || 'Data';
+            // Show immediate status update
+            showMessage(`Starting Gemini analysis with custom prompt: "${customPrompt.substring(0, 50)}${customPrompt.length > 50 ? '...' : ''}"`, 'info');
+            showInsightsStatus('🔧 Preparing NEW Gemini analysis with custom prompt...');
+            
+            const dataset = previewDataResult.full_dataset;
+            const headers = previewDataResult.headers;
+            const sheetName = previewDataResult.sheet_name || selectedSheet || 'Data';
             
             // Modify the analysis function to use custom prompt
             await analyzeDatasetWithGeminiCustomPrompt(dataset, headers, sheetName, customPrompt);
@@ -3505,10 +3559,18 @@ Please analyze this dataset according to the request above.`;
 **Sample Data (JSON format):**
 ${JSON.stringify(sampleData, null, 2)}`;
                 
-                // Use Claude Code CLI for analysis
-                const result = await analyzeWithClaudeCodeCLI(customPrompt, dataset, headers);
+                // Show status that we're starting Claude Code CLI analysis
+                showInsightsStatus('🔄 Executing NEW Claude Code CLI analysis with custom prompt...');
+                showMessage(`Sending dataset to Claude Code CLI for fresh analysis with prompt: "${customPrompt.substring(0, 50)}..."`, 'info');
+                
+                // Use Claude Code CLI for analysis with the full prompt
+                const result = await analyzeWithClaudeCodeCLI(prompt, dataset, headers);
                 
                 if (result.success) {
+                    // Show status that new analysis is complete
+                    showInsightsStatus('✅ NEW Claude analysis complete! Choose Save to keep or Cancel to revert.');
+                    showMessage(`Fresh Claude analysis completed with custom prompt. Analysis length: ${result.analysis.length} characters`, 'success');
+                    
                     // Store in pending analysis (don't save to cache yet)
                     pendingClaudeAnalysis = {
                         success: true,
@@ -3535,6 +3597,11 @@ ${JSON.stringify(sampleData, null, 2)}`;
                 
             } catch (error) {
                 console.error('Claude custom prompt analysis error:', error);
+                
+                // Show error status
+                showInsightsStatus('❌ Claude analysis failed - see details below');
+                showMessage(`Claude analysis failed with custom prompt: ${error.message}`, 'error');
+                
                 displayClaudeError(error.message, dataset.length);
                 
                 // Reset button to try again state
@@ -3580,6 +3647,10 @@ ${JSON.stringify(sampleData, null, 2)}`;
 **Sample Data (JSON format):**
 ${JSON.stringify(sampleData, null, 2)}`;
                 
+                // Show status that we're starting Gemini API analysis
+                showInsightsStatus('🔄 Executing NEW Gemini API analysis with custom prompt...');
+                showMessage(`Sending dataset to Gemini API for fresh analysis with prompt: "${customPrompt.substring(0, 50)}..."`, 'info');
+                
                 // Make request to Gemini via our API
                 const response = await fetch('http://localhost:8081/api/gemini/analyze', {
                     method: 'POST',
@@ -3604,6 +3675,10 @@ ${JSON.stringify(sampleData, null, 2)}`;
                 const result = await response.json();
                 
                 if (result.success) {
+                    // Show status that new analysis is complete
+                    showInsightsStatus('✅ NEW Gemini analysis complete and saved!');
+                    showMessage(`Fresh Gemini analysis completed and saved. Analysis length: ${result.analysis.length} characters`, 'success');
+                    
                     // Cache successful result
                     aiInsightsCache[cacheKey] = {
                         success: true,
@@ -3620,7 +3695,7 @@ ${JSON.stringify(sampleData, null, 2)}`;
                     
                     // Update button to cached state and show refresh button
                     geminiInsightsBtn.disabled = false;
-                    geminiInsightsText.textContent = 'Gemini Insights';
+                    geminiInsightsText.textContent = 'Gemini Insights (Cached)';
                     geminiRefreshBtn.style.display = 'flex';
                 } else {
                     const error = new Error(result.error || 'Analysis failed');
@@ -3630,6 +3705,11 @@ ${JSON.stringify(sampleData, null, 2)}`;
                 
             } catch (error) {
                 console.error('Gemini custom prompt analysis error:', error);
+                
+                // Show error status
+                showInsightsStatus('❌ Gemini analysis failed - see details below');
+                showMessage(`Gemini analysis failed with custom prompt: ${error.message}`, 'error');
+                
                 displayGeminiError(error.message, dataset.length, error.details);
                 
                 // Reset button to try again state
