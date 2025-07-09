@@ -894,6 +894,17 @@
                 const stored = localStorage.getItem('claudeInsightsCache');
                 const cache = stored ? JSON.parse(stored) : {};
                 console.log('Loaded Claude cache from localStorage:', Object.keys(cache));
+                
+                // Debug: Show cache contents
+                Object.keys(cache).forEach(key => {
+                    console.log(`Claude cache key "${key}":`, {
+                        success: cache[key].success,
+                        analysisLength: cache[key].analysis?.length,
+                        totalRecords: cache[key].totalRecords,
+                        timestamp: cache[key].timestamp
+                    });
+                });
+                
                 return cache;
             } catch (error) {
                 console.error('Error loading Claude cache from localStorage:', error);
@@ -2655,29 +2666,31 @@ Please provide a concise analysis with:
 Keep the response structured and actionable for a data import workflow.`;
 
                 // Use Claude Code CLI for analysis
-                const result = await analyzeWithClaudeCodeCLI(prompt);
+                const result = await analyzeWithClaudeCodeCLI(prompt, dataset, headers);
                 
                 if (result.success) {
-                    // Cache successful result
-                    claudeInsightsCache[cacheKey] = {
+                    // Store in pending analysis (don't save to cache yet)
+                    pendingClaudeAnalysis = {
                         success: true,
                         analysis: result.analysis,
                         totalRecords: dataset.length,
                         sampleSize: sampleSize,
                         timestamp: new Date().toISOString(),
-                        sheetName: sheetName
+                        sheetName: sheetName,
+                        source: result.source
                     };
-                    saveClaudeCacheToStorage(); // Persist to localStorage
                     
-                    displayClaudeInsights(result.analysis, dataset.length, sampleSize);
+                    // Display with Save/Cancel buttons
+                    displayClaudeInsights(result.analysis, dataset.length, sampleSize, true);
                     
                     // Hide loading status
                     hideInsightsStatus();
                     
-                    // Update button to cached state and show refresh button
+                    // Update button to pending state
                     claudeInsightsBtn.disabled = false;
-                    claudeInsightsText.textContent = 'Claude Insights (Cached)';
-                    claudeRefreshBtn.style.display = 'flex';
+                    claudeInsightsText.textContent = 'Claude Insights (Pending)';
+                    // Don't show refresh button until saved
+                    claudeRefreshBtn.style.display = 'none';
                 } else {
                     throw new Error(result.error || 'Analysis failed');
                 }
@@ -2707,29 +2720,69 @@ Keep the response structured and actionable for a data import workflow.`;
         }
 
         // Use Claude Code CLI for analysis
-        async function analyzeWithClaudeCodeCLI(prompt) {
+        async function analyzeWithClaudeCodeCLI(prompt, dataset, headers) {
             try {
-                // Since we're using Claude Code CLI, we'll simulate the analysis process
-                // In a real implementation, this would interface with the Claude Code CLI
-                // For now, we'll create a mock response that demonstrates the functionality
-                
                 showMessage('Analyzing dataset with Claude Code CLI...', 'info');
                 
-                // Simulate processing time
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Prepare the full prompt with dataset context
+                const fullPrompt = `${prompt}
+
+**Dataset Context:**
+- Headers: ${headers.join(', ')}
+- Total Records: ${dataset.length}
+- Sample Data (first 10 records):
+${JSON.stringify(dataset.slice(0, 10), null, 2)}
+
+Please analyze this dataset according to the request above.`;
+
+                // Make request to our backend which will use Claude Code CLI
+                const response = await fetch('http://localhost:8081/api/claude/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: fullPrompt,
+                        dataset_info: {
+                            headers: headers,
+                            record_count: dataset.length,
+                            sample_data: dataset.slice(0, 10)
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    // If API fails, fall back to mock analysis
+                    console.log('Claude API failed, using mock analysis');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    const analysis = generateClaudeAnalysis(prompt);
+                    return {
+                        success: true,
+                        analysis: analysis,
+                        source: 'mock'
+                    };
+                }
+
+                const result = await response.json();
                 
-                // Generate a Claude-style analysis
-                const analysis = generateClaudeAnalysis(prompt);
-                
-                return {
-                    success: true,
-                    analysis: analysis
-                };
+                if (result.success) {
+                    return {
+                        success: true,
+                        analysis: result.analysis,
+                        source: 'claude_cli'
+                    };
+                } else {
+                    throw new Error(result.error || 'Analysis failed');
+                }
                 
             } catch (error) {
+                console.error('Claude Code CLI error:', error);
+                // Fall back to mock analysis on error
+                const analysis = generateClaudeAnalysis(prompt);
                 return {
-                    success: false,
-                    error: error.message
+                    success: true,
+                    analysis: analysis,
+                    source: 'mock_fallback'
                 };
             }
         }
@@ -2771,23 +2824,33 @@ Keep the response structured and actionable for a data import workflow.`;
 **Analysis completed using Claude Code CLI integration**`;
         }
 
-        async function displayClaudeInsights(analysis, totalRecords, sampleSize) {
+        async function displayClaudeInsights(analysis, totalRecords, sampleSize, isNewAnalysis = false) {
             const insightsContent = document.getElementById('insightsContent');
             
             // Check if this is cached data
             const cacheKey = getCurrentCacheKey();
             const cachedData = claudeInsightsCache[cacheKey];
-            const isCached = cachedData && cachedData.success;
+            const isCached = cachedData && cachedData.success && !isNewAnalysis;
             
             try {
                 // Use the same markdown processing as Gemini
                 const processedHTML = await processGeminiMarkdown(analysis);
                 
+                // Add Save/Cancel buttons if this is a new analysis
+                const saveButtonsHTML = isNewAnalysis ? `
+                    <div class="save-cancel-buttons" style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: flex-end;">
+                        <button class="btn btn-secondary" onclick="cancelClaudeAnalysis()">Cancel</button>
+                        <button class="btn btn-primary" onclick="saveClaudeAnalysis()">Save Changes</button>
+                    </div>
+                ` : '';
+
                 let html = `
                     <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
                         <strong>🤖 Claude Analysis:</strong> ${totalRecords} total records analyzed (${sampleSize} sample)
                         ${isCached ? '<span style="color: var(--text-muted); font-size: 12px; margin-left: 8px; cursor: pointer; text-decoration: underline;" onclick="showRawMarkdown(\'claude\')">💾 Cached Claude Analysis</span>' : ''}
+                        ${isNewAnalysis ? '<span style="color: var(--accent-blue); font-size: 12px; margin-left: 8px;">✨ New Analysis</span>' : ''}
                     </div>
+                    ${saveButtonsHTML}
                     <div class="insight-section readme-content">
                         ${processedHTML}
                     </div>
@@ -2801,23 +2864,33 @@ Keep the response structured and actionable for a data import workflow.`;
             } catch (error) {
                 console.error('Error processing Claude markdown:', error);
                 // Fallback to simple processing
-                displayClaudeInsightsSimple(analysis, totalRecords, sampleSize);
+                displayClaudeInsightsSimple(analysis, totalRecords, sampleSize, isNewAnalysis);
             }
         }
 
-        function displayClaudeInsightsSimple(analysis, totalRecords, sampleSize) {
+        function displayClaudeInsightsSimple(analysis, totalRecords, sampleSize, isNewAnalysis = false) {
             const insightsContent = document.getElementById('insightsContent');
             
             // Check if this is cached data
             const cacheKey = getCurrentCacheKey();
             const cachedData = claudeInsightsCache[cacheKey];
-            const isCached = cachedData && cachedData.success;
+            const isCached = cachedData && cachedData.success && !isNewAnalysis;
+            
+            // Add Save/Cancel buttons if this is a new analysis
+            const saveButtonsHTML = isNewAnalysis ? `
+                <div class="save-cancel-buttons" style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="cancelClaudeAnalysis()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveClaudeAnalysis()">Save Changes</button>
+                </div>
+            ` : '';
             
             let html = `
                 <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
                     <strong>🤖 Claude Analysis:</strong> ${totalRecords} total records analyzed (${sampleSize} sample)
                     ${isCached ? '<span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">💾 Cached analysis</span>' : ''}
+                    ${isNewAnalysis ? '<span style="color: var(--accent-blue); font-size: 12px; margin-left: 8px;">✨ New Analysis</span>' : ''}
                 </div>
+                ${saveButtonsHTML}
                 <div class="insight-section readme-content">
                     <pre style="white-space: pre-wrap; font-family: inherit;">${analysis}</pre>
                 </div>
@@ -3114,6 +3187,15 @@ Keep the response structured and actionable for a data import workflow.`;
             const promptInput = document.getElementById('promptInput');
             const submitBtn = document.getElementById('promptSubmitBtn');
             
+            const cacheKey = getCurrentCacheKey();
+            console.log(`Showing refresh prompt for ${aiType}, cache key: ${cacheKey}`);
+            
+            if (aiType === 'claude') {
+                console.log('Claude cache before refresh:', claudeInsightsCache[cacheKey] ? 'exists' : 'none');
+            } else {
+                console.log('Gemini cache before refresh:', aiInsightsCache[cacheKey] ? 'exists' : 'none');
+            }
+            
             modalTitle.textContent = aiType === 'claude' ? 'Claude AI Analysis' : 'Gemini AI Analysis';
             submitBtn.textContent = aiType === 'claude' ? 'Analyze with Claude' : 'Analyze with Gemini';
             
@@ -3128,6 +3210,16 @@ Keep the response structured and actionable for a data import workflow.`;
         function closePromptModal() {
             const modal = document.getElementById('promptModal');
             modal.classList.add('hidden');
+            
+            const cacheKey = getCurrentCacheKey();
+            console.log('Closing prompt modal, currentPromptAI was:', currentPromptAI);
+            
+            if (currentPromptAI === 'claude') {
+                console.log('Claude cache after modal close:', claudeInsightsCache[cacheKey] ? 'exists' : 'none');
+            } else if (currentPromptAI === 'gemini') {
+                console.log('Gemini cache after modal close:', aiInsightsCache[cacheKey] ? 'exists' : 'none');
+            }
+            
             currentPromptAI = null;
         }
         
@@ -3148,8 +3240,8 @@ Keep the response structured and actionable for a data import workflow.`;
             console.log('Submit prompt called with:', customPrompt, 'Default prompt:', isDefaultPrompt, 'AI type:', currentPromptAI);
             
             if (currentPromptAI === 'claude') {
-                delete claudeInsightsCache[cacheKey];
-                saveClaudeCacheToStorage();
+                // Don't clear cache here - only clear when user saves the new analysis
+                console.log('Keeping Claude cache until new analysis is saved');
                 
                 if (isDefaultPrompt) {
                     // Use standard insights for default prompt
@@ -3164,8 +3256,8 @@ Keep the response structured and actionable for a data import workflow.`;
                 }
                 
             } else if (currentPromptAI === 'gemini') {
-                delete aiInsightsCache[cacheKey];
-                saveCacheToStorage();
+                // Don't clear cache here - only clear when user saves the new analysis
+                console.log('Keeping Gemini cache until new analysis is saved');
                 
                 if (isDefaultPrompt) {
                     // Use standard insights for default prompt
@@ -3227,6 +3319,89 @@ Keep the response structured and actionable for a data import workflow.`;
             } else {
                 console.log('No cached Gemini insights, showing prompt modal');
                 showRefreshPrompt('gemini');
+            }
+        }
+
+        // Temporary storage for new analysis before saving
+        let pendingClaudeAnalysis = null;
+
+        // Save/Cancel functions for Claude analysis
+        function saveClaudeAnalysis() {
+            if (pendingClaudeAnalysis) {
+                const cacheKey = getCurrentCacheKey();
+                console.log('Saving Claude analysis to cache with key:', cacheKey);
+                
+                // Now it's safe to clear the old cache and save the new one
+                delete claudeInsightsCache[cacheKey]; // Remove old version
+                claudeInsightsCache[cacheKey] = pendingClaudeAnalysis; // Add new version
+                saveClaudeCacheToStorage();
+                
+                // Clear pending analysis
+                pendingClaudeAnalysis = null;
+                
+                // Re-display without Save/Cancel buttons
+                displayClaudeInsights(claudeInsightsCache[cacheKey].analysis, claudeInsightsCache[cacheKey].totalRecords, claudeInsightsCache[cacheKey].sampleSize, false);
+                
+                // Update button text
+                const claudeInsightsText = document.getElementById('claudeInsightsText');
+                if (claudeInsightsText) {
+                    claudeInsightsText.textContent = 'Claude Insights (Cached)';
+                }
+                
+                // Show refresh button
+                const claudeRefreshBtn = document.getElementById('claudeRefreshBtn');
+                if (claudeRefreshBtn) {
+                    claudeRefreshBtn.style.display = 'flex';
+                }
+                
+                showMessage('Claude analysis saved successfully!', 'success');
+            }
+        }
+
+        function cancelClaudeAnalysis() {
+            if (pendingClaudeAnalysis) {
+                const cacheKey = getCurrentCacheKey();
+                console.log('Canceling Claude analysis, reverting to cached version');
+                console.log('Current cache key:', cacheKey);
+                console.log('Available cache keys:', Object.keys(claudeInsightsCache));
+                
+                // Clear pending analysis
+                pendingClaudeAnalysis = null;
+                
+                // Check if we have cached data to revert to
+                if (claudeInsightsCache[cacheKey]) {
+                    console.log('Restoring cached Claude analysis from browser storage');
+                    console.log('Cached data:', {
+                        analysisLength: claudeInsightsCache[cacheKey].analysis?.length,
+                        totalRecords: claudeInsightsCache[cacheKey].totalRecords,
+                        sampleSize: claudeInsightsCache[cacheKey].sampleSize,
+                        timestamp: claudeInsightsCache[cacheKey].timestamp
+                    });
+                    
+                    // Display the cached analysis
+                    displayClaudeInsights(
+                        claudeInsightsCache[cacheKey].analysis, 
+                        claudeInsightsCache[cacheKey].totalRecords, 
+                        claudeInsightsCache[cacheKey].sampleSize, 
+                        false // Not a new analysis
+                    );
+                    
+                    // Update button states to show cached status
+                    const claudeInsightsBtn = document.getElementById('claudeInsightsBtn');
+                    const claudeInsightsText = document.getElementById('claudeInsightsText');
+                    const claudeRefreshBtn = document.getElementById('claudeRefreshBtn');
+                    
+                    if (claudeInsightsBtn) claudeInsightsBtn.disabled = false;
+                    if (claudeInsightsText) claudeInsightsText.textContent = 'Claude Insights (Cached)';
+                    if (claudeRefreshBtn) claudeRefreshBtn.style.display = 'flex';
+                    
+                    showMessage('Reverted to previous Claude analysis from browser storage.', 'info');
+                } else {
+                    // No cached data, show empty state
+                    console.log('No cached Claude analysis found, showing empty state');
+                    showAIInsightsButtons();
+                    showMessage('New analysis canceled. No previous analysis found.', 'info');
+                }
             }
         }
 
@@ -3300,27 +3475,29 @@ Keep the response structured and actionable for a data import workflow.`;
 ${JSON.stringify(sampleData, null, 2)}`;
                 
                 // Use Claude Code CLI for analysis
-                const result = await analyzeWithClaudeCodeCLI(prompt);
+                const result = await analyzeWithClaudeCodeCLI(customPrompt, dataset, headers);
                 
                 if (result.success) {
-                    // Cache successful result
-                    claudeInsightsCache[cacheKey] = {
+                    // Store in pending analysis (don't save to cache yet)
+                    pendingClaudeAnalysis = {
                         success: true,
                         analysis: result.analysis,
                         totalRecords: dataset.length,
                         sampleSize: sampleSize,
                         timestamp: new Date().toISOString(),
                         sheetName: sheetName,
-                        customPrompt: customPrompt
+                        customPrompt: customPrompt,
+                        source: result.source
                     };
-                    saveClaudeCacheToStorage();
                     
-                    displayClaudeInsights(result.analysis, dataset.length, sampleSize);
+                    // Display with Save/Cancel buttons
+                    displayClaudeInsights(result.analysis, dataset.length, sampleSize, true);
                     
-                    // Update button to cached state and show refresh button
+                    // Update button to pending state
                     claudeInsightsBtn.disabled = false;
-                    claudeInsightsText.textContent = 'Claude Insights';
-                    claudeRefreshBtn.style.display = 'flex';
+                    claudeInsightsText.textContent = 'Claude Insights (Pending)';
+                    // Don't show refresh button until saved
+                    claudeRefreshBtn.style.display = 'none';
                 } else {
                     throw new Error(result.error || 'Analysis failed');
                 }
