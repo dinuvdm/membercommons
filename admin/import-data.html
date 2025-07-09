@@ -3220,6 +3220,21 @@ Please analyze this dataset according to the request above.`;
                 console.log('Gemini cache after modal close:', aiInsightsCache[cacheKey] ? 'exists' : 'none');
             }
             
+            // Reset submit button state
+            const submitBtn = document.getElementById('promptSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                // Reset button text based on AI type
+                if (currentPromptAI === 'claude') {
+                    submitBtn.textContent = 'Analyze with Claude';
+                } else if (currentPromptAI === 'gemini') {
+                    submitBtn.textContent = 'Analyze with Gemini';
+                } else {
+                    submitBtn.textContent = 'Analyze';
+                }
+            }
+            
             currentPromptAI = null;
         }
         
@@ -3230,6 +3245,18 @@ Please analyze this dataset according to the request above.`;
             if (!customPrompt) {
                 alert('Please enter a prompt.');
                 return;
+            }
+            
+            // Show immediate status message
+            showMessage(`Starting ${currentPromptAI === 'claude' ? 'Claude' : 'Gemini'} analysis...`, 'info');
+            showInsightsStatus(`Preparing ${currentPromptAI === 'claude' ? 'Claude' : 'Gemini'} analysis...`);
+            
+            // Update button to show it's processing
+            const submitBtn = document.getElementById('promptSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Analyzing...';
+                submitBtn.classList.add('loading');
             }
             
             // Clear cache for current file to force fresh analysis
@@ -3247,11 +3274,13 @@ Please analyze this dataset according to the request above.`;
                     // Use standard insights for default prompt
                     console.log('Using standard Claude insights');
                     showMessage('Generating Claude insights with standard analysis...', 'info');
+                    console.log('About to call requestClaudeInsights()');
                     requestClaudeInsights();
                 } else {
                     // Use custom prompt for non-default prompts
                     console.log('Using custom Claude prompt');
                     showMessage(`Generating Claude insights with custom prompt: "${customPrompt}"`, 'info');
+                    console.log('About to call requestClaudeInsightsWithPrompt()');
                     requestClaudeInsightsWithPrompt(customPrompt);
                 }
                 
@@ -3263,11 +3292,13 @@ Please analyze this dataset according to the request above.`;
                     // Use standard insights for default prompt
                     console.log('Using standard Gemini insights');
                     showMessage('Generating Gemini insights with standard analysis...', 'info');
+                    console.log('About to call requestGeminiInsights()');
                     requestGeminiInsights();
                 } else {
                     // Use custom prompt for non-default prompts
                     console.log('Using custom Gemini prompt');
                     showMessage(`Generating Gemini insights with custom prompt: "${customPrompt}"`, 'info');
+                    console.log('About to call requestGeminiInsightsWithPrompt()');
                     requestGeminiInsightsWithPrompt(customPrompt);
                 }
             }
