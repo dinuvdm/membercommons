@@ -4,7 +4,7 @@ This page allows you to pull participant lists from a Google Meetup into a Googl
 
 ## Your Meetup
 
-- **Launch Meetup:** [https://meet.google.com/pcv-xrdh-bat](https://meet.google.com/pcv-xrdh-bat)
+- **Launch Our Model.earth Meetup:** [https://meet.google.com/pcv-xrdh-bat](https://meet.google.com/pcv-xrdh-bat)
 - **Google Sheet ID:** You'll need to create a Google Sheet and get its ID from the URL. The ID is the long string of characters between `/d/` and `/edit`.
 
 ## Get Participants from Google Sheet
