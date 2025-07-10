@@ -1,12 +1,13 @@
 # Gemini API Test Page
 
-This page is a simple dashboard to test and validate the Google Gemini AI API key configuration for MemberCommons.
+This page validates your Google Gemini AI API key configuration and documents how to integrate a Google Meetup.
 
 ## Features
 
 *   **API Key Check:** Verifies that the `GEMINI_API_KEY` environment variable is set.
 *   **Configuration Display:** Shows the current database and SSL configuration.
 *   **API Test:** Allows you to send a test request to the Gemini API to ensure it's working correctly.
+*   **Google Meetup Participants:** Fetch the list of participants from a Google Meetup.
 
 ## How to Use
 

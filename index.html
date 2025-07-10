@@ -474,6 +474,15 @@
             transform: translateY(-4px);
         }
 
+        .clickable-card:hover .feature-icon {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+
+        .feature-icon {
+            transition: transform 0.2s ease;
+        }
+
         .feature-icon {
             width: 48px;
             height: 48px;
@@ -941,7 +950,7 @@
                         </div>
 
                         <div class="feature-grid">
-                            <div class="feature-card clickable-card" onclick="router.navigate('admin', 'import')">
+                            <div class="feature-card clickable-card" onclick="window.location.href='./admin/index.html'">
                                 <div class="feature-icon">
                                     <i data-feather="zap"></i>
                                 </div>
@@ -949,7 +958,7 @@
                                 <p class="feature-desc">Get smart recommendations and natural language search with customizations using AI to accelerate your project workflows.</p>
                             </div>
 
-                            <div class="feature-card clickable-card" onclick="router.navigate('people', 'teams')">
+                            <div class="feature-card clickable-card" onclick="window.location.hash = '#people/teams'">
                                 <div class="feature-icon">
                                     <i data-feather="users"></i>
                                 </div>
@@ -957,7 +966,7 @@
                                 <p class="feature-desc">Connect with local programming teams, join Innovation Bond projects, and collaborate on government AI initiatives.</p>
                             </div>
 
-                            <div class="feature-card clickable-card" onclick="router.navigate('projects', 'opportunities')">
+                            <div class="feature-card clickable-card" onclick="window.location.hash = '#projects/opportunities'">
                                 <div class="feature-icon">
                                     <i data-feather="trending-up"></i>
                                 </div>
@@ -965,7 +974,7 @@
                                 <p class="feature-desc">Manage opportunities, track progress, assign tasks, and monitor timelines with beautiful, intuitive interfaces.</p>
                             </div>
 
-                            <div class="feature-card clickable-card" onclick="router.navigate('projects', 'opportunities')">
+                            <div class="feature-card clickable-card" onclick="window.location.hash = '#projects/opportunities'">
                                 <div class="feature-icon">
                                     <i data-feather="target"></i>
                                 </div>

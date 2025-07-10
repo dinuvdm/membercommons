@@ -66,6 +66,10 @@ dirs = "5.0"
 calamine = "0.25"
 mime_guess = "2.0"
 
+# Google APIs
+google-apis-common = "5.0.3"
+google-sheets4 = "5.0.3"
+
 [dev-dependencies]
 # Testing
 mockito = "1.4"

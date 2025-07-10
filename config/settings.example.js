@@ -98,6 +98,11 @@ const CONFIG = {
         }
     },
 
+    // Google Meetup Configuration
+    MEETUP: {
+        SPREADSHEET_ID: 'your-google-spreadsheet-id'
+    },
+
     // Validation Rules
     VALIDATION: {
         PASSWORD_MIN_LENGTH: 8,

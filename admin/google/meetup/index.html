@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Meetup Integration - MemberCommons</title>
+    <link rel="icon" type="image/x-icon" href="../../../img/logo/neighborhood/favicon.png">
+    <link rel="stylesheet" href="../../../css/common.css">
+    <link rel="stylesheet" href="../../../css/shared-styles.css">
+    <style>
+        .container {
+            max-width: 1000px;
+        }
+        
+        .readme-content {
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            background: var(--bg-tertiary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="../">← Google API Test</a>
+        </div>
+
+        <div class="header">
+            <h1>Google Meetup Integration</h1>
+            <p>This page allows you to pull participant lists from a Google Meetup into a Google Sheet.</p>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Get Participants from Google Sheet</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                Enter a Google Meetup link to fetch the list of participants. The link should be to a Google Sheet with the participant data.
+            </p>
+            <div class="form-group">
+                <input type="text" id="meetup-link" class="form-control" placeholder="Enter Google Sheet link...">
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" id="get-participants">
+                    <span class="loading-spinner" id="participants-spinner" style="display: none;"></span>
+                    Get Participants
+                </button>
+            </div>
+            <div id="participants-result"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">📖 Google Meetup Integration Guide</h2>
+            <div id="readmeDiv" class="readme-content">
+                <p style="color: var(--text-secondary); font-style: italic;">
+                    Loading README.md...
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../../js/common.js"></script>
+    <script>
+        const GEMINI_API_BASE = 'http://localhost:8081/api';
+
+        // Google Meetup Participants
+        const getParticipantsButton = document.getElementById('get-participants');
+        const participantsSpinner = document.getElementById('participants-spinner');
+        const participantsResult = document.getElementById('participants-result');
+        const meetupLinkInput = document.getElementById('meetup-link');
+
+        async function getMeetupParticipants() {
+            const meetupLink = meetupLinkInput.value.trim();
+            if (!meetupLink) {
+                participantsResult.innerHTML = '<div class="error-message">Please enter a Google Sheet link.</div>';
+                return;
+            }
+
+            try {
+                getParticipantsButton.disabled = true;
+                participantsSpinner.style.display = 'inline-block';
+                participantsResult.innerHTML = '';
+
+                const response = await fetch(`${GEMINI_API_BASE}/google/meetup/participants`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ meetup_link: meetupLink })
+                });
+
+                const data = await response.json();
+                displayParticipants(data);
+
+            } catch (error) {
+                displayParticipants({
+                    success: false,
+                    error: 'Failed to connect to API server'
+                });
+            } finally {
+                getParticipantsButton.disabled = false;
+                participantsSpinner.style.display = 'none';
+            }
+        }
+
+        function displayParticipants(result) {
+            if (result.success) {
+                let html = '<div class="success-message"><h4>Participants</h4><ul>';
+                result.participants.forEach(participant => {
+                    html += `<li>${participant.join(', ')}</li>`;
+                });
+                html += '</ul></div>';
+                participantsResult.innerHTML = html;
+            } else {
+                participantsResult.innerHTML = `<div class="error-message"><h4>Error</h4><p>${result.error}</p></div>`;
+            }
+        }
+
+        getParticipantsButton.addEventListener('click', getMeetupParticipants);
+
+        // Load README documentation
+        document.addEventListener('DOMContentLoaded', function() {
+            displayFile("README.md", "readmeDiv", "_parent");
+        });
+    </script>
+</body>
+</html>

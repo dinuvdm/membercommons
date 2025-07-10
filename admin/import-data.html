@@ -2582,7 +2582,7 @@ Keep the response structured and actionable for a data import workflow.`;
                 insightsContent.innerHTML = `
                     <div class="insights-error">
                         <strong>⚙️ Gemini AI Configuration Needed</strong>
-                        <br>API key not configured. Visit <a href="../gemini/" target="_blank">Gemini API Test</a> to set up AI analysis.
+                        <br>API key not configured. Visit <a href="../google/" target="_blank">Google API Test</a> to set up AI analysis.
                         <br><small>Dataset contains ${totalRecords} records - manual review recommended</small>
                     </div>
                     ${basicInsights}
@@ -3060,7 +3060,7 @@ Please analyze this dataset according to the request above.`;
                     return `
                         <li>Verify API key is correctly configured</li>
                         <li>Check if API key has expired</li>
-                        <li>Visit <a href="../gemini/" target="_blank">Gemini API Test</a> to validate key</li>
+                        <li>Visit <a href="../google/" target="_blank">Google API Test</a> to validate key</li>
                     `;
                 case 403:
                     return `

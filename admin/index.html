@@ -23,6 +23,7 @@
             --border-medium: #D1D5DB;
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             --radius-md: 8px;
             --radius-lg: 12px;
         }
@@ -101,6 +102,7 @@
             justify-content: center;
             margin-right: 16px;
             font-size: 24px;
+            transition: transform 0.2s ease;
         }
 
         .admin-card-icon.database {
@@ -132,7 +134,7 @@
         }
 
         .admin-card-features {
-            margin-bottom: 24px;
+            margin-bottom: 0;
         }
 
         .admin-card-features ul {
@@ -178,7 +180,7 @@
             margin-left: 8px;
         }
 
-        .admin-card-header-link {
+        .admin-card-header-content {
             display: flex;
             align-items: center;
             text-decoration: none;
@@ -186,13 +188,24 @@
             transition: color 0.2s ease;
         }
 
-        .admin-card-header-link:hover {
-            color: var(--accent-blue);
+        .clickable-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .admin-card-header-link:hover .admin-card-icon {
+        .clickable-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-blue);
+        }
+
+        .clickable-card:hover .admin-card-icon {
             transform: scale(1.05);
             transition: transform 0.2s ease;
+        }
+
+        .clickable-card:hover h3 {
+            color: var(--accent-blue);
         }
 
         .status-badge {
@@ -252,9 +265,9 @@
 
         <div class="admin-grid">
             <!-- Database Admin Panel -->
-            <div class="admin-card">
+            <div class="admin-card clickable-card" onclick="window.location.href='sql/panel/'">
                 <div class="admin-card-header">
-                    <a href="sql/panel/" class="admin-card-header-link">
+                    <div class="admin-card-header-content">
                         <div class="admin-card-icon database">
                             <i data-feather="database"></i>
                         </div>
@@ -262,7 +275,7 @@
                             <h3>Database Admin Panel</h3>
                             <span class="status-badge active">Active</span>
                         </div>
-                    </a>
+                    </div>
                 </div>
                 <p>Manage Azure PostgreSQL database connections, test queries, and explore table structures with real-time data.</p>
                 <div class="admin-card-features">
@@ -273,16 +286,12 @@
                         <li>Connection diagnostics</li>
                     </ul>
                 </div>
-                <a href="sql/panel/" class="admin-link">
-                    Open Database Panel
-                    &nbsp; <i data-feather="external-link"></i>
-                </a>
             </div>
 
             <!-- Data Import Tool -->
-            <div class="admin-card">
+            <div class="admin-card clickable-card" onclick="window.location.href='import-data.html'">
                 <div class="admin-card-header">
-                    <a href="import-data.html" class="admin-card-header-link">
+                    <div class="admin-card-header-content">
                         <div class="admin-card-icon excel">
                             <i data-feather="upload"></i>
                         </div>
@@ -290,7 +299,7 @@
                             <h3>Data Import Tool</h3>
                             <span class="status-badge active">Active</span>
                         </div>
-                    </a>
+                    </div>
                 </div>
                 <p>Apply AI Insights to dataset loaded from Excel, Google Sheets and CSV files. Push data into Azure databases using preview and validation features.</p>
                 <div class="admin-card-features">
@@ -301,16 +310,12 @@
                         <li>Import to projects or accounts tables</li>
                     </ul>
                 </div>
-                <a href="import-data.html" class="admin-link">
-                    Open Import Tool
-                    &nbsp; <i data-feather="external-link"></i>
-                </a>
             </div>
 
             <!-- Log Output Monitor -->
-            <div class="admin-card">
+            <div class="admin-card clickable-card" onclick="window.location.href='log-output/'">
                 <div class="admin-card-header">
-                    <a href="log-output/" class="admin-card-header-link">
+                    <div class="admin-card-header-content">
                         <div class="admin-card-icon logs">
                             <i data-feather="monitor"></i>
                         </div>
@@ -318,7 +323,7 @@
                             <h3>Log Output Monitor</h3>
                             <span class="status-badge active">Active</span>
                         </div>
-                    </a>
+                    </div>
                 </div>
                 <p>Real-time monitoring of system operations with detailed logging for file processing and API interactions.</p>
                 <div class="admin-card-features">
@@ -329,26 +334,22 @@
                         <li>README.md loading demonstration</li>
                     </ul>
                 </div>
-                <a href="log-output/" class="admin-link">
-                    Open Log Monitor
-                    &nbsp; <i data-feather="external-link"></i>
-                </a>
             </div>
 
             <!-- Gemini AI Test -->
-            <div class="admin-card">
+            <div class="admin-card clickable-card" onclick="window.location.href='google/'">
                 <div class="admin-card-header">
-                    <a href="gemini/" class="admin-card-header-link">
+                    <div class="admin-card-header-content">
                         <div class="admin-card-icon" style="background: linear-gradient(45deg, #4285F4, #34A853, #FBBC05, #EA4335); color: white;">
                             <i data-feather="zap"></i>
                         </div>
                         <div>
-                            <h3>Gemini AI Test</h3>
+                            <h3>Google API Test</h3>
                             <span class="status-badge active">Active</span>
                         </div>
-                    </a>
+                    </div>
                 </div>
-                <p>Test and validate your Google Gemini AI API key configuration for enhanced CRM functionality with intelligent features.</p>
+                <p>Test and validate your Google APIs configuration including Gemini AI for enhanced CRM functionality with intelligent features.</p>
                 <div class="admin-card-features">
                     <ul>
                         <li>API key validation and testing</li>
@@ -357,10 +358,6 @@
                         <li>AI integration readiness check</li>
                     </ul>
                 </div>
-                <a href="gemini/" class="admin-link">
-                    Open Gemini Test
-                    &nbsp; <i data-feather="external-link"></i>
-                </a>
             </div>
         </div>
 

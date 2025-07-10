@@ -57,6 +57,19 @@ Technical coders and programmers who deploy AI to streamline government processe
 - **Navigation**: Collapsible left sidebar with smooth animations
 - **Routing**: HashRouter for static compatibility with deep linking support
 - **No Build Required**: Frontend works directly without compilation
+- **Favicon**: All HTML pages should include favicon with relative path to `img/logo/neighborhood/favicon.png`
+
+#### Favicon Implementation
+All HTML pages should include this favicon tag in the `<head>` section:
+```html
+<link rel="icon" type="image/x-icon" href="[relative-path]/img/logo/neighborhood/favicon.png">
+```
+
+**Relative Path Examples:**
+- Root level pages: `href="img/logo/neighborhood/favicon.png"`
+- Admin pages: `href="../img/logo/neighborhood/favicon.png"`
+- Nested admin pages: `href="../../img/logo/neighborhood/favicon.png"`
+- Deep nested pages: `href="../../../img/logo/neighborhood/favicon.png"`
 
 ### HashRouter Implementation
 The application implements a sophisticated HashRouter system that enables:
