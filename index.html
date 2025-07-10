@@ -2024,7 +2024,7 @@
             currentSection: 'home',
             currentTab: 'welcome',
             isAuthenticated: false,
-            sidebarCollapsed: false,
+            sidebarCollapsed: localStorage.getItem('sideNavCollapseStatus') === 'true',
             urlParams: new URLSearchParams()
         };
 
@@ -2319,12 +2319,20 @@
             let isHoverExpanded = false;
             let slideRightEnabled = true; // Toggle for slide-right functionality
             
-            // Auto-collapse sidebar on narrow screens at page load
+            // Apply saved sidebar state from localStorage
+            if (AppState.sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+            
+            // Auto-collapse sidebar on narrow screens at page load (overrides saved state if needed)
             const appContainer = document.querySelector('.app-container');
             const containerWidth = appContainer ? appContainer.offsetWidth : window.innerWidth;
             if (containerWidth <= 1000 && !sidebar.classList.contains('collapsed')) {
                 sidebar.classList.add('collapsed');
                 AppState.sidebarCollapsed = true;
+                localStorage.setItem('sideNavCollapseStatus', true);
             }
             
             // Reusable function to toggle sidebar state
@@ -2370,6 +2378,8 @@
             if (sidebarToggle && sidebar) {
                 sidebarToggle.addEventListener('click', function() {
                     toggleSidebar(); // Use reusable function
+                    // Save the new sidebar state to localStorage
+                    localStorage.setItem('sideNavCollapseStatus', AppState.sidebarCollapsed);
                 });
             }
 
@@ -2379,6 +2389,8 @@
                     // Only expand if currently collapsed
                     if (sidebar.classList.contains('collapsed')) {
                         toggleSidebar('expand'); // Use reusable function
+                        // Save the new sidebar state to localStorage
+                        localStorage.setItem('sideNavCollapseStatus', AppState.sidebarCollapsed);
                     }
                 });
             }
