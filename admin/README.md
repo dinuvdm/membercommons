@@ -29,6 +29,7 @@ For Windows,
 	.\env\Scripts\activate
 
 
+It's okay to skip this line if you've already installed Claude Code CLI.  
 In the membercommons folder, install [NodeJS 18+](https://nodejs.org/en/download), then install Claude Code CLI:
 
 	npm install -g @anthropic-ai/claude-code

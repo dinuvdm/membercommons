@@ -12,10 +12,6 @@ To use the Google Meetup integration with the MemberCommons backend, you'll need
 - `GOOGLE_CLIENT_EMAIL`
 - `GOOGLE_CLIENT_ID`
 
-## Get Participants from Google Sheet
-
-Enter a Google Meetup link to fetch the list of participants. The link should be to a Google Sheet with the participant data.
-
 ## Pulling Participants from a Google Meetup into a Google Sheet
 
 Since there isn't a direct Google Meet API to get a list of participants, the most reliable method is to use a Google Apps Script. This script will run within your Google account and can be triggered to capture the participants of an active meeting.

@@ -131,6 +131,11 @@ struct EnvConfigResponse {
     database: Option<EnvDatabaseConfig>,
     database_connections: Vec<DatabaseConnection>,
     gemini_api_key_present: bool,
+    google_project_id: Option<String>,
+    google_user_email: Option<String>,
+    google_org_id: Option<String>,
+    google_billing_id: Option<String>,
+    google_service_key: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -138,6 +143,20 @@ struct DatabaseConnection {
     name: String,
     display_name: String,
     config: EnvDatabaseConfig,
+}
+
+#[derive(Deserialize)]
+struct SaveEnvConfigRequest {
+    google_project_id: Option<String>,
+    google_user_email: Option<String>,
+    google_org_id: Option<String>,
+    google_billing_id: Option<String>,
+    google_service_key: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct FetchCsvRequest {
+    url: String,
 }
 
 // Health check endpoint
@@ -216,11 +235,169 @@ async fn get_env_config() -> Result<HttpResponse> {
     // Check if Gemini API key is present (but don't expose the actual key)
     let gemini_api_key_present = std::env::var("GEMINI_API_KEY").is_ok();
     
+    // Get Google configuration values
+    let google_project_id = std::env::var("GOOGLE_PROJECT_ID").ok();
+    let google_user_email = std::env::var("GOOGLE_USER_EMAIL").ok();
+    let google_org_id = std::env::var("GOOGLE_ORG_ID").ok();
+    let google_billing_id = std::env::var("GOOGLE_BILLING_ID").ok();
+    let google_service_key = std::env::var("GOOGLE_SERVICE_KEY").ok();
+    
     Ok(HttpResponse::Ok().json(EnvConfigResponse {
         database: database_config,
         database_connections,
         gemini_api_key_present,
+        google_project_id,
+        google_user_email,
+        google_org_id,
+        google_billing_id,
+        google_service_key,
     }))
+}
+
+// Save environment configuration to .env file
+async fn save_env_config(req: web::Json<SaveEnvConfigRequest>) -> Result<HttpResponse> {
+    use std::fs::OpenOptions;
+    use std::io::{BufRead, BufReader, Write};
+    
+    let env_path = ".env";
+    let mut env_lines = Vec::new();
+    let mut updated_keys = std::collections::HashSet::<String>::new();
+    
+    // Read existing .env file if it exists
+    if let Ok(file) = std::fs::File::open(env_path) {
+        let reader = BufReader::new(file);
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                env_lines.push(line);
+            }
+        }
+    }
+    
+    // Helper function to update or add environment variable
+    let update_env_var = |env_lines: &mut Vec<String>, updated_keys: &mut std::collections::HashSet<String>, key: &str, value: &Option<String>| {
+        if let Some(val) = value {
+            if !val.is_empty() {
+                let new_line = format!("{}={}", key, val);
+                
+                // Find and update existing key, or mark for addition
+                let mut found = false;
+                for line in env_lines.iter_mut() {
+                    if line.starts_with(&format!("{}=", key)) {
+                        *line = new_line.clone();
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if !found {
+                    env_lines.push(new_line);
+                }
+                updated_keys.insert(key.to_string());
+            }
+        }
+    };
+    
+    // Update or add new values
+    update_env_var(&mut env_lines, &mut updated_keys, "GOOGLE_PROJECT_ID", &req.google_project_id);
+    update_env_var(&mut env_lines, &mut updated_keys, "GOOGLE_USER_EMAIL", &req.google_user_email);
+    update_env_var(&mut env_lines, &mut updated_keys, "GOOGLE_ORG_ID", &req.google_org_id);
+    update_env_var(&mut env_lines, &mut updated_keys, "GOOGLE_BILLING_ID", &req.google_billing_id);
+    update_env_var(&mut env_lines, &mut updated_keys, "GOOGLE_SERVICE_KEY", &req.google_service_key);
+    
+    // Write back to .env file
+    match OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(env_path)
+    {
+        Ok(mut file) => {
+            for line in env_lines {
+                writeln!(file, "{}", line).map_err(|e| {
+                    actix_web::error::ErrorInternalServerError(format!("Failed to write to .env file: {}", e))
+                })?;
+            }
+            
+            // Update environment variables in current process
+            let set_env_var = |key: &str, value: &Option<String>| {
+                if let Some(val) = value {
+                    if !val.is_empty() {
+                        std::env::set_var(key, val);
+                    }
+                }
+            };
+            
+            set_env_var("GOOGLE_PROJECT_ID", &req.google_project_id);
+            set_env_var("GOOGLE_USER_EMAIL", &req.google_user_email);
+            set_env_var("GOOGLE_ORG_ID", &req.google_org_id);
+            set_env_var("GOOGLE_BILLING_ID", &req.google_billing_id);
+            set_env_var("GOOGLE_SERVICE_KEY", &req.google_service_key);
+            
+            Ok(HttpResponse::Ok().json(json!({
+                "success": true,
+                "message": "Configuration saved to .env file",
+                "updated_keys": updated_keys.into_iter().collect::<Vec<_>>()
+            })))
+        }
+        Err(e) => {
+            Ok(HttpResponse::InternalServerError().json(json!({
+                "success": false,
+                "error": format!("Failed to write .env file: {}", e)
+            })))
+        }
+    }
+}
+
+// Fetch CSV data from external URL (proxy for CORS)
+async fn fetch_csv(req: web::Json<FetchCsvRequest>) -> Result<HttpResponse> {
+    let url = &req.url;
+    
+    // Validate URL is from Google Sheets
+    if !url.contains("docs.google.com/spreadsheets") {
+        return Ok(HttpResponse::BadRequest().json(json!({
+            "success": false,
+            "error": "Only Google Sheets URLs are allowed"
+        })));
+    }
+    
+    match reqwest::get(url).await {
+        Ok(response) => {
+            if response.status().is_success() {
+                match response.text().await {
+                    Ok(csv_data) => {
+                        if csv_data.trim().is_empty() {
+                            Ok(HttpResponse::Ok().json(json!({
+                                "success": false,
+                                "error": "The spreadsheet appears to be empty or not publicly accessible"
+                            })))
+                        } else {
+                            Ok(HttpResponse::Ok().json(json!({
+                                "success": true,
+                                "data": csv_data
+                            })))
+                        }
+                    }
+                    Err(e) => {
+                        Ok(HttpResponse::Ok().json(json!({
+                            "success": false,
+                            "error": format!("Failed to read response data: {}", e)
+                        })))
+                    }
+                }
+            } else {
+                Ok(HttpResponse::Ok().json(json!({
+                    "success": false,
+                    "error": format!("HTTP {}: The spreadsheet may not be publicly accessible or the URL is incorrect", response.status())
+                })))
+            }
+        }
+        Err(e) => {
+            Ok(HttpResponse::Ok().json(json!({
+                "success": false,
+                "error": format!("Network error: {}", e)
+            })))
+        }
+    }
 }
 
 // Test specific database connection
@@ -1215,6 +1392,7 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                     .service(
                         web::scope("/config")
                             .route("/env", web::get().to(get_env_config))
+                            .route("/save-env", web::post().to(save_env_config))
                             .route("/gemini", web::get().to(google::test_gemini_config))
                             .route("/database/{connection_name}", web::get().to(test_database_connection))
                     )
@@ -1229,6 +1407,7 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                     .service(
                         web::scope("/google")
                             .route("/meetup/participants", web::post().to(google::get_meetup_participants))
+                            .route("/fetch-csv", web::post().to(fetch_csv))
                     )
             )
             // Add health check route at root level as well
