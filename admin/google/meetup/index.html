@@ -273,6 +273,64 @@
             font-size: 16px;
         }
         
+        /* Present Participants Control */
+        .present-control {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+        }
+        
+        .present-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .present-input-group input {
+            flex: 1;
+        }
+        
+        #present-toggle {
+            white-space: nowrap;
+            min-width: 100px;
+        }
+        
+        #present-toggle.active {
+            background: var(--accent-green);
+            color: white;
+            border-color: var(--accent-green);
+        }
+        
+        /* Present participant highlighting */
+        .participant-present {
+            border: 3px solid var(--accent-green) !important;
+            box-shadow: 0 0 0 1px var(--accent-green) !important;
+        }
+        
+        .participant-present .participant-name {
+            color: var(--accent-green) !important;
+            font-weight: 700 !important;
+        }
+        
+        /* Keep gallery names white when present border is added */
+        .participant-present .gallery-name {
+            color: white !important;
+            font-weight: 700 !important;
+        }
+        
+        /* Table row highlighting */
+        .participants-table tr.participant-present {
+            background: rgba(16, 185, 129, 0.1) !important;
+            border-left: 4px solid var(--accent-green) !important;
+        }
+        
+        .participants-table tr.participant-present td:first-child {
+            color: var(--accent-green) !important;
+            font-weight: 600 !important;
+        }
+        
         /* View Controls */
         .view-controls {
             display: flex;
@@ -541,7 +599,104 @@
                 <div class="gemini-icon">G</div>
                 Google Meetup Integration
             </h1>
-            <p>This page will eventually allow you to pull participant lists from a Google Meetup into a Google Sheet.</p>
+            <p>This page will eventually pull a list from a Google Meetup to flter the Google Sheet list below.</p>
+        </div>
+
+        <div class="card" id="participants-table-card" style="display: none;">
+            <h2 class="card-title">📊 Participants List</h2>
+            
+            <!-- Present Participants Control -->
+            <div class="present-control">
+                <label class="form-label">Present Participants</label>
+                <div class="present-input-group">
+                    <input type="text" id="present" class="form-control" placeholder="Enter names separated by commas (e.g., Loren, Ivy, Gary)...">
+                    <button class="btn btn-secondary" id="present-toggle">
+                        <span id="present-toggle-text">Present</span>
+                        <span id="present-count">(0)</span>
+                    </button>
+                </div>
+                <small class="form-help">Type names and press comma or enter to highlight. Click "Present" to show only marked participants.</small>
+            </div>
+            
+            <!-- View Toggle Controls -->
+            <div class="view-controls">
+                <div class="view-buttons">
+                    <button class="btn btn-secondary view-btn active" id="column-view-btn" data-view="column">
+                        Column
+                    </button>
+                    <button class="btn btn-secondary view-btn" id="table-view-btn" data-view="table">
+                        Table
+                    </button>
+                    <button class="btn btn-secondary view-btn" id="gallery-view-btn" data-view="gallery">
+                        Gallery
+                    </button>
+                </div>
+                <div class="table-info">
+                    <span id="participant-count" style="margin-right:10px">0 participants</span>
+                    <button class="btn btn-secondary" id="export-csv">
+                        Export CSV
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Column View (Default) -->
+            <div class="view-container" id="column-view">
+                <div class="participants-grid" id="participants-column-grid"></div>
+            </div>
+            
+            <!-- Table View -->
+            <div class="view-container" id="table-view" style="display: none;">
+                <div class="table-container">
+                    <table id="participants-table" class="participants-table">
+                        <thead id="table-header"></thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Gallery View -->
+            <div class="view-container" id="gallery-view" style="display: none;">
+                <div class="team-legend" id="team-legend" style="display: none;">
+                    <div class="legend-header">
+                        <h4>Filter by Team</h4>
+                        <button class="btn btn-sm" id="clear-team-filter">Show All</button>
+                    </div>
+                    <div class="legend-items" id="legend-items"></div>
+                </div>
+                <div class="participants-gallery" id="participants-gallery-grid"></div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title">Get Participants from Google Sheet</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                Enter a Google Sheet with participant data.
+            </p>
+            <div class="form-group">
+                <div class="input-button-group">
+                    <input type="text" id="meetup-link" class="form-control" placeholder="Enter Google Sheet link" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh5-bIR4hC1f9H3NtDCNT19hZXnqz8WRrBwTuLGnZiA5PWhFILUv2nS2FKE2TZ4dZ-RnJkZwHx1t2Y/pub?gid=1054734503&single=true&output=csv">
+                    <button class="btn btn-primary" id="get-participants">
+                        <span class="loading-spinner" id="participants-spinner" style="display: none;"></span>
+                        Get Participants
+                    </button>
+                </div>
+            </div>
+            
+            <div class="alternative-upload" style="margin: 16px 0; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); display: none;" id="upload-fallback">
+                <h4 style="margin-bottom: 8px; color: var(--text-primary);">Alternative: Upload CSV File</h4>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 12px;">
+                    If the automatic fetch fails due to CORS restrictions, you can download the CSV manually and upload it here.
+                </p>
+                <div class="upload-group">
+                    <input type="file" id="csv-upload" accept=".csv" class="form-control" style="margin-bottom: 8px;">
+                    <button class="btn btn-secondary" id="process-upload">
+                        <i data-feather="upload"></i>
+                        Process CSV File
+                    </button>
+                </div>
+            </div>
+            
+            <div id="participants-result"></div>
         </div>
 
         <div class="card">
@@ -652,94 +807,6 @@
                         <div id="creds-status" class="status-message"></div>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h2 class="card-title">Get Participants from Google Sheet</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 16px;">
-                Enter a Google Sheet with participant data.
-            </p>
-            <div class="form-group">
-                <div class="input-button-group">
-                    <input type="text" id="meetup-link" class="form-control" placeholder="Enter Google Sheet link" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh5-bIR4hC1f9H3NtDCNT19hZXnqz8WRrBwTuLGnZiA5PWhFILUv2nS2FKE2TZ4dZ-RnJkZwHx1t2Y/pub?gid=1054734503&single=true&output=csv">
-                    <button class="btn btn-primary" id="get-participants">
-                        <span class="loading-spinner" id="participants-spinner" style="display: none;"></span>
-                        Get Participants
-                    </button>
-                </div>
-            </div>
-            
-            <div class="alternative-upload" style="margin: 16px 0; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md); display: none;" id="upload-fallback">
-                <h4 style="margin-bottom: 8px; color: var(--text-primary);">Alternative: Upload CSV File</h4>
-                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 12px;">
-                    If the automatic fetch fails due to CORS restrictions, you can download the CSV manually and upload it here.
-                </p>
-                <div class="upload-group">
-                    <input type="file" id="csv-upload" accept=".csv" class="form-control" style="margin-bottom: 8px;">
-                    <button class="btn btn-secondary" id="process-upload">
-                        <i data-feather="upload"></i>
-                        Process CSV File
-                    </button>
-                </div>
-            </div>
-            
-            <div id="participants-result"></div>
-        </div>
-        
-        <div class="card" id="participants-table-card" style="display: none;">
-            <h2 class="card-title">📊 Participants List</h2>
-            
-            <!-- View Toggle Controls -->
-            <div class="view-controls">
-                <div class="view-buttons">
-                    <button class="btn btn-secondary view-btn active" id="column-view-btn" data-view="column">
-                        <i data-feather="grid"></i>
-                        Column
-                    </button>
-                    <button class="btn btn-secondary view-btn" id="table-view-btn" data-view="table">
-                        <i data-feather="list"></i>
-                        Table
-                    </button>
-                    <button class="btn btn-secondary view-btn" id="gallery-view-btn" data-view="gallery">
-                        <i data-feather="image"></i>
-                        Gallery
-                    </button>
-                </div>
-                <div class="table-info">
-                    <span id="participant-count">0 participants</span>
-                    <button class="btn btn-secondary" id="export-csv">
-                        <i data-feather="download"></i>
-                        Export CSV
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Column View (Default) -->
-            <div class="view-container" id="column-view">
-                <div class="participants-grid" id="participants-column-grid"></div>
-            </div>
-            
-            <!-- Table View -->
-            <div class="view-container" id="table-view" style="display: none;">
-                <div class="table-container">
-                    <table id="participants-table" class="participants-table">
-                        <thead id="table-header"></thead>
-                        <tbody id="table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Gallery View -->
-            <div class="view-container" id="gallery-view" style="display: none;">
-                <div class="team-legend" id="team-legend" style="display: none;">
-                    <div class="legend-header">
-                        <h4>Filter by Team</h4>
-                        <button class="btn btn-sm" id="clear-team-filter">Show All</button>
-                    </div>
-                    <div class="legend-items" id="legend-items"></div>
-                </div>
-                <div class="participants-gallery" id="participants-gallery-grid"></div>
             </div>
         </div>
 
@@ -909,9 +976,11 @@
         }
         
         // Current view mode and filtering
-        let currentView = 'column';
+        let currentView = localStorage.getItem('participantsViewMode') || 'column';
         let currentTeamFilter = null;
         let allParticipantsData = [];
+        let presentParticipants = new Set();
+        let showOnlyPresent = false;
         
         // Team color mapping
         const teamColors = {
@@ -942,6 +1011,10 @@
             window.participantsData = data;
             allParticipantsData = data;
             
+            // Load present participants from storage and apply highlighting
+            loadPresentParticipants();
+            updatePresentHighlighting();
+            
             // Render all views
             renderColumnView(data);
             renderTableView(data);
@@ -960,6 +1033,7 @@
             data.forEach(participant => {
                 const card = document.createElement('div');
                 card.className = 'participant-card';
+                card.dataset.participantName = participant.Name || 'Unknown';
                 
                 const name = participant.Name || 'Unknown';
                 const team = participant.Team || 'Not specified';
@@ -1001,6 +1075,7 @@
             tableBody.innerHTML = '';
             data.forEach(row => {
                 const tr = document.createElement('tr');
+                tr.dataset.participantName = row.Name || 'Unknown';
                 headers.forEach(header => {
                     const td = document.createElement('td');
                     td.textContent = row[header] || '';
@@ -1117,6 +1192,7 @@
                 const card = document.createElement('div');
                 const teamClass = getTeamClass(participant.Team);
                 card.className = `gallery-card ${teamClass}`;
+                card.dataset.participantName = participant.Name || 'Unknown';
                 
                 const name = participant.Name || 'Unknown';
                 const location = participant.Location || 'Location TBD';
@@ -1136,6 +1212,9 @@
         function switchView(viewType) {
             currentView = viewType;
             
+            // Save view preference to localStorage
+            localStorage.setItem('participantsViewMode', viewType);
+            
             // Hide all views
             document.getElementById('column-view').style.display = 'none';
             document.getElementById('table-view').style.display = 'none';
@@ -1149,6 +1228,127 @@
                 btn.classList.remove('active');
             });
             document.getElementById(viewType + '-view-btn').classList.add('active');
+            
+            // Apply present highlighting after view switch
+            setTimeout(() => updatePresentHighlighting(), 100);
+        }
+        
+        // Present participants functionality
+        function loadPresentParticipants() {
+            const stored = localStorage.getItem('presentParticipants');
+            if (stored) {
+                // Only populate the field if it's currently empty (page load scenario)
+                const presentInput = document.getElementById('present');
+                if (!presentInput.value.trim()) {
+                    presentInput.value = stored;
+                }
+                presentParticipants = new Set(stored.split(',').map(name => name.trim()).filter(name => name));
+            }
+            updatePresentCount();
+        }
+        
+        function savePresentParticipants() {
+            const presentList = Array.from(presentParticipants).join(', ');
+            localStorage.setItem('presentParticipants', presentList);
+            // Don't overwrite the input field value to preserve user's typing
+        }
+        
+        function updatePresentCount() {
+            const count = presentParticipants.size;
+            document.getElementById('present-count').textContent = `(${count})`;
+        }
+        
+        function updatePresentHighlighting() {
+            // Remove existing highlighting
+            document.querySelectorAll('.participant-present').forEach(el => {
+                el.classList.remove('participant-present');
+            });
+            
+            // Apply highlighting to present participants
+            presentParticipants.forEach(name => {
+                const elements = document.querySelectorAll(`[data-participant-name]`);
+                elements.forEach(el => {
+                    if (el.dataset.participantName.toLowerCase() === name.toLowerCase()) {
+                        el.classList.add('participant-present');
+                    }
+                });
+            });
+        }
+        
+        function processPresentInput() {
+            const input = document.getElementById('present');
+            const value = input.value;
+            
+            // Parse names from input
+            presentParticipants = new Set();
+            value.split(',').forEach(name => {
+                const trimmed = name.trim();
+                if (trimmed) {
+                    presentParticipants.add(trimmed);
+                }
+            });
+            
+            // Save to storage
+            savePresentParticipants();
+            updatePresentCount();
+            updatePresentHighlighting();
+        }
+        
+        function togglePresentFilter() {
+            showOnlyPresent = !showOnlyPresent;
+            const toggle = document.getElementById('present-toggle');
+            const toggleText = document.getElementById('present-toggle-text');
+            
+            if (showOnlyPresent) {
+                toggle.classList.add('active');
+                toggleText.textContent = 'All';
+                
+                // Filter data to show only present participants
+                const filteredData = allParticipantsData.filter(participant => {
+                    const name = participant.Name || 'Unknown';
+                    return Array.from(presentParticipants).some(presentName => 
+                        presentName.toLowerCase() === name.toLowerCase()
+                    );
+                });
+                
+                // Re-render current view with filtered data
+                if (currentView === 'column') {
+                    renderColumnView(filteredData);
+                } else if (currentView === 'table') {
+                    renderTableView(filteredData);
+                } else if (currentView === 'gallery') {
+                    renderGalleryCards(filteredData);
+                }
+                
+                // Update participant count
+                const participantCount = document.getElementById('participant-count');
+                participantCount.textContent = `${filteredData.length} present participant${filteredData.length !== 1 ? 's' : ''}`;
+                
+            } else {
+                toggle.classList.remove('active');
+                toggleText.textContent = 'Present';
+                
+                // Show all participants
+                if (currentView === 'column') {
+                    renderColumnView(allParticipantsData);
+                } else if (currentView === 'table') {
+                    renderTableView(allParticipantsData);
+                } else if (currentView === 'gallery') {
+                    if (currentTeamFilter) {
+                        // Restore team filter if it was active
+                        filterByTeam(currentTeamFilter);
+                    } else {
+                        renderGalleryCards(allParticipantsData);
+                    }
+                }
+                
+                // Update participant count
+                const participantCount = document.getElementById('participant-count');
+                participantCount.textContent = `${allParticipantsData.length} participant${allParticipantsData.length !== 1 ? 's' : ''}`;
+            }
+            
+            // Apply highlighting after re-rendering
+            setTimeout(() => updatePresentHighlighting(), 100);
         }
 
         getParticipantsButton.addEventListener('click', getMeetupParticipants);
@@ -1160,12 +1360,38 @@
                 return;
             }
             
-            const data = window.participantsData;
-            const headers = Object.keys(data[0]);
+            // Determine which data to export based on current filter state
+            let dataToExport = window.participantsData;
+            
+            // Generate date string for filename (YYYY-MM-DD format)
+            const today = new Date();
+            const dateString = today.getFullYear() + '-' + 
+                String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(today.getDate()).padStart(2, '0');
+            
+            let filename = `meetup-participants-${dateString}.csv`;
+            
+            // If showing only present participants, export only those
+            if (showOnlyPresent) {
+                dataToExport = window.participantsData.filter(participant => {
+                    const name = participant.Name || 'Unknown';
+                    return Array.from(presentParticipants).some(presentName => 
+                        presentName.toLowerCase() === name.toLowerCase()
+                    );
+                });
+                filename = `meetup-participants-present-${dateString}.csv`;
+            }
+            
+            if (dataToExport.length === 0) {
+                alert('No participants to export');
+                return;
+            }
+            
+            const headers = Object.keys(dataToExport[0]);
             
             // Create CSV content
             let csvContent = headers.join(',') + '\n';
-            data.forEach(row => {
+            dataToExport.forEach(row => {
                 const values = headers.map(header => {
                     const value = row[header] || '';
                     // Escape quotes and wrap in quotes if contains comma
@@ -1179,7 +1405,7 @@
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', 'meetup-participants.csv');
+            link.setAttribute('download', filename);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
@@ -1657,10 +1883,63 @@
         // Team filter event listener
         document.getElementById('clear-team-filter').addEventListener('click', clearTeamFilter);
         
+        // Present participants event listeners
+        const presentInput = document.getElementById('present');
+        presentInput.addEventListener('input', function(e) {
+            const value = e.target.value;
+            // Process input when comma is typed, but preserve the comma
+            if (value.endsWith(',')) {
+                // Extract the part before the comma for processing
+                const beforeComma = value.substring(0, value.length - 1);
+                if (beforeComma.trim()) {
+                    // Process the names before the comma
+                    const names = beforeComma.split(',').map(name => name.trim()).filter(name => name);
+                    names.forEach(name => {
+                        if (name) presentParticipants.add(name);
+                    });
+                    
+                    // Save to storage and update highlighting
+                    savePresentParticipants();
+                    updatePresentCount();
+                    updatePresentHighlighting();
+                }
+            }
+        });
+        
+        presentInput.addEventListener('keydown', function(e) {
+            // Process input when Enter is pressed
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                processPresentInput();
+            }
+        });
+        
+        presentInput.addEventListener('blur', function() {
+            // Process input when field loses focus
+            processPresentInput();
+        });
+        
+        document.getElementById('present-toggle').addEventListener('click', togglePresentFilter);
+        
+        // Restore saved view state
+        function restoreViewState() {
+            // Restore the saved view mode (currentView is already loaded from localStorage)
+            switchView(currentView);
+        }
+        
         // Load README documentation and configuration
         document.addEventListener('DOMContentLoaded', function() {
             displayFile("README.md", "readmeDiv", "_parent");
             loadConfiguration(); // Auto-load configuration on page load
+            
+            // Restore saved view state
+            restoreViewState();
+            
+            // Auto-load Google Sheet data if URL is present
+            const meetupLink = document.getElementById('meetup-link').value.trim();
+            if (meetupLink) {
+                getMeetupParticipants();
+            }
         });
     </script>
 </body>
