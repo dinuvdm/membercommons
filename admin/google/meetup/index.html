@@ -18,16 +18,65 @@
             padding: 16px;
             background: var(--bg-tertiary);
         }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .input-button-group {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+        
+        .input-button-group .form-control {
+            flex: 1;
+        }
+        
+        @media (max-width: 500px) {
+            .input-button-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .input-button-group .btn {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="breadcrumb">
-            <a href="../">← Google API Test</a>
+            <a href="../">← Google Gemini Insights</a>
         </div>
 
         <div class="header">
-            <h1>Google Meetup Integration</h1>
+            <h1>
+                <div class="gemini-icon">G</div>
+                Google Meetup Integration
+            </h1>
             <p>This page allows you to pull participant lists from a Google Meetup into a Google Sheet.</p>
         </div>
 
@@ -37,13 +86,13 @@
                 Enter a Google Meetup link to fetch the list of participants. The link should be to a Google Sheet with the participant data.
             </p>
             <div class="form-group">
-                <input type="text" id="meetup-link" class="form-control" placeholder="Enter Google Sheet link...">
-            </div>
-            <div class="actions">
-                <button class="btn btn-primary" id="get-participants">
-                    <span class="loading-spinner" id="participants-spinner" style="display: none;"></span>
-                    Get Participants
-                </button>
+                <div class="input-button-group">
+                    <input type="text" id="meetup-link" class="form-control" placeholder="Enter Google Sheet link">
+                    <button class="btn btn-primary" id="get-participants">
+                        <span class="loading-spinner" id="participants-spinner" style="display: none;"></span>
+                        Get Participants
+                    </button>
+                </div>
             </div>
             <div id="participants-result"></div>
         </div>

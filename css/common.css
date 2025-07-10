@@ -56,11 +56,12 @@ h2 {
 
 /* ===== HEADERS ===== */
 .header {
-    background: var(--bg-secondary);
+    backgroundX: var(--bg-secondary);
     padding: 24px;
-    border-radius: var(--radius-lg);
+    border-radiusX: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     margin-bottom: 24px;
+    text-align: center;
 }
 
 .header h1 {
@@ -70,6 +71,7 @@ h2 {
     margin-bottom: 8px;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 12px;
 }
 
