@@ -1,11 +1,16 @@
 # Google Meetup Integration - MemberCommons
 
-This page allows you to pull participant lists from a Google Meetup into a Google Sheet.
-
-## Your Meetup
-
 - **Launch Our Model.earth Meetup:** [https://meet.google.com/pcv-xrdh-bat](https://meet.google.com/pcv-xrdh-bat)
 - **Google Sheet ID:** You'll need to create a Google Sheet and get its ID from the URL. The ID is the long string of characters between `/d/` and `/edit`.
+
+## Add Settings for Google Meetup Integration
+
+To use the Google Meetup integration with the MemberCommons backend, you'll need to provide the following credentials in your `.env` file:
+
+- `GOOGLE_PRIVATE_KEY_ID`
+- `GOOGLE_PRIVATE_KEY`
+- `GOOGLE_CLIENT_EMAIL`
+- `GOOGLE_CLIENT_ID`
 
 ## Get Participants from Google Sheet
 
@@ -87,14 +92,7 @@ You can also run the script manually from the Google Sheet:
 2. You should see a new **Meetup** menu item.
 3. Click **Meetup > Get Participants** to run the script.
 
-## Add Settings for Google Meetup Integration
 
-To use the Google Meetup integration with the MemberCommons backend, you'll need to provide the following credentials in your `.env` file:
-
-- `GOOGLE_PRIVATE_KEY_ID`
-- `GOOGLE_PRIVATE_KEY`
-- `GOOGLE_CLIENT_EMAIL`
-- `GOOGLE_CLIENT_ID`
 
 You can get these credentials by creating a service account in the [Google Cloud Console](https://console.cloud.google.com/).
 
