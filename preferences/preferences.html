@@ -361,7 +361,7 @@
                 });
                 if (response.ok) {
                     const recommended = await response.json();
-                    appState.recommendedProjects = recommended;
+                    appState.recommendedProjects = recommended.slice(0, 5);
                 } else {
                     console.error('Failed to fetch recommendations');
                     appState.recommendedProjects = [];
