@@ -784,7 +784,6 @@
                 <div class="legend-header">
                     <h4>Filter by Team</h4>
                     <div class="legend-controls">
-                        <button class="btn btn-sm" id="clear-team-filter">Show All</button>
                         <button class="btn btn-sm" id="sort-toggle">Sort by</button>
                         <button class="btn btn-sm" id="status-toggle">Status</button>
                         
@@ -1048,11 +1047,18 @@
                 }
                 const parsedData = parseCSV(csvText);
                 
-                if (parsedData.length === 0) {
+                if (!parsedData || parsedData.length === 0) {
                     throw new Error('No data found in the spreadsheet');
                 }
                 
-                displayParticipantsTable(parsedData);
+                // Filter out any null/undefined rows
+                const validData = parsedData.filter(row => row && typeof row === 'object');
+                
+                if (validData.length === 0) {
+                    throw new Error('No valid data found in the spreadsheet');
+                }
+                
+                displayParticipantsTable(validData);
                 
                 participantsResult.innerHTML = '<div class="success-message">Successfully loaded participant data!</div>';
 
@@ -1174,7 +1180,7 @@
         
         // Display participants in all views
         function displayParticipantsTable(data) {
-            if (data.length === 0) return;
+            if (!data || data.length === 0) return;
             
             const tableCard = document.getElementById('participants-table-card');
             const participantCount = document.getElementById('participant-count');
@@ -1222,7 +1228,14 @@
             const container = document.getElementById('participants-column-grid');
             container.innerHTML = '';
             
+            // Check if data is valid
+            if (!data || data.length === 0) {
+                console.error('No data provided to renderColumnView');
+                return;
+            }
+            
             data.forEach(participant => {
+                if (!participant) return; // Skip null/undefined participants
                 const card = document.createElement('div');
                 card.className = 'participant-card';
                 card.dataset.participantName = participant.Name || 'Unknown';
@@ -1250,8 +1263,14 @@
             const tableHeader = document.getElementById('table-header');
             const tableBody = document.getElementById('table-body');
             
+            // Check if data is valid
+            if (!data || data.length === 0) {
+                console.error('No data provided to renderTableView');
+                return;
+            }
+            
             // Get headers from first row
-            const headers = Object.keys(data[0]);
+            const headers = Object.keys(data[0] || {});
             
             // Create table header
             tableHeader.innerHTML = '';
@@ -1286,6 +1305,7 @@
             // Create table body
             tableBody.innerHTML = '';
             data.forEach(row => {
+                if (!row) return; // Skip null/undefined rows
                 const tr = document.createElement('tr');
                 tr.dataset.participantName = row.Name || 'Unknown';
                 headers.forEach(header => {
@@ -1350,15 +1370,35 @@
             const teamLegend = document.getElementById('team-legend');
             const legendItems = document.getElementById('legend-items');
             
+            // Check if data is valid
+            if (!data || data.length === 0) {
+                teamLegend.style.display = 'none';
+                return;
+            }
+            
             // Get unique teams from data (collect all team classes for each participant)
             const teams = new Set();
             data.forEach(participant => {
+                if (!participant) return; // Skip null/undefined participants
                 const teamClasses = getAllTeamClasses(participant.Team);
                 teamClasses.forEach(teamClass => teams.add(teamClass));
             });
             
             // Create legend items
             legendItems.innerHTML = '';
+            
+            // Add "Show All" button as first item
+            const showAllItem = document.createElement('div');
+            showAllItem.className = 'legend-item';
+            showAllItem.id = 'clear-team-filter';
+            showAllItem.innerHTML = `
+                <div class="legend-color" style="background: #ddd;"></div>
+                <span>Show All</span>
+            `;
+            showAllItem.addEventListener('click', clearTeamFilter);
+            legendItems.appendChild(showAllItem);
+            
+            // Add team filter buttons
             teams.forEach(teamClass => {
                 const teamInfo = Object.values(teamColors).find(t => t.class === teamClass) || teamColors.default;
                 
@@ -1395,6 +1435,12 @@
                 item.classList.toggle('active', item.dataset.team === teamClass);
             });
             
+            // Remove active state from "Show All" button
+            const showAllButton = document.getElementById('clear-team-filter');
+            if (showAllButton) {
+                showAllButton.classList.remove('active');
+            }
+            
             // Apply all filters (team + status)
             applyAllFilters();
         }
@@ -1411,6 +1457,12 @@
                 item.classList.remove('active');
             });
             
+            // Make "Show All" button active
+            const showAllButton = document.getElementById('clear-team-filter');
+            if (showAllButton) {
+                showAllButton.classList.add('active');
+            }
+            
             // Apply all filters (status only now)
             applyAllFilters();
         }
@@ -1426,7 +1478,14 @@
             const container = document.getElementById('participants-gallery-grid');
             container.innerHTML = '';
             
+            // Check if data is valid
+            if (!data || data.length === 0) {
+                console.error('No data provided to renderGalleryCards');
+                return;
+            }
+            
             data.forEach(participant => {
+                if (!participant) return; // Skip null/undefined participants
                 const card = document.createElement('div');
                 const teamClass = getTeamClass(participant.Team);
                 card.className = `gallery-card ${teamClass}`;
@@ -2379,8 +2438,7 @@
         document.getElementById('table-view-btn').addEventListener('click', () => switchView('table'));
         document.getElementById('gallery-view-btn').addEventListener('click', () => switchView('gallery'));
         
-        // Team filter event listener
-        document.getElementById('clear-team-filter').addEventListener('click', clearTeamFilter);
+        // Team filter event listener (now handled in generateTeamLegend function)
         
         // Sort event listeners
         document.getElementById('sort-toggle').addEventListener('click', toggleSortDropdown);
