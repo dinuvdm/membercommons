@@ -294,7 +294,8 @@
             currentPage: 1,
             itemsPerPage: 20,
             projects: [],
-            excelLoaded: false
+            excelLoaded: false,
+            recommendedProjects: []
         };
 
         // Excel loading function
@@ -340,6 +341,36 @@
                 appState.projects = mockProjects;
                 appState.excelLoaded = false;
             }
+        }
+
+        async function fetchRecommendations() {
+            const activePreferences = Object.keys(appState.preferences).filter(key => appState.preferences[key]);
+            if (activePreferences.length === 0) {
+                appState.recommendedProjects = [];
+                render();
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8081/api/recommendations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ preferences: activePreferences }),
+                });
+                if (response.ok) {
+                    const recommended = await response.json();
+                    appState.recommendedProjects = recommended.slice(0, 5);
+                } else {
+                    console.error('Failed to fetch recommendations');
+                    appState.recommendedProjects = [];
+                }
+            } catch (error) {
+                console.error('Error fetching recommendations:', error);
+                appState.recommendedProjects = [];
+            }
+            render();
         }
 
         // Generate tags from project data
@@ -539,6 +570,7 @@
             }
             
             saveToStorage();
+            fetchRecommendations();
             render();
         }
 
@@ -970,6 +1002,22 @@
             searchSection.appendChild(searchContainer);
             mainContent.appendChild(searchSection);
 
+            // Recommended projects section
+            if (appState.recommendedProjects.length > 0) {
+                const recommendedSection = createElement('div', 'bg-white rounded-lg p-6 mb-8 shadow-sm border border-gray-100');
+                const recommendedHeader = createElement('h2', 'text-xl font-semibold text-gray-900 mb-4 flex items-center');
+                recommendedHeader.innerHTML = `<svg class="w-5 h-5 mr-2 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>Recommended Projects (${appState.recommendedProjects.length})`;
+                
+                const recommendedGrid = createElement('div', 'grid gap-4');
+                appState.recommendedProjects.forEach(project => {
+                    recommendedGrid.appendChild(createProjectCard(project));
+                });
+
+                recommendedSection.appendChild(recommendedHeader);
+                recommendedSection.appendChild(recommendedGrid);
+                mainContent.appendChild(recommendedSection);
+            }
+
             // Starred projects section
             if (starredProjectsList.length > 0) {
                 const starredSection = createElement('div', 'bg-white rounded-lg p-6 mb-8 shadow-sm border border-gray-100');
@@ -1307,6 +1355,7 @@
         async function init() {
             loadFromStorage();
             await loadExcelData();
+            fetchRecommendations();
             render();
         }
 
