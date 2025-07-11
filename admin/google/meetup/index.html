@@ -292,6 +292,17 @@
             flex: 1;
         }
         
+        #present {
+            text-align: right;
+            caret-color: var(--text-primary) !important;
+            padding-right: 18px !important; /* Extra padding to ensure cursor visibility */
+            box-sizing: border-box;
+        }
+        
+        #present:focus {
+            caret-color: var(--accent-blue) !important;
+        }
+        
         #present-toggle {
             white-space: nowrap;
             min-width: 100px;
@@ -1746,10 +1757,17 @@
                 const presentInput = document.getElementById('present');
                 if (!presentInput.value.trim()) {
                     presentInput.value = stored;
+                    // Scroll to the right to show the end of the text
+                    setTimeout(() => scrollPresentInputToRight(), 100);
                 }
                 presentParticipants = new Set(stored.split(',').map(name => name.trim()).filter(name => name));
             }
             updatePresentCount();
+        }
+        
+        function scrollPresentInputToRight() {
+            const presentInput = document.getElementById('present');
+            presentInput.scrollLeft = presentInput.scrollWidth - presentInput.clientWidth;
         }
         
         function savePresentParticipants() {
@@ -2418,6 +2436,10 @@
         presentInput.addEventListener('blur', function() {
             // Process input when field loses focus
             processPresentInput();
+            // Only scroll to the right if already near the right edge
+            if (presentInput.scrollLeft >= presentInput.scrollWidth - presentInput.clientWidth - 10) {
+                setTimeout(() => scrollPresentInputToRight(), 10); // Very fast, 10th of 10th
+            }
         });
         
         document.getElementById('present-toggle').addEventListener('click', togglePresentFilter);
