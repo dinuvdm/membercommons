@@ -553,6 +553,135 @@
             flex-shrink: 0;
         }
         
+        /* Legend Controls */
+        .legend-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            position: relative;
+        }
+        
+        /* Sort Dropdown */
+        .sort-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            min-width: 200px;
+            z-index: 1000;
+            margin-top: 4px;
+        }
+        
+        .sort-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .sort-header h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .sort-items {
+            padding: 8px 0;
+        }
+        
+        .sort-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .sort-item:hover {
+            background-color: var(--bg-tertiary);
+        }
+        
+        .sort-item.active {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+        
+        .sort-arrow {
+            font-size: 12px;
+            font-weight: bold;
+            min-width: 16px;
+            text-align: center;
+        }
+        
+        /* Status Dropdown */
+        .status-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            min-width: 220px;
+            z-index: 1000;
+            margin-top: 4px;
+        }
+        
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .status-header h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .status-items {
+            padding: 8px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .status-item:hover {
+            background-color: var(--bg-tertiary);
+        }
+        
+        .status-checkbox {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        
+        .status-label {
+            flex: 1;
+            cursor: pointer;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
             .participants-grid {
@@ -639,6 +768,37 @@
                 </div>
             </div>
             
+            <!-- Team Legend and Sort Controls (Shared across all views) -->
+            <div class="team-legend" id="team-legend" style="display: none;">
+                <div class="legend-header">
+                    <h4>Filter by Team</h4>
+                    <div class="legend-controls">
+                        <button class="btn btn-sm" id="clear-team-filter">Show All</button>
+                        <button class="btn btn-sm" id="sort-toggle">Sort by</button>
+                        <button class="btn btn-sm" id="status-toggle">Status</button>
+                        
+                        <!-- Sort Dropdown -->
+                        <div class="sort-dropdown" id="sort-dropdown" style="display: none;">
+                            <div class="sort-header">
+                                <h4>Sort by</h4>
+                                <button class="btn btn-sm" id="close-sort">×</button>
+                            </div>
+                            <div class="sort-items" id="sort-items"></div>
+                        </div>
+                        
+                        <!-- Status Dropdown -->
+                        <div class="status-dropdown" id="status-dropdown" style="display: none;">
+                            <div class="status-header">
+                                <h4>Filter by Status</h4>
+                                <button class="btn btn-sm" id="close-status">×</button>
+                            </div>
+                            <div class="status-items" id="status-items"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend-items" id="legend-items"></div>
+            </div>
+            
             <!-- Column View (Default) -->
             <div class="view-container" id="column-view">
                 <div class="participants-grid" id="participants-column-grid"></div>
@@ -656,13 +816,6 @@
             
             <!-- Gallery View -->
             <div class="view-container" id="gallery-view" style="display: none;">
-                <div class="team-legend" id="team-legend" style="display: none;">
-                    <div class="legend-header">
-                        <h4>Filter by Team</h4>
-                        <button class="btn btn-sm" id="clear-team-filter">Show All</button>
-                    </div>
-                    <div class="legend-items" id="legend-items"></div>
-                </div>
                 <div class="participants-gallery" id="participants-gallery-grid"></div>
             </div>
         </div>
@@ -977,10 +1130,19 @@
         
         // Current view mode and filtering
         let currentView = localStorage.getItem('participantsViewMode') || 'column';
-        let currentTeamFilter = null;
+        let currentTeamFilter = localStorage.getItem('participantsTeamFilter') || null;
         let allParticipantsData = [];
         let presentParticipants = new Set();
         let showOnlyPresent = false;
+        
+        // Sort functionality
+        let currentSortColumn = localStorage.getItem('participantsSortColumn') || 'Rows';
+        let currentSortOrder = localStorage.getItem('participantsSortOrder') || 'asc';
+        let originalDataOrder = [];
+        
+        // Status filtering
+        let selectedStatuses = new Set(JSON.parse(localStorage.getItem('participantsStatusFilter') || '["All"]'));
+        let availableStatuses = [];
         
         // Team color mapping
         const teamColors = {
@@ -1010,6 +1172,7 @@
             // Store data globally
             window.participantsData = data;
             allParticipantsData = data;
+            originalDataOrder = [...data]; // Store original order
             
             // Load present participants from storage and apply highlighting
             loadPresentParticipants();
@@ -1019,6 +1182,19 @@
             renderColumnView(data);
             renderTableView(data);
             renderGalleryView(data);
+            
+            // Apply saved sort preferences
+            if (currentSortColumn) {
+                applySortToData();
+            }
+            
+            // Update status button text
+            updateStatusButtonText();
+            
+            // Apply all saved filters (team + status)
+            setTimeout(() => {
+                applyAllFilters();
+            }, 100);
             
             // Show the card and initialize view
             tableCard.style.display = 'block';
@@ -1085,25 +1261,52 @@
             });
         }
         
-        // Get team class based on first team value
+        // Get team class based on team value (checks all teams in comma-separated list)
         function getTeamClass(teamString) {
             if (!teamString) return 'team-default';
             
-            const firstTeam = teamString.split(',')[0].trim().toLowerCase();
+            // Split by comma and check each team
+            const teams = teamString.split(',').map(team => team.trim().toLowerCase());
             
-            // Check for team keywords
-            if (firstTeam.includes('js')) return 'team-js';
-            if (firstTeam.includes('ml')) return 'team-ml';
-            if (firstTeam.includes('react')) return 'team-react';
-            if (firstTeam.includes('io')) return 'team-io';
-            if (firstTeam.includes('ai')) return 'team-ai';
-            if (firstTeam.includes('flask')) return 'team-flask';
-            if (firstTeam.includes('suite')) return 'team-suite';
-            if (firstTeam.includes('us')) return 'team-us';
-            if (firstTeam.includes('auth')) return 'team-auth';
-            if (firstTeam.includes('discord')) return 'team-discord';
+            // Check for team keywords in order of priority
+            for (const team of teams) {
+                if (team.includes('js')) return 'team-js';
+                if (team.includes('ml')) return 'team-ml';
+                if (team.includes('react')) return 'team-react';
+                if (team.includes('io')) return 'team-io';
+                if (team.includes('ai')) return 'team-ai';
+                if (team.includes('flask')) return 'team-flask';
+                if (team.includes('suite')) return 'team-suite';
+                if (team.includes('us')) return 'team-us';
+                if (team.includes('auth')) return 'team-auth';
+                if (team.includes('discord')) return 'team-discord';
+            }
             
             return 'team-default';
+        }
+        
+        // Get all matching team classes for a participant (for filtering)
+        function getAllTeamClasses(teamString) {
+            if (!teamString) return ['team-default'];
+            
+            const matchingTeams = [];
+            const teams = teamString.split(',').map(team => team.trim().toLowerCase());
+            
+            // Check each team and collect all matches
+            for (const team of teams) {
+                if (team.includes('js')) matchingTeams.push('team-js');
+                else if (team.includes('ml')) matchingTeams.push('team-ml');
+                else if (team.includes('react')) matchingTeams.push('team-react');
+                else if (team.includes('io')) matchingTeams.push('team-io');
+                else if (team.includes('ai')) matchingTeams.push('team-ai');
+                else if (team.includes('flask')) matchingTeams.push('team-flask');
+                else if (team.includes('suite')) matchingTeams.push('team-suite');
+                else if (team.includes('us')) matchingTeams.push('team-us');
+                else if (team.includes('auth')) matchingTeams.push('team-auth');
+                else if (team.includes('discord')) matchingTeams.push('team-discord');
+            }
+            
+            return matchingTeams.length > 0 ? matchingTeams : ['team-default'];
         }
         
         // Generate team legend
@@ -1111,11 +1314,11 @@
             const teamLegend = document.getElementById('team-legend');
             const legendItems = document.getElementById('legend-items');
             
-            // Get unique teams from data
+            // Get unique teams from data (collect all team classes for each participant)
             const teams = new Set();
             data.forEach(participant => {
-                const teamClass = getTeamClass(participant.Team);
-                teams.add(teamClass);
+                const teamClasses = getAllTeamClasses(participant.Team);
+                teamClasses.forEach(teamClass => teams.add(teamClass));
             });
             
             // Create legend items
@@ -1140,41 +1343,40 @@
         
         // Filter by team
         function filterByTeam(teamClass) {
+            // If clicking on the already selected team, clear the filter
+            if (currentTeamFilter === teamClass) {
+                clearTeamFilter();
+                return;
+            }
+            
             currentTeamFilter = teamClass;
+            
+            // Save team filter preference to localStorage
+            localStorage.setItem('participantsTeamFilter', teamClass);
             
             // Update legend active state
             document.querySelectorAll('.legend-item').forEach(item => {
                 item.classList.toggle('active', item.dataset.team === teamClass);
             });
             
-            // Filter and render gallery
-            const filteredData = allParticipantsData.filter(participant => {
-                const participantTeamClass = getTeamClass(participant.Team);
-                return participantTeamClass === teamClass;
-            });
-            
-            renderGalleryCards(filteredData);
-            
-            // Update participant count
-            const participantCount = document.getElementById('participant-count');
-            participantCount.textContent = `${filteredData.length} participant${filteredData.length !== 1 ? 's' : ''} (${teamColors[teamClass.replace('team-', '')] ? teamColors[teamClass.replace('team-', '')].name : 'filtered'})`;
+            // Apply all filters (team + status)
+            applyAllFilters();
         }
         
         // Clear team filter
         function clearTeamFilter() {
             currentTeamFilter = null;
             
+            // Remove team filter preference from localStorage
+            localStorage.removeItem('participantsTeamFilter');
+            
             // Update legend active state
             document.querySelectorAll('.legend-item').forEach(item => {
                 item.classList.remove('active');
             });
             
-            // Render all participants
-            renderGalleryCards(allParticipantsData);
-            
-            // Update participant count
-            const participantCount = document.getElementById('participant-count');
-            participantCount.textContent = `${allParticipantsData.length} participant${allParticipantsData.length !== 1 ? 's' : ''}`;
+            // Apply all filters (status only now)
+            applyAllFilters();
         }
         
         // Render gallery view
@@ -1208,6 +1410,284 @@
             });
         }
         
+        // Sort functionality
+        function generateSortDropdown() {
+            const sortItems = document.getElementById('sort-items');
+            if (!allParticipantsData.length) return;
+            
+            // Get available columns from data
+            const columns = Object.keys(allParticipantsData[0]);
+            
+            // Add "Rows" as first option (original order)
+            const sortOptions = ['Rows', ...columns];
+            
+            sortItems.innerHTML = '';
+            sortOptions.forEach(column => {
+                const sortItem = document.createElement('div');
+                sortItem.className = 'sort-item';
+                sortItem.dataset.column = column;
+                
+                const isActive = currentSortColumn === column;
+                if (isActive) {
+                    sortItem.classList.add('active');
+                }
+                
+                const arrow = currentSortOrder === 'asc' ? '↑' : '↓';
+                sortItem.innerHTML = `
+                    <span>${column}</span>
+                    <span class="sort-arrow">${isActive ? arrow : ''}</span>
+                `;
+                
+                sortItem.addEventListener('click', () => sortBy(column));
+                sortItems.appendChild(sortItem);
+            });
+        }
+        
+        function sortBy(column) {
+            // If clicking the same column, toggle order
+            if (currentSortColumn === column) {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortOrder = 'asc';
+            }
+            
+            // Save sort preferences
+            localStorage.setItem('participantsSortColumn', currentSortColumn);
+            localStorage.setItem('participantsSortOrder', currentSortOrder);
+            
+            // Apply sort to data
+            applySortToData();
+            
+            // Update dropdown display
+            generateSortDropdown();
+            
+            // Hide dropdown
+            document.getElementById('sort-dropdown').style.display = 'none';
+        }
+        
+        function applySortToData() {
+            let sortedData = [...allParticipantsData];
+            
+            if (currentSortColumn === 'Rows') {
+                // Sort by original row order
+                if (currentSortOrder === 'desc') {
+                    sortedData.reverse();
+                } else {
+                    sortedData = [...originalDataOrder];
+                }
+            } else {
+                // Sort by column data
+                sortedData.sort((a, b) => {
+                    let valueA = a[currentSortColumn] || '';
+                    let valueB = b[currentSortColumn] || '';
+                    
+                    // Convert to string for comparison
+                    valueA = valueA.toString().toLowerCase();
+                    valueB = valueB.toString().toLowerCase();
+                    
+                    if (currentSortOrder === 'asc') {
+                        return valueA.localeCompare(valueB);
+                    } else {
+                        return valueB.localeCompare(valueA);
+                    }
+                });
+            }
+            
+            // Update global data
+            allParticipantsData = sortedData;
+            
+            // Re-render all views
+            renderColumnView(sortedData);
+            renderTableView(sortedData);
+            renderGalleryView(sortedData);
+            
+            // Reapply present highlighting
+            setTimeout(() => updatePresentHighlighting(), 100);
+            
+            // Reapply team filter if active
+            if (currentTeamFilter && currentView === 'gallery') {
+                setTimeout(() => {
+                    filterByTeam(currentTeamFilter);
+                }, 150);
+            }
+        }
+        
+        function toggleSortDropdown() {
+            const dropdown = document.getElementById('sort-dropdown');
+            const isVisible = dropdown.style.display === 'block';
+            
+            if (isVisible) {
+                dropdown.style.display = 'none';
+            } else {
+                generateSortDropdown();
+                dropdown.style.display = 'block';
+            }
+        }
+        
+        // Status filtering functionality
+        function generateStatusDropdown() {
+            const statusItems = document.getElementById('status-items');
+            if (!allParticipantsData.length) return;
+            
+            // Get unique status values from data
+            const statuses = new Set();
+            allParticipantsData.forEach(participant => {
+                const status = participant.Status || 'Unknown';
+                statuses.add(status);
+            });
+            
+            availableStatuses = ['All', ...Array.from(statuses).sort()];
+            
+            statusItems.innerHTML = '';
+            availableStatuses.forEach(status => {
+                const statusItem = document.createElement('div');
+                statusItem.className = 'status-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'status-checkbox';
+                checkbox.checked = selectedStatuses.has(status);
+                checkbox.id = `status-${status}`;
+                
+                const label = document.createElement('label');
+                label.className = 'status-label';
+                label.htmlFor = `status-${status}`;
+                label.textContent = status;
+                
+                statusItem.appendChild(checkbox);
+                statusItem.appendChild(label);
+                
+                // Add click handler for the whole item
+                statusItem.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox') {
+                        checkbox.checked = !checkbox.checked;
+                    }
+                    handleStatusChange(status, checkbox.checked);
+                });
+                
+                statusItems.appendChild(statusItem);
+            });
+        }
+        
+        function handleStatusChange(status, isChecked) {
+            if (status === 'All') {
+                if (isChecked) {
+                    // Check all statuses
+                    selectedStatuses.clear();
+                    selectedStatuses.add('All');
+                    // Update all checkboxes
+                    document.querySelectorAll('.status-checkbox').forEach(cb => {
+                        cb.checked = cb.id === 'status-All';
+                    });
+                }
+            } else {
+                if (isChecked) {
+                    // Uncheck "All" and add specific status
+                    selectedStatuses.delete('All');
+                    selectedStatuses.add(status);
+                    document.getElementById('status-All').checked = false;
+                } else {
+                    // Remove specific status
+                    selectedStatuses.delete(status);
+                    
+                    // If no specific statuses selected, check "All"
+                    if (selectedStatuses.size === 0) {
+                        selectedStatuses.add('All');
+                        document.getElementById('status-All').checked = true;
+                    }
+                }
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('participantsStatusFilter', JSON.stringify(Array.from(selectedStatuses)));
+            
+            // Update button text
+            updateStatusButtonText();
+            
+            // Apply filters
+            applyAllFilters();
+        }
+        
+        function updateStatusButtonText() {
+            const button = document.getElementById('status-toggle');
+            const statusArray = Array.from(selectedStatuses);
+            
+            if (statusArray.includes('All') || statusArray.length === 0) {
+                button.textContent = 'Status';
+            } else if (statusArray.length === 1) {
+                button.textContent = statusArray[0];
+            } else {
+                button.textContent = statusArray[0] + '...';
+            }
+        }
+        
+        function toggleStatusDropdown() {
+            const dropdown = document.getElementById('status-dropdown');
+            const isVisible = dropdown.style.display === 'block';
+            
+            if (isVisible) {
+                dropdown.style.display = 'none';
+            } else {
+                generateStatusDropdown();
+                dropdown.style.display = 'block';
+            }
+        }
+        
+        function applyAllFilters() {
+            let filteredData = [...allParticipantsData];
+            
+            // Apply status filter
+            if (!selectedStatuses.has('All') && selectedStatuses.size > 0) {
+                filteredData = filteredData.filter(participant => {
+                    const status = participant.Status || 'Unknown';
+                    return selectedStatuses.has(status);
+                });
+            }
+            
+            // Apply team filter if active
+            if (currentTeamFilter) {
+                filteredData = filteredData.filter(participant => {
+                    const participantTeamClasses = getAllTeamClasses(participant.Team);
+                    return participantTeamClasses.includes(currentTeamFilter);
+                });
+            }
+            
+            // Render filtered data in all views
+            renderColumnView(filteredData);
+            renderTableView(filteredData);
+            renderGalleryCards(filteredData);
+            
+            // Update participant count
+            const participantCount = document.getElementById('participant-count');
+            let countText = `${filteredData.length} participant${filteredData.length !== 1 ? 's' : ''}`;
+            
+            // Add filter description
+            const filters = [];
+            if (!selectedStatuses.has('All') && selectedStatuses.size > 0) {
+                const statusList = Array.from(selectedStatuses);
+                if (statusList.length === 1) {
+                    filters.push(statusList[0]);
+                } else {
+                    filters.push(`${statusList.length} statuses`);
+                }
+            }
+            if (currentTeamFilter) {
+                const teamName = teamColors[currentTeamFilter.replace('team-', '')] ? 
+                    teamColors[currentTeamFilter.replace('team-', '')].name : 'filtered team';
+                filters.push(teamName);
+            }
+            
+            if (filters.length > 0) {
+                countText += ` (${filters.join(', ')})`;
+            }
+            
+            participantCount.textContent = countText;
+            
+            // Reapply present highlighting
+            setTimeout(() => updatePresentHighlighting(), 100);
+        }
+        
         // Switch between views
         function switchView(viewType) {
             currentView = viewType;
@@ -1231,6 +1711,13 @@
             
             // Apply present highlighting after view switch
             setTimeout(() => updatePresentHighlighting(), 100);
+            
+            // If switching to gallery view and there's a saved team filter, restore it
+            if (viewType === 'gallery' && currentTeamFilter && allParticipantsData.length > 0) {
+                setTimeout(() => {
+                    filterByTeam(currentTeamFilter);
+                }, 150);
+            }
         }
         
         // Present participants functionality
@@ -1882,6 +2369,34 @@
         
         // Team filter event listener
         document.getElementById('clear-team-filter').addEventListener('click', clearTeamFilter);
+        
+        // Sort event listeners
+        document.getElementById('sort-toggle').addEventListener('click', toggleSortDropdown);
+        document.getElementById('close-sort').addEventListener('click', () => {
+            document.getElementById('sort-dropdown').style.display = 'none';
+        });
+        
+        // Status event listeners
+        document.getElementById('status-toggle').addEventListener('click', toggleStatusDropdown);
+        document.getElementById('close-status').addEventListener('click', () => {
+            document.getElementById('status-dropdown').style.display = 'none';
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            const sortDropdown = document.getElementById('sort-dropdown');
+            const sortToggle = document.getElementById('sort-toggle');
+            const statusDropdown = document.getElementById('status-dropdown');
+            const statusToggle = document.getElementById('status-toggle');
+            
+            if (!sortDropdown.contains(e.target) && !sortToggle.contains(e.target)) {
+                sortDropdown.style.display = 'none';
+            }
+            
+            if (!statusDropdown.contains(e.target) && !statusToggle.contains(e.target)) {
+                statusDropdown.style.display = 'none';
+            }
+        });
         
         // Present participants event listeners
         const presentInput = document.getElementById('present');
