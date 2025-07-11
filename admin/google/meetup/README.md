@@ -1,11 +1,11 @@
-# Google Meetup Integration - MemberCommons
+# Coding Meetup Integration - MemberCommons
 
 - **Launch Our Model.earth Meetup:** [https://meet.google.com/pcv-xrdh-bat](https://meet.google.com/pcv-xrdh-bat)
 - **Google Sheet ID:** You'll need to create a Google Sheet and get its ID from the URL. The ID is the long string of characters between `/d/` and `/edit`.
 
-## Add Settings for Google Meetup Integration
+## Add Settings for Coding Meetup Integration
 
-To use the Google Meetup integration with the MemberCommons backend, you'll need to provide the following credentials in your `.env` file:
+To use the Coding Meetup Integration with the MemberCommons backend, you'll need to provide the following credentials in your `.env` file:
 
 - `GOOGLE_PRIVATE_KEY_ID`
 - `GOOGLE_PRIVATE_KEY`

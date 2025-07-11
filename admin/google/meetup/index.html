@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Meetup Integration - MemberCommons</title>
+    <title>Coding Meetup Integration - MemberCommons</title>
     <link rel="icon" type="image/x-icon" href="../../../img/logo/neighborhood/favicon.png">
     <link rel="stylesheet" href="../../../css/common.css">
     <link rel="stylesheet" href="../../../css/shared-styles.css">
@@ -731,15 +731,17 @@
 <body>
     <div class="container">
         <div class="breadcrumb">
-            <a href="../">← Google Gemini Insights</a>
+            <a href="../../">← Admin Dashboard</a>
         </div>
 
         <div class="header">
             <h1>
                 <div class="gemini-icon">G</div>
-                Google Meetup Integration
+                Coding Meetup Integration
             </h1>
-            <p>This page will eventually pull a list from a Google Meetup to filter the Google Sheet list below.</p>
+            <p>Filters a Google Sheet to share member details during meetups.
+                <!--  will eventually pull a list from a Google Meetup to filter the  -->
+            </p>
         </div>
 
         <div class="card" id="participants-table-card" style="display: none;">
@@ -865,7 +867,7 @@
         <div class="card">
             <h2 class="card-title">🚀 Setup Google Project</h2>
             <p style="color: var(--text-secondary); margin-bottom: 16px;">
-                Configure and create your Google Cloud project for meetup integration.
+                Configure and create your Google Cloud project for Coding Meetup Integration.
             </p>
             
             <div class="config-form">
@@ -974,7 +976,7 @@
         </div>
 
         <div class="card">
-            <h2 class="card-title">📖 Google Meetup Integration Guide</h2>
+            <h2 class="card-title">📖 Coding Meetup Integration Guide</h2>
             <div id="readmeDiv" class="readme-content">
                 <p style="color: var(--text-secondary); font-style: italic;">
                     Loading README.md...
@@ -1008,41 +1010,51 @@
                 // Hide table initially
                 document.getElementById('participants-table-card').style.display = 'none';
 
-                // Try to fetch CSV data via backend proxy first, then fallback to direct fetch
+                // Try to fetch CSV data - direct fetch first, then backend proxy
                 let csvText;
                 try {
-                    // Try backend proxy first
-                    const proxyResponse = await fetch(`${GEMINI_API_BASE}/google/fetch-csv`, {
-                        method: 'POST',
+                    // Try direct fetch first (works on static sites like GitHub Pages)
+                    console.log('Attempting direct fetch of Google Sheet CSV...');
+                    const directResponse = await fetch(meetupLink, {
+                        cache: 'no-cache',
                         headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ url: meetupLink })
+                            'Accept': 'text/csv'
+                        }
                     });
                     
-                    if (proxyResponse.ok) {
-                        const proxyData = await proxyResponse.json();
-                        if (proxyData.success) {
-                            csvText = proxyData.data;
-                        } else {
-                            throw new Error(proxyData.error || 'Backend proxy failed');
-                        }
+                    if (directResponse.ok) {
+                        csvText = await directResponse.text();
+                        console.log('Direct fetch successful');
                     } else {
-                        throw new Error('Backend proxy not available');
+                        throw new Error(`Direct fetch failed: ${directResponse.status} ${directResponse.statusText}`);
                     }
-                } catch (proxyError) {
-                    console.log('Backend proxy failed, trying direct fetch:', proxyError.message);
+                } catch (directError) {
+                    console.log('Direct fetch failed, trying backend proxy:', directError.message);
                     
-                    // Fallback to direct fetch with no-cors mode
+                    // Fallback to backend proxy (only works with backend server)
                     try {
-                        const response = await fetch(meetupLink, {
-                            mode: 'no-cors',
-                            cache: 'no-cache'
+                        const proxyResponse = await fetch(`${GEMINI_API_BASE}/google/fetch-csv`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ url: meetupLink })
                         });
-                        csvText = await response.text();
-                    } catch (directError) {
+                        
+                        if (proxyResponse.ok) {
+                            const proxyData = await proxyResponse.json();
+                            if (proxyData.success) {
+                                csvText = proxyData.data;
+                                console.log('Backend proxy successful');
+                            } else {
+                                throw new Error(proxyData.error || 'Backend proxy failed');
+                            }
+                        } else {
+                            throw new Error('Backend proxy not available');
+                        }
+                    } catch (proxyError) {
                         // If both fail, provide helpful error message
-                        throw new Error(`CORS Error: Cannot fetch data directly from Google Sheets. Please try one of these solutions:\n\n1. Use the backend API (if available)\n2. Download the CSV manually and upload it\n3. Make the sheet publicly accessible\n\nDirect error: ${directError.message}`);
+                        throw new Error(`Cannot fetch data from Google Sheets. Tried both direct fetch and backend proxy.\n\nDirect error: ${directError.message}\nProxy error: ${proxyError.message}\n\nPlease try:\n1. Download the CSV manually and upload it\n2. Make sure the sheet is publicly accessible\n3. Use the backend API (if available)`);
                     }
                 }
                 const parsedData = parseCSV(csvText);

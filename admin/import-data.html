@@ -748,13 +748,13 @@
 
             <!-- Custom file upload (hidden by default) -->
             <div class="form-group hidden" id="customFileSection">
-                <label class="form-label">Upload Excel File (.xlsx)</label>
+                <label class="form-label">Upload Data</label>
                 <div class="file-input-wrapper">
-                    <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" />
+                    <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls,.csv" />
                     <div class="file-input-display" id="fileDisplay">
                         <div class="file-info">
-                            <div class="file-name">Click to select Excel file</div>
-                            <div class="file-details">Supports .xlsx and .xls formats</div>
+                            <div class="file-name">Click to upload file</div>
+                            <div class="file-details">Supports .csv, .xls and .xlsx formats</div>
                         </div>
                     </div>
                 </div>
@@ -769,7 +769,7 @@
 
             <div class="btn-group hidden" id="analyzeSection">
                 <button id="analyzeBtn" class="btn btn-primary" disabled>
-                    Analyze File
+                    Upload
                 </button>
             </div>
         </div>
@@ -1034,10 +1034,11 @@
                 // Update display
                 const fileSize = (file.size / 1024 / 1024).toFixed(2);
                 
+                const fileType = isCSVFile(file) ? 'CSV' : 'Excel';
                 fileDisplay.innerHTML = `
                     <div class="file-info">
                         <div class="file-name">${fileName}</div>
-                        <div class="file-details">${fileSize} MB • Excel file</div>
+                        <div class="file-details">${fileSize} MB • ${fileType} file</div>
                     </div>
                 `;
                 
@@ -1046,7 +1047,7 @@
                 // Store the file for later use
                 customFiles[fileName] = file;
                 
-                // For custom files, we'll need to use client-side Excel reading
+                // For custom files, we'll need to use client-side processing
                 // since we can't send File objects to the server API
                 analyzeCustomFile();
             }
@@ -1233,8 +1234,9 @@
                     
                     // For CSV files, don't try API fallback - they must be processed client-side
                     if (typeof selectedFile === 'string' && isCSVFile(selectedFile)) {
-                        console.error('CSV file analysis failed, no API fallback available');
-                        showMessage(`CSV file analysis failed: ${clientError.message}`, 'error');
+                        console.error('CSV file analysis failed, showing upload fallback');
+                        showMessage(`CSV file loading failed: ${clientError.message}`, 'error');
+                        showUploadFallback();
                         throw clientError;
                     }
                     
@@ -1306,7 +1308,7 @@
             } catch (error) {
                 showMessage('Error analyzing file: ' + error.message, 'error');
             } finally {
-                hideLoading(analyzeBtn, 'Analyze File');
+                hideLoading(analyzeBtn, 'Upload');
             }
         }
 
@@ -1332,8 +1334,9 @@
                 
                 // For CSV files, don't try API fallback - they must be processed client-side
                 if (typeof selectedFile === 'string' && isCSVFile(selectedFile)) {
-                    console.error('CSV file processing failed, no API fallback available');
+                    console.error('CSV file processing failed, showing upload fallback');
                     showMessage(`CSV file processing failed: ${clientError.message}`, 'error');
+                    showUploadFallback();
                     throw clientError;
                 }
                 
@@ -1417,7 +1420,12 @@
         }
 
         function isCSVFile(filePath) {
-            return filePath.includes('output=csv') || filePath.endsWith('.csv');
+            if (typeof filePath === 'string') {
+                return filePath.includes('output=csv') || filePath.endsWith('.csv');
+            } else if (filePath instanceof File) {
+                return filePath.name.toLowerCase().endsWith('.csv');
+            }
+            return false;
         }
 
         function getImportTableForFile(filePath) {
@@ -1492,22 +1500,34 @@
                     }
                     
                 } else if (selectedFile instanceof File) {
-                    // Custom uploaded file (Excel only for now)
+                    // Custom uploaded file (CSV or Excel)
                     console.log('Processing uploaded file:', selectedFile.name);
-                    const arrayBuffer = await selectedFile.arrayBuffer();
-                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
                     
-                    if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
-                        throw new Error('No sheets found in Excel file');
-                    }
+                    if (isCSVFile(selectedFile)) {
+                        // Handle CSV file
+                        console.log('Processing uploaded CSV file');
+                        const csvText = await selectedFile.text();
+                        console.log('CSV text length:', csvText.length);
+                        
+                        jsonData = parseCSV(csvText);
+                        console.log('Parsed CSV rows:', jsonData.length);
+                    } else {
+                        // Handle Excel file
+                        const arrayBuffer = await selectedFile.arrayBuffer();
+                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                        
+                        if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+                            throw new Error('No sheets found in Excel file');
+                        }
 
-                    const sheetToUse = selectedSheet || workbook.SheetNames[0];
-                    if (!workbook.Sheets[sheetToUse]) {
-                        throw new Error(`Sheet "${sheetToUse}" not found. Available sheets: ${workbook.SheetNames.join(', ')}`);
-                    }
+                        const sheetToUse = selectedSheet || workbook.SheetNames[0];
+                        if (!workbook.Sheets[sheetToUse]) {
+                            throw new Error(`Sheet "${sheetToUse}" not found. Available sheets: ${workbook.SheetNames.join(', ')}`);
+                        }
 
-                    const worksheet = workbook.Sheets[sheetToUse];
-                    jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        const worksheet = workbook.Sheets[sheetToUse];
+                        jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    }
                     
                 } else if (customFiles[selectedFile]) {
                     // File from customFiles storage (Excel only for now)
@@ -1568,7 +1588,7 @@
 
                 // Determine sheet name for result object
                 let sheetName;
-                if (typeof selectedFile === 'string' && isCSVFile(selectedFile)) {
+                if (isCSVFile(selectedFile)) {
                     sheetName = 'Data'; // CSV files have one implicit sheet
                 } else {
                     sheetName = selectedSheet || 'Sheet1'; // Excel files use selected sheet
@@ -1636,8 +1656,16 @@
             } else if (selectedFile instanceof File) {
                 // Custom uploaded file
                 console.log('Processing uploaded file for analysis:', selectedFile.name);
-                const arrayBuffer = await selectedFile.arrayBuffer();
-                workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                
+                if (isCSVFile(selectedFile)) {
+                    // CSV files have one implicit "sheet"
+                    console.log('CSV file detected, returning default sheet name');
+                    return ['Data'];
+                } else {
+                    // Excel file
+                    const arrayBuffer = await selectedFile.arrayBuffer();
+                    workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                }
             } else if (customFiles[selectedFile]) {
                 // File from customFiles storage
                 console.log('Processing custom file from storage for analysis:', selectedFile);
@@ -1677,7 +1705,7 @@
             
             try {
                 // For CSV files, send the parsed data directly to the API
-                if (typeof selectedFile === 'string' && isCSVFile(selectedFile)) {
+                if (isCSVFile(selectedFile)) {
                     showMessage('Checking for CSV import endpoint...', 'info');
                     
                     try {
@@ -2042,6 +2070,33 @@
 
         function hideSection(element) {
             element.classList.add('hidden');
+        }
+
+        function showUploadFallback() {
+            // Show the upload fallback section
+            showMessage('Google Sheets loading failed. Please upload the file manually.', 'warning');
+            
+            // Change dropdown to "Choose File..." to show upload interface
+            fileSelect.value = 'custom';
+            
+            // Show the custom file upload section
+            showSection(customFileSection);
+            showSection(analyzeSection);
+            hideSection(sheetSelection);
+            hideSection(previewSection);
+            hideSection(resultsSection);
+            
+            // Reset selected file
+            selectedFile = null;
+            
+            // Update file display to show it's ready for upload
+            const fileDisplay = document.getElementById('fileDisplay');
+            fileDisplay.innerHTML = `
+                <div class="file-info">
+                    <div class="file-name">Click to upload file</div>
+                    <div class="file-details">Upload the CSV or Excel file manually</div>
+                </div>
+            `;
         }
 
         function showLoading(button, text) {
