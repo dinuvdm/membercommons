@@ -1513,20 +1513,8 @@
             // Update global data
             allParticipantsData = sortedData;
             
-            // Re-render all views
-            renderColumnView(sortedData);
-            renderTableView(sortedData);
-            renderGalleryView(sortedData);
-            
-            // Reapply present highlighting
-            setTimeout(() => updatePresentHighlighting(), 100);
-            
-            // Reapply team filter if active
-            if (currentTeamFilter && currentView === 'gallery') {
-                setTimeout(() => {
-                    filterByTeam(currentTeamFilter);
-                }, 150);
-            }
+            // Re-render all views with current filters applied
+            applyAllFilters();
         }
         
         function toggleSortDropdown() {
@@ -1632,7 +1620,7 @@
             if (statusArray.includes('All') || statusArray.length === 0) {
                 button.textContent = 'Status';
             } else if (statusArray.length === 1) {
-                button.textContent = statusArray[0];
+                button.textContent = statusArray[0] + ' Only';
             } else {
                 button.textContent = statusArray[0] + '...';
             }
