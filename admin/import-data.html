@@ -740,8 +740,8 @@
             <div class="form-group">
                 <label class="form-label">Choose Data File</label>
                 <select id="fileSelect" class="form-select">
-                    <option value="../preferences/projects/DFC-ActiveProjects.xlsx" selected>DFC Active Projects (Excel → projects table)</option>
-                    <option value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh5-bIR4hC1f9H3NtDCNT19hZXnqz8WRrBwTuLGnZiA5PWhFILUv2nS2FKE2TZ4dZ-RnJkZwHx1t2Y/pub?gid=1054734503&single=true&output=csv">Google Sheets - Individuals (CSV → accounts table)</option>
+                    <option value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh5-bIR4hC1f9H3NtDCNT19hZXnqz8WRrBwTuLGnZiA5PWhFILUv2nS2FKE2TZ4dZ-RnJkZwHx1t2Y/pub?gid=1054734503&single=true&output=csv" selected>Google Sheets - Individuals (CSV → accounts table)</option>
+                    <option value="../preferences/projects/DFC-ActiveProjects.xlsx">DFC Active Projects (Excel → projects table)</option>
                     <option value="custom">Choose File...</option>
                 </select>
             </div>
@@ -3840,9 +3840,12 @@ ${JSON.stringify(sampleData, null, 2)}`;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            showMessage('Excel import tool loaded. DFC Active Projects file is pre-selected.', 'info');
-            // Auto-load the default file on page load
-            selectedFile = '../preferences/projects/DFC-ActiveProjects.xlsx';
+            // Get the pre-selected option from the dropdown
+            const selectedOption = fileSelect.options[fileSelect.selectedIndex];
+            selectedFile = selectedOption.value;
+            
+            showMessage(`Import tool loaded. ${selectedOption.text} is pre-selected.`, 'info');
+            // Auto-load the pre-selected file on page load
             autoAnalyzeAndPreview();
             
             // Restore cached insights after data loads

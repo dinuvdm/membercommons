@@ -1133,7 +1133,6 @@
         let currentTeamFilter = localStorage.getItem('participantsTeamFilter') || null;
         let allParticipantsData = [];
         let presentParticipants = new Set();
-        let showOnlyPresent = false;
         
         // Sort functionality
         let currentSortColumn = localStorage.getItem('participantsSortColumn') || 'Rows';
@@ -1143,6 +1142,9 @@
         // Status filtering
         let selectedStatuses = new Set(JSON.parse(localStorage.getItem('participantsStatusFilter') || '["All"]'));
         let availableStatuses = [];
+        
+        // Present participants toggle state
+        let showOnlyPresent = JSON.parse(localStorage.getItem('showOnlyPresent') || 'false');
         
         // Team color mapping
         const teamColors = {
@@ -1191,7 +1193,10 @@
             // Update status button text
             updateStatusButtonText();
             
-            // Apply all saved filters (team + status)
+            // Restore present toggle UI state
+            updatePresentToggleUI();
+            
+            // Apply all saved filters (team + status + present)
             setTimeout(() => {
                 applyAllFilters();
             }, 100);
@@ -1653,6 +1658,16 @@
                 });
             }
             
+            // Apply present participants filter if active
+            if (showOnlyPresent) {
+                filteredData = filteredData.filter(participant => {
+                    const name = participant.Name || 'Unknown';
+                    return Array.from(presentParticipants).some(presentName => 
+                        presentName.toLowerCase() === name.toLowerCase()
+                    );
+                });
+            }
+            
             // Render filtered data in all views
             renderColumnView(filteredData);
             renderTableView(filteredData);
@@ -1664,6 +1679,9 @@
             
             // Add filter description
             const filters = [];
+            if (showOnlyPresent) {
+                filters.push('present only');
+            }
             if (!selectedStatuses.has('All') && selectedStatuses.size > 0) {
                 const statusList = Array.from(selectedStatuses);
                 if (statusList.length === 1) {
@@ -1783,59 +1801,27 @@
         
         function togglePresentFilter() {
             showOnlyPresent = !showOnlyPresent;
+            
+            // Save state to localStorage
+            localStorage.setItem('showOnlyPresent', JSON.stringify(showOnlyPresent));
+            
+            updatePresentToggleUI();
+            
+            // Apply all filters (includes present participant filtering)
+            applyAllFilters();
+        }
+        
+        function updatePresentToggleUI() {
             const toggle = document.getElementById('present-toggle');
             const toggleText = document.getElementById('present-toggle-text');
             
             if (showOnlyPresent) {
                 toggle.classList.add('active');
                 toggleText.textContent = 'All';
-                
-                // Filter data to show only present participants
-                const filteredData = allParticipantsData.filter(participant => {
-                    const name = participant.Name || 'Unknown';
-                    return Array.from(presentParticipants).some(presentName => 
-                        presentName.toLowerCase() === name.toLowerCase()
-                    );
-                });
-                
-                // Re-render current view with filtered data
-                if (currentView === 'column') {
-                    renderColumnView(filteredData);
-                } else if (currentView === 'table') {
-                    renderTableView(filteredData);
-                } else if (currentView === 'gallery') {
-                    renderGalleryCards(filteredData);
-                }
-                
-                // Update participant count
-                const participantCount = document.getElementById('participant-count');
-                participantCount.textContent = `${filteredData.length} present participant${filteredData.length !== 1 ? 's' : ''}`;
-                
             } else {
                 toggle.classList.remove('active');
                 toggleText.textContent = 'Present';
-                
-                // Show all participants
-                if (currentView === 'column') {
-                    renderColumnView(allParticipantsData);
-                } else if (currentView === 'table') {
-                    renderTableView(allParticipantsData);
-                } else if (currentView === 'gallery') {
-                    if (currentTeamFilter) {
-                        // Restore team filter if it was active
-                        filterByTeam(currentTeamFilter);
-                    } else {
-                        renderGalleryCards(allParticipantsData);
-                    }
-                }
-                
-                // Update participant count
-                const participantCount = document.getElementById('participant-count');
-                participantCount.textContent = `${allParticipantsData.length} participant${allParticipantsData.length !== 1 ? 's' : ''}`;
             }
-            
-            // Apply highlighting after re-rendering
-            setTimeout(() => updatePresentHighlighting(), 100);
         }
 
         getParticipantsButton.addEventListener('click', getMeetupParticipants);
