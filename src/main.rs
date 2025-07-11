@@ -554,15 +554,40 @@ async fn call_claude_code_cli(prompt: &str, dataset_info: &Option<serde_json::Va
 }
 
 // Get list of tables with row counts - returns real database tables with accurate counts
-async fn get_tables(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
-    match get_database_tables(&data.db, None).await {
+async fn get_tables(data: web::Data<Arc<ApiState>>, query: web::Query<std::collections::HashMap<String, String>>) -> Result<HttpResponse> {
+    // Check if a specific connection is requested
+    let pool = if let Some(connection_name) = query.get("connection") {
+        // Use the specified connection
+        match std::env::var(connection_name) {
+            Ok(database_url) => {
+                match sqlx::postgres::PgPool::connect(&database_url).await {
+                    Ok(pool) => pool,
+                    Err(e) => {
+                        return Ok(HttpResponse::InternalServerError().json(json!({
+                            "error": format!("Failed to connect to {}: {}", connection_name, e)
+                        })));
+                    }
+                }
+            }
+            Err(_) => {
+                return Ok(HttpResponse::BadRequest().json(json!({
+                    "error": format!("Connection '{}' not found in environment variables", connection_name)
+                })));
+            }
+        }
+    } else {
+        // Use default connection
+        data.db.clone()
+    };
+    
+    match get_database_tables(&pool, None).await {
         Ok(tables) => {
             let mut table_info = Vec::new();
             
             // Get actual row counts for each table
             for table in tables {
                 let query = format!("SELECT COUNT(*) FROM {}", table.name);
-                match sqlx::query(&query).fetch_one(&data.db).await {
+                match sqlx::query(&query).fetch_one(&pool).await {
                     Ok(row) => {
                         let count: i64 = row.get(0);
                         table_info.push(TableInfo {

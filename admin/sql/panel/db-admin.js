@@ -75,6 +75,7 @@ class DatabaseAdmin {
             databaseSelect.addEventListener('change', (e) => {
                 this.selectedConnection = e.target.value;
                 this.addLog(`Selected database connection: ${e.target.value}`);
+                console.log('Connection changed to:', this.selectedConnection);
                 this.displayConfig();
             });
         }
@@ -86,12 +87,18 @@ class DatabaseAdmin {
 
         const list10TablesBtn = document.getElementById('list-10-tables');
         if (list10TablesBtn) {
-            list10TablesBtn.addEventListener('click', () => this.listTables(10));
+            list10TablesBtn.addEventListener('click', () => {
+                console.log('List 10 tables clicked, selectedConnection:', this.selectedConnection);
+                this.listTables(10);
+            });
         }
 
         const listAllTablesBtn = document.getElementById('list-all-tables');
         if (listAllTablesBtn) {
-            listAllTablesBtn.addEventListener('click', () => this.listTables());
+            listAllTablesBtn.addEventListener('click', () => {
+                console.log('List all tables clicked, selectedConnection:', this.selectedConnection);
+                this.listTables();
+            });
         }
 
         const clearLogBtn = document.getElementById('clear-log');
@@ -240,12 +247,12 @@ class DatabaseAdmin {
     async listTables(limit = null) {
         const buttonId = limit ? 'list-10-tables' : 'list-all-tables';
         this.setLoading(buttonId, true);
-        const logMessage = limit ? `Fetching first ${limit} database tables...` : 'Fetching all database tables...';
+        const logMessage = limit ? `Fetching first ${limit} database tables from ${this.selectedConnection}...` : `Fetching all database tables from ${this.selectedConnection}...`;
         this.addLog(logMessage);
         
         try {
-            // Try the same endpoint that project/edit.html uses successfully
-            const response = await this.makeRequest('/tables', {
+            // Use the selected connection parameter
+            const response = await this.makeRequest(`/tables?connection=${this.selectedConnection}`, {
                 method: 'GET'
             });
 
