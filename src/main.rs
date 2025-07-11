@@ -14,6 +14,8 @@ use url::Url;
 
 mod import;
 mod google;
+mod recommendations;
+use recommendations::{RecommendationRequest, Project};
 
 // Configuration structure
 #[derive(Debug, Deserialize)]
@@ -22,6 +24,7 @@ struct Config {
     gemini_api_key: String,
     server_host: String,
     server_port: u16,
+    excel_file_path: String,
 }
 
 impl Config {
@@ -45,6 +48,8 @@ impl Config {
                     .unwrap_or_else(|_| "8081".to_string())
                     .parse()
                     .unwrap_or(8081),
+                excel_file_path: std::env::var("EXCEL_FILE_PATH")
+                    .unwrap_or_else(|_| "C:\\Users\\yashg\\Model Earth\\membercommons\\preferences\\projects\\DFC-ActiveProjects.xlsx".to_string()),
             })
         }
     }
@@ -282,7 +287,7 @@ async fn save_env_config(req: web::Json<SaveEnvConfigRequest>) -> Result<HttpRes
                 // Find and update existing key, or mark for addition
                 let mut found = false;
                 for line in env_lines.iter_mut() {
-                    if line.starts_with(&format!("{}=", key)) {
+                    if line.starts_with(&format!("{} = ", key)) {
                         *line = new_line.clone();
                         found = true;
                         break;
@@ -493,8 +498,14 @@ struct ClaudeAnalysisResponse {
 
 
 
-
 // Analyze data with Claude Code CLI
+async fn get_recommendations_handler(req: web::Json<RecommendationRequest>, data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
+    match recommendations::get_recommendations(&req.preferences, &data.config.excel_file_path) {
+        Ok(projects) => Ok(HttpResponse::Ok().json(projects)),
+        Err(e) => Ok(HttpResponse::InternalServerError().json(json!({ "error": e.to_string() }))),
+    }
+}
+
 async fn analyze_with_claude_cli(
     req: web::Json<ClaudeAnalysisRequest>,
 ) -> Result<HttpResponse> {
@@ -1404,6 +1415,7 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                         web::scope("/claude")
                             .route("/analyze", web::post().to(analyze_with_claude_cli))
                     )
+                    .route("/recommendations", web::post().to(get_recommendations_handler))
                     .service(
                         web::scope("/google")
                             .route("/meetup/participants", web::post().to(google::get_meetup_participants))
