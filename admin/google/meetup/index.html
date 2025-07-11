@@ -762,7 +762,7 @@
             <div class="view-controls">
                 <div class="view-buttons">
                     <button class="btn btn-secondary view-btn active" id="column-view-btn" data-view="column">
-                        Column
+                        Columns
                     </button>
                     <button class="btn btn-secondary view-btn" id="table-view-btn" data-view="table">
                         Table
@@ -1258,7 +1258,27 @@
             const headerRow = document.createElement('tr');
             headers.forEach(header => {
                 const th = document.createElement('th');
-                th.textContent = header;
+                th.style.cursor = 'pointer';
+                th.style.userSelect = 'none';
+                th.style.position = 'relative';
+                
+                // Add click handler for sorting
+                th.addEventListener('click', () => sortBy(header));
+                
+                // Add header text and sort arrow
+                const headerText = document.createElement('span');
+                headerText.textContent = header;
+                th.appendChild(headerText);
+                
+                // Add sort arrow if this is the current sort column
+                if (currentSortColumn === header) {
+                    const arrow = document.createElement('span');
+                    arrow.innerHTML = currentSortOrder === 'asc' ? ' ↑' : ' ↓';
+                    arrow.style.marginLeft = '4px';
+                    arrow.style.fontSize = '12px';
+                    th.appendChild(arrow);
+                }
+                
                 headerRow.appendChild(th);
             });
             tableHeader.appendChild(headerRow);
