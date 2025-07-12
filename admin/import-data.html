@@ -2273,6 +2273,102 @@
             }, 5000);
         }
 
+        // Generate fallback analysis when Rust API is not available
+        function generateFallbackAnalysis(dataset, headers, sheetName, sampleSize) {
+            const totalRecords = dataset.length;
+            
+            // Analyze data quality
+            const missingValues = {};
+            const dataTypes = {};
+            const uniqueValues = {};
+            
+            headers.forEach(header => {
+                const values = dataset.map(row => row[header]).filter(val => val !== null && val !== undefined && val !== '');
+                const nonEmptyCount = values.length;
+                
+                missingValues[header] = totalRecords - nonEmptyCount;
+                uniqueValues[header] = new Set(values).size;
+                
+                // Determine data type
+                if (values.length > 0) {
+                    const sample = values[0];
+                    if (!isNaN(sample) && !isNaN(parseFloat(sample))) {
+                        dataTypes[header] = 'Number';
+                    } else if (Date.parse(sample)) {
+                        dataTypes[header] = 'Date';
+                    } else {
+                        dataTypes[header] = 'Text';
+                    }
+                }
+            });
+            
+            // Generate insights
+            const qualityIssues = Object.entries(missingValues)
+                .filter(([field, missing]) => missing > 0)
+                .map(([field, missing]) => `${field}: ${missing} missing values (${Math.round(missing/totalRecords*100)}%)`)
+                .slice(0, 5);
+            
+            const keyPatterns = [];
+            if (totalRecords > 100) keyPatterns.push(`Large dataset with ${totalRecords} records`);
+            if (headers.length > 10) keyPatterns.push(`Rich data structure with ${headers.length} fields`);
+            
+            const duplicateFields = Object.entries(uniqueValues)
+                .filter(([field, unique]) => unique < totalRecords * 0.5)
+                .map(([field, unique]) => `${field} has ${unique} unique values`)
+                .slice(0, 3);
+            
+            if (duplicateFields.length > 0) {
+                keyPatterns.push(`Potential grouping fields: ${duplicateFields.join(', ')}`);
+            }
+            
+            return `## 📊 Data Analysis (Offline Mode)
+
+**🔧 DATA QUALITY**
+- **Total Records:** ${totalRecords}
+- **Sample Analyzed:** ${sampleSize} records
+- **Field Count:** ${headers.length} columns
+${qualityIssues.length > 0 ? '- **Missing Data Issues:**\n  ' + qualityIssues.map(issue => `• ${issue}`).join('\n  ') : '- **Data Completeness:** Good - minimal missing values detected'}
+
+**📈 KEY PATTERNS**
+${keyPatterns.length > 0 ? keyPatterns.map(pattern => `• ${pattern}`).join('\n') : '• Standard dataset structure detected'}
+- **Data Types:** ${Object.values(dataTypes).join(', ')}
+- **Key Fields:** ${headers.slice(0, 5).join(', ')}${headers.length > 5 ? ` (+${headers.length - 5} more)` : ''}
+
+**💼 BUSINESS INSIGHTS**
+• Dataset "${sheetName}" appears to be ${totalRecords > 1000 ? 'enterprise-scale' : totalRecords > 100 ? 'medium-sized' : 'small-scale'} data
+• Structure suggests ${headers.some(h => h.toLowerCase().includes('name')) ? 'entity/contact' : headers.some(h => h.toLowerCase().includes('date')) ? 'time-series' : 'structured business'} data
+• Data completeness is ${qualityIssues.length === 0 ? 'excellent' : qualityIssues.length < 3 ? 'good' : 'needs attention'}
+
+**⚡ RECOMMENDATIONS**
+• ${qualityIssues.length > 0 ? 'Address missing data issues before import' : 'Data quality is good for import'}
+• Consider data validation rules for key fields
+• ${totalRecords > 500 ? 'Batch processing recommended for large dataset' : 'Standard import process suitable'}
+• Review field mappings to ensure proper data types
+
+---
+*Analysis generated offline | For AI-powered insights, start the backend server*`;
+        }
+
+        // Generate fallback analysis with custom prompt when Rust API is not available
+        function generateFallbackAnalysisWithPrompt(dataset, headers, sheetName, sampleSize, customPrompt) {
+            const basicAnalysis = generateFallbackAnalysis(dataset, headers, sheetName, sampleSize);
+            
+            return `## 📊 Custom Analysis (Offline Mode)
+
+*Custom prompt analysis generated offline | For AI-powered custom insights, start your server with commands on the <a href="./">Admin Page</a>*
+
+**🔧 CUSTOM PROMPT:** "${customPrompt}"
+
+${basicAnalysis.replace('## 📊 Data Analysis (Offline Mode)', '').replace('---\n*Analysis generated offline | For AI-powered insights, start the backend server*', '')}
+
+**💡 CUSTOM PROMPT RESPONSE**
+*Note: This is a basic offline analysis. Your custom prompt "${customPrompt}" would be processed with full AI capabilities when the backend server is running.*
+
+• For advanced custom analysis matching your specific prompt, please start the Rust backend server
+• Current analysis provides standard data quality and pattern insights
+• Custom AI prompts unlock sophisticated analytical capabilities`;
+        }
+
         async function requestGeminiInsights() {
             console.log('requestGeminiInsights called');
             if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
@@ -2333,12 +2429,18 @@
 
         // Gemini AI Analysis Functions
         async function analyzeDatasetWithGemini(dataset, headers, sheetName = 'Data') {
+            console.log('=== analyzeDatasetWithGemini START ===');
+            console.log('Dataset length:', dataset?.length);
+            console.log('Headers:', headers);
+            console.log('Sheet name:', sheetName);
+            
             const geminiInsightsBtn = document.getElementById('geminiInsightsBtn');
             const geminiInsightsText = document.getElementById('geminiInsightsText');
             const geminiRefreshBtn = document.getElementById('geminiRefreshBtn');
             const insightsContent = document.getElementById('insightsContent');
             
             const cacheKey = getCurrentCacheKey();
+            console.log('Cache key:', cacheKey);
             
             try {
                 // Set active AI and update button states
@@ -2374,28 +2476,56 @@ Please provide a concise analysis with:
 
 Keep the response structured and actionable for a data import workflow.`;
 
-                // Make request to Gemini via our API
-                const response = await fetch('http://localhost:8081/api/gemini/analyze', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        prompt: prompt,
-                        data_context: {
-                            sheet_name: sheetName,
-                            total_records: dataset.length,
-                            headers: headers,
-                            sample_size: sampleSize
-                        }
-                    })
-                });
+                // Try to make request to Gemini via our API
+                let result;
+                try {
+                    console.log('Attempting fetch to Gemini API...');
+                    const response = await fetch('http://localhost:8081/api/gemini/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt: prompt,
+                            data_context: {
+                                sheet_name: sheetName,
+                                total_records: dataset.length,
+                                headers: headers,
+                                sample_size: sampleSize
+                            }
+                        })
+                    });
 
-                if (!response.ok) {
-                    throw new Error(`API request failed: ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`API request failed: ${response.status}`);
+                    }
+
+                    result = await response.json();
+                } catch (apiError) {
+                    // If API is not available, provide fallback analysis
+                    // Check for various network error conditions
+                    const isNetworkError = apiError.message === 'Failed to fetch' || 
+                                         apiError.message.includes('fetch') ||
+                                         apiError.message.includes('NetworkError') ||
+                                         apiError.message.includes('ERR_CONNECTION_REFUSED') ||
+                                         apiError.message.includes('ECONNREFUSED') ||
+                                         apiError.message.includes('net::ERR_CONNECTION_REFUSED') ||
+                                         apiError.name === 'TypeError' ||
+                                         apiError.code === 'NETWORK_ERROR';
+                    
+                    if (isNetworkError) {
+                        console.log('Rust API not available, providing fallback analysis. Error:', apiError.message);
+                        console.log('Error name:', apiError.name);
+                        console.log('Error code:', apiError.code);
+                        result = {
+                            success: true,
+                            analysis: generateFallbackAnalysis(dataset, headers, sheetName, sampleSize)
+                        };
+                    } else {
+                        console.log('Non-network error, rethrowing:', apiError);
+                        throw apiError;
+                    }
                 }
-
-                const result = await response.json();
                 
                 if (result.success) {
                     // Cache successful result
@@ -2425,7 +2555,10 @@ Keep the response structured and actionable for a data import workflow.`;
                 }
 
             } catch (error) {
-                console.error('Gemini analysis error:', error);
+                console.error('=== OUTER CATCH: Gemini analysis error ===');
+                console.error('Error message:', error.message);
+                console.error('Error name:', error.name);
+                console.error('Error stack:', error.stack);
                 
                 // Cache error result
                 aiInsightsCache[cacheKey] = {
@@ -3440,10 +3573,10 @@ Please analyze this dataset according to the request above.`;
                     displayCachedGeminiInsights(cacheKey);
                 }, 100);
             } else {
-                console.log('No cached Gemini insights, showing prompt modal');
-                showMessage('No cached Gemini analysis found - showing prompt for custom analysis...', 'info');
-                showInsightsStatus('Preparing Gemini analysis prompt...');
-                showRefreshPrompt('gemini');
+                console.log('No cached Gemini insights, running standard analysis');
+                showMessage('No cached Gemini analysis found - running standard analysis...', 'info');
+                showInsightsStatus('Starting Gemini analysis...');
+                requestGeminiInsights();
             }
         }
 
@@ -3707,28 +3840,52 @@ ${JSON.stringify(sampleData, null, 2)}`;
                 showInsightsStatus('🔄 Executing NEW Gemini API analysis with custom prompt...');
                 showMessage(`Sending dataset to Gemini API for fresh analysis with prompt: "${customPrompt.substring(0, 50)}..."`, 'info');
                 
-                // Make request to Gemini via our API
-                const response = await fetch('http://localhost:8081/api/gemini/analyze', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        prompt: prompt,
-                        data_context: {
-                            sheet_name: sheetName,
-                            total_records: dataset.length,
-                            headers: headers,
-                            sample_size: sampleSize
-                        }
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`API request failed: ${response.status}`);
+                // Try to make request to Gemini via our API
+                let result;
+                try {
+                    const response = await fetch('http://localhost:8081/api/gemini/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt: prompt,
+                            data_context: {
+                                sheet_name: sheetName,
+                                total_records: dataset.length,
+                                headers: headers,
+                                sample_size: sampleSize
+                            }
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`API request failed: ${response.status}`);
+                    }
+                    
+                    result = await response.json();
+                } catch (apiError) {
+                    // If API is not available, provide fallback analysis with custom prompt context
+                    // Check for various network error conditions
+                    const isNetworkError = apiError.message === 'Failed to fetch' || 
+                                         apiError.message.includes('fetch') ||
+                                         apiError.message.includes('NetworkError') ||
+                                         apiError.message.includes('ERR_CONNECTION_REFUSED') ||
+                                         apiError.message.includes('ECONNREFUSED') ||
+                                         apiError.message.includes('net::ERR_CONNECTION_REFUSED') ||
+                                         apiError.name === 'TypeError' ||
+                                         apiError.code === 'NETWORK_ERROR';
+                    
+                    if (isNetworkError) {
+                        console.log('Rust API not available, providing fallback analysis with custom prompt. Error:', apiError.message);
+                        result = {
+                            success: true,
+                            analysis: generateFallbackAnalysisWithPrompt(dataset, headers, sheetName, sampleSize, customPrompt)
+                        };
+                    } else {
+                        throw apiError;
+                    }
                 }
-                
-                const result = await response.json();
                 
                 if (result.success) {
                     // Show status that new analysis is complete
@@ -3899,12 +4056,27 @@ ${JSON.stringify(sampleData, null, 2)}`;
             const selectedOption = fileSelect.options[fileSelect.selectedIndex];
             selectedFile = selectedOption.value;
             
+            // Check for hash parameters
+            const urlParams = new URLSearchParams(window.location.hash.substring(1));
+            const mode = urlParams.get('m');
+            
             showMessage(`Import tool loaded. ${selectedOption.text} is pre-selected.`, 'info');
             // Auto-load the pre-selected file on page load
             autoAnalyzeAndPreview();
             
             // Restore cached insights after data loads
             restoreCachedInsights();
+            
+            // If mode=gemini, default to Gemini Insights after data loads
+            if (mode === 'gemini') {
+                setTimeout(() => {
+                    const geminiBtn = document.getElementById('geminiInsightsBtn');
+                    if (geminiBtn && !geminiBtn.disabled) {
+                        console.log('Auto-triggering Gemini Insights from URL hash');
+                        geminiBtn.click();
+                    }
+                }, 2000); // Wait 2 seconds for data to load
+            }
         });
     </script>
 </body>

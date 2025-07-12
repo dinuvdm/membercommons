@@ -6,7 +6,8 @@
       "Bash(rg:*)",
       "Bash(pgrep:*)",
       "Bash(curl:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }

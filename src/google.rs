@@ -73,7 +73,9 @@ impl std::error::Error for GeminiErrorDetails {}
 
 // Test Gemini API configuration
 pub async fn test_gemini_config(data: web::Data<std::sync::Arc<ApiState>>) -> Result<HttpResponse> {
-    let api_key_present = !data.config.gemini_api_key.is_empty() && data.config.gemini_api_key != "dummy_key";
+    let api_key_present = !data.config.gemini_api_key.is_empty() 
+        && data.config.gemini_api_key != "dummy_key"
+        && data.config.gemini_api_key != "get-key-at-aistudio.google.com";
     
     let api_key_preview = if api_key_present {
         let key = &data.config.gemini_api_key;
@@ -129,7 +131,9 @@ pub async fn analyze_with_gemini(
     data: web::Data<std::sync::Arc<ApiState>>,
     req: web::Json<GeminiAnalysisRequest>,
 ) -> Result<HttpResponse> {
-    let api_key_present = !data.config.gemini_api_key.is_empty() && data.config.gemini_api_key != "dummy_key";
+    let api_key_present = !data.config.gemini_api_key.is_empty() 
+        && data.config.gemini_api_key != "dummy_key"
+        && data.config.gemini_api_key != "get-key-at-aistudio.google.com";
     
     if !api_key_present {
         return Ok(HttpResponse::BadRequest().json(GeminiAnalysisResponse {

@@ -2036,7 +2036,13 @@
             } catch (error) {
                 status.className = 'status-message error';
                 status.style.display = 'block';
-                status.textContent = 'Error loading configuration: ' + error.message;
+                let errorMessage = 'Error loading configuration: ';
+                if (error.message === 'Failed to fetch') {
+                    errorMessage = 'Backend API not available (fetch failed). To view requested data, run locally using the commands on our Admin Page.';
+                } else {
+                    errorMessage += error.message + '. To view requested data, run locally using the commands on our Admin Page.';
+                }
+                status.innerHTML = '<span style="color: var(--accent-red);">' + errorMessage + ' <a href="/admin" style="color: var(--accent-blue); text-decoration: underline;">Link to: /admin</a></span>';
                 
                 // Reset button text on error
                 btn.innerHTML = '<i data-feather="refresh-cw"></i> Load from .env';
@@ -2105,7 +2111,13 @@
             } catch (error) {
                 status.className = 'status-message error';
                 status.style.display = 'block';
-                status.textContent = 'Error saving configuration: ' + error.message;
+                let errorMessage = 'Error saving configuration: ';
+                if (error.message === 'Failed to fetch') {
+                    errorMessage = 'Backend API not available (fetch failed). To view requested data, run locally using the commands on our Admin Page.';
+                } else {
+                    errorMessage += error.message + '. To view requested data, run locally using the commands on our Admin Page.';
+                }
+                status.innerHTML = '<span style="color: var(--accent-red);">' + errorMessage + ' <a href="/admin" style="color: var(--accent-blue); text-decoration: underline;">Link to: /admin</a></span>';
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i data-feather="save"></i> Save to .env';

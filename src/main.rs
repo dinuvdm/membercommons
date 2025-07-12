@@ -37,9 +37,10 @@ impl Config {
             toml::from_str(&config_str).context("Failed to parse config.toml")
         } else {
             // Fall back to environment variables
+            let database_url = Self::build_database_url();
+            
             Ok(Config {
-                database_url: std::env::var("DATABASE_URL")
-                    .unwrap_or_else(|_| "postgres://user:password@localhost/suitecrm".to_string()),
+                database_url,
                 gemini_api_key: std::env::var("GEMINI_API_KEY")
                     .unwrap_or_else(|_| "dummy_key".to_string()),
                 server_host: std::env::var("SERVER_HOST")
@@ -51,6 +52,34 @@ impl Config {
                 excel_file_path: std::env::var("EXCEL_FILE_PATH")
                     .unwrap_or_else(|_| "C:\\Users\\yashg\\Model Earth\\membercommons\\preferences\\projects\\DFC-ActiveProjects.xlsx".to_string()),
             })
+        }
+    }
+    
+    fn build_database_url() -> String {
+        // First, try COMMONS component variables (more secure)
+        if let (Ok(host), Ok(port), Ok(name), Ok(user), Ok(password)) = (
+            std::env::var("COMMONS_HOST"),
+            std::env::var("COMMONS_PORT"),
+            std::env::var("COMMONS_NAME"),
+            std::env::var("COMMONS_USER"),
+            std::env::var("COMMONS_PASSWORD")
+        ) {
+            let ssl_mode = std::env::var("COMMONS_SSL_MODE").unwrap_or_else(|_| "require".to_string());
+            format!("postgres://{}:{}@{}:{}/{}?sslmode={}", user, password, host, port, name, ssl_mode)
+        } else if let (Ok(host), Ok(port), Ok(name), Ok(user), Ok(password)) = (
+            std::env::var("DB_HOST"),
+            std::env::var("DB_PORT"),
+            std::env::var("DB_NAME"),
+            std::env::var("DB_USER"),
+            std::env::var("DB_PASSWORD")
+        ) {
+            // Fall back to generic DB_ variables
+            let ssl_mode = std::env::var("DB_SSL_MODE").unwrap_or_else(|_| "require".to_string());
+            format!("postgres://{}:{}@{}:{}/{}?sslmode={}", user, password, host, port, name, ssl_mode)
+        } else {
+            // Fall back to full DATABASE_URL
+            std::env::var("DATABASE_URL")
+                .unwrap_or_else(|_| "postgres://user:password@localhost/suitecrm".to_string())
         }
     }
 }
@@ -152,11 +181,18 @@ struct DatabaseConnection {
 
 #[derive(Deserialize)]
 struct SaveEnvConfigRequest {
+    #[serde(rename = "GEMINI_API_KEY")]
+    gemini_api_key: Option<String>,
     google_project_id: Option<String>,
     google_user_email: Option<String>,
     google_org_id: Option<String>,
     google_billing_id: Option<String>,
     google_service_key: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CreateEnvConfigRequest {
+    content: String,
 }
 
 #[derive(Deserialize)]
@@ -237,8 +273,12 @@ async fn get_env_config() -> Result<HttpResponse> {
         }
     }
     
-    // Check if Gemini API key is present (but don't expose the actual key)
-    let gemini_api_key_present = std::env::var("GEMINI_API_KEY").is_ok();
+    // Check if Gemini API key is present and valid (but don't expose the actual key)
+    let gemini_api_key_present = if let Ok(key) = std::env::var("GEMINI_API_KEY") {
+        !key.is_empty() && key != "dummy_key" && key != "get-key-at-aistudio.google.com"
+    } else {
+        false
+    };
     
     // Get Google configuration values
     let google_project_id = std::env::var("GOOGLE_PROJECT_ID").ok();
@@ -257,6 +297,23 @@ async fn get_env_config() -> Result<HttpResponse> {
         google_billing_id,
         google_service_key,
     }))
+}
+
+// Restart server endpoint (for development)
+async fn restart_server() -> Result<HttpResponse> {
+    // In a production environment, you might want to add authentication here
+    
+    // For development, just exit and let the user restart manually
+    // This is safer and more reliable than trying to auto-restart
+    tokio::spawn(async {
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+        std::process::exit(0); // Clean exit
+    });
+    
+    Ok(HttpResponse::Ok().json(json!({
+        "message": "Server shutdown initiated. Please restart manually with 'cargo run serve'",
+        "status": "success"
+    })))
 }
 
 // Save environment configuration to .env file
@@ -303,6 +360,7 @@ async fn save_env_config(req: web::Json<SaveEnvConfigRequest>) -> Result<HttpRes
     };
     
     // Update or add new values
+    update_env_var(&mut env_lines, &mut updated_keys, "GEMINI_API_KEY", &req.gemini_api_key);
     update_env_var(&mut env_lines, &mut updated_keys, "GOOGLE_PROJECT_ID", &req.google_project_id);
     update_env_var(&mut env_lines, &mut updated_keys, "GOOGLE_USER_EMAIL", &req.google_user_email);
     update_env_var(&mut env_lines, &mut updated_keys, "GOOGLE_ORG_ID", &req.google_org_id);
@@ -332,6 +390,7 @@ async fn save_env_config(req: web::Json<SaveEnvConfigRequest>) -> Result<HttpRes
                 }
             };
             
+            set_env_var("GEMINI_API_KEY", &req.gemini_api_key);
             set_env_var("GOOGLE_PROJECT_ID", &req.google_project_id);
             set_env_var("GOOGLE_USER_EMAIL", &req.google_user_email);
             set_env_var("GOOGLE_ORG_ID", &req.google_org_id);
@@ -348,6 +407,35 @@ async fn save_env_config(req: web::Json<SaveEnvConfigRequest>) -> Result<HttpRes
             Ok(HttpResponse::InternalServerError().json(json!({
                 "success": false,
                 "error": format!("Failed to write .env file: {}", e)
+            })))
+        }
+    }
+}
+
+// Create .env file from .env.example content
+async fn create_env_config(req: web::Json<CreateEnvConfigRequest>) -> Result<HttpResponse> {
+    use std::fs;
+    
+    // Check if .env file already exists
+    if std::path::Path::new(".env").exists() {
+        return Ok(HttpResponse::BadRequest().json(json!({
+            "success": false,
+            "error": ".env file already exists"
+        })));
+    }
+    
+    // Write the content to .env file
+    match fs::write(".env", &req.content) {
+        Ok(_) => {
+            Ok(HttpResponse::Ok().json(json!({
+                "success": true,
+                "message": ".env file created successfully from .env.example template"
+            })))
+        }
+        Err(e) => {
+            Ok(HttpResponse::InternalServerError().json(json!({
+                "success": false,
+                "error": format!("Failed to create .env file: {}", e)
             })))
         }
     }
@@ -1426,9 +1514,14 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                             .route("/data", web::post().to(import::import_data))
                     )
                     .service(
+                        web::scope("/admin")
+                            .route("/restart", web::post().to(restart_server))
+                    )
+                    .service(
                         web::scope("/config")
                             .route("/env", web::get().to(get_env_config))
                             .route("/save-env", web::post().to(save_env_config))
+                            .route("/create-env", web::post().to(create_env_config))
                             .route("/gemini", web::get().to(google::test_gemini_config))
                             .route("/database/{connection_name}", web::get().to(test_database_connection))
                     )
