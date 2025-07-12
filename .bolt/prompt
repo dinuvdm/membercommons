@@ -28,7 +28,7 @@ There will not be an extra table for members or managers.
 
 Managers of each account will be the person who created the account. Provide managers of accounts (teams and organizations) with access to admin features for their accounts, including the ability to promote associated account users to managers and editors.
 
-Include functional Google Gemini Insights throughout the frontend interface, including:
+Include functional AI Insights throughout the frontend interface, including:
 1. Smart Insights: Provide sumarized analysis of account/contact relationships, teams and orgs and provide next step process and links for move projects forward.
 2. Natural Language Search: Search contacts using conversational queries
 
