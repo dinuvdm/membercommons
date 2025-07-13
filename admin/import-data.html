@@ -731,19 +731,26 @@
 
         <div class="header">
             <h1>📊 Data Import with AI Insights</h1>
-            <p>Import project data from Excel files or individual data from CSV files into the MemberCommons database</p>
+            <p>Explore project and partner data from Excel and CSV files with AI Insights</p>
         </div>
 
         <!-- File Selection -->
         <div class="card">
-            <h2>1. Select Data File</h2>
-            <div class="form-group">
-                <label class="form-label">Choose Data File</label>
-                <select id="fileSelect" class="form-select">
-                    <option value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh5-bIR4hC1f9H3NtDCNT19hZXnqz8WRrBwTuLGnZiA5PWhFILUv2nS2FKE2TZ4dZ-RnJkZwHx1t2Y/pub?gid=1054734503&single=true&output=csv" selected>Google Sheets - Individuals (CSV → accounts table)</option>
-                    <option value="../preferences/projects/DFC-ActiveProjects.xlsx">DFC Active Projects (Excel → projects table)</option>
-                    <option value="custom">Choose File...</option>
-                </select>
+            <h2>Select Data File</h2>
+            <div style="display: flex; gap: 16px; align-items: flex-start;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <select id="fileSelect" class="form-select">
+                        <option value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh5-bIR4hC1f9H3NtDCNT19hZXnqz8WRrBwTuLGnZiA5PWhFILUv2nS2FKE2TZ4dZ-RnJkZwHx1t2Y/pub?gid=1054734503&single=true&output=csv" selected>Google Sheets - Individuals (CSV → accounts table)</option>
+                        <option value="../preferences/projects/DFC-ActiveProjects.xlsx">DFC Active Projects (Excel → projects table)</option>
+                        <option value="custom">Choose File...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group hidden" id="sheetSelection" style="flex: 0 0 auto; margin-bottom: 0;">
+                    <select id="sheetSelect" class="form-select" style="width: auto; max-width: 150px;">
+                        <option value="">Loading sheets...</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Custom file upload (hidden by default) -->
@@ -758,13 +765,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="form-group hidden" id="sheetSelection">
-                <label class="form-label">Select Sheet</label>
-                <select id="sheetSelect" class="form-select">
-                    <option value="">Loading sheets...</option>
-                </select>
             </div>
 
             <div class="btn-group hidden" id="analyzeSection">
@@ -802,8 +802,8 @@
                         </div>
                     </div>
                 </div>
-                <div id="loadingStatus" class="loading-status" style="display: none; padding: 12px; margin-bottom: 16px; background: var(--accent-blue); border-radius: var(--radius-md); text-align: center; font-style: italic; color: white; font-weight: bold; border: 2px solid var(--accent-green);">
-                    <!-- Loading status will be shown here -->
+                <div id="loadingStatus" class="loading-status" style="display: block; padding: 12px; margin-bottom: 16px; background: linear-gradient(135deg, #6B7280, #E5E7EB); border-radius: var(--radius-md); text-align: left; font-style: italic; color: white; font-weight: bold;">
+                    Ready for AI analysis
                 </div>
                 <div id="insightsContent" class="insights-content">
                     <div style="color: var(--text-secondary); font-style: italic; text-align: center; padding: 20px;">
@@ -1070,7 +1070,6 @@
                 
                 const sheetNames = workbook.SheetNames;
                 populateSheetSelect(sheetNames);
-                showSection(sheetSelection);
                 showMessage(`File analyzed successfully - found ${sheetNames.length} sheet(s)`, 'success');
                 
                 // Auto-select first sheet and trigger preview
@@ -1214,7 +1213,6 @@
                 try {
                     const sheets = await analyzeFileClientSide();
                     populateSheetSelect(sheets);
-                    showSection(sheetSelection);
                     showMessage('File analyzed successfully (client-side)', 'success');
                     
                     // Auto-select first sheet and trigger preview
@@ -1265,7 +1263,6 @@
                         
                         if (result.success) {
                             populateSheetSelect(result.sheets);
-                            showSection(sheetSelection);
                             showMessage('File analyzed successfully (API)', 'success');
                             
                             // Auto-select first sheet and trigger preview
@@ -1294,7 +1291,6 @@
                 
                 if (result.success) {
                     populateSheetSelect(result.sheets);
-                    showSection(sheetSelection);
                     showMessage('File analyzed successfully - found ' + result.sheets.length + ' sheet(s)', 'success');
                     
                     // Auto-select first sheet (no auto-preview to avoid duplicate)
@@ -1716,7 +1712,7 @@
                                 'Content-Type': 'application/json',
                             },
                             body: JSON.stringify({
-                                data: previewDataResult.preview, // Send the parsed data directly
+                                data: previewDataResult.full_dataset || previewDataResult.preview, // Send full dataset if available, fallback to preview
                                 headers: previewDataResult.headers,
                                 table_name: targetTable,
                                 source: 'csv',
@@ -1835,6 +1831,18 @@
                 }
                 sheetSelect.appendChild(option);
             });
+            
+            // Only show sheet selection if there's more than one sheet
+            if (sheets.length > 1) {
+                showSection(sheetSelection);
+            } else {
+                hideSection(sheetSelection);
+                // Auto-select the single sheet
+                if (sheets.length === 1) {
+                    selectedSheet = sheets[0];
+                    sheetSelect.value = sheets[0];
+                }
+            }
             
             // If we had a selection before, trigger the change event
             if (currentValue && sheets.includes(currentValue)) {
@@ -1973,7 +1981,13 @@
                 }
                 html += '</table>';
                 
-                html += `<div style="margin-top: 10px;"><input type="checkbox" id="firstRowHeaders" ${hasHeaderRow ? 'checked' : ''}> <label for="firstRowHeaders">First row contains column headers</label></div>`;
+                // Add bottom margin to the table
+                html += '<div style="margin-bottom: 11px;"></div>';
+                
+                // Only show checkbox if headers are NOT detected
+                if (!hasHeaderRow) {
+                    html += `<div style="margin-top: 10px;"><input type="checkbox" id="firstRowHeaders"> <label for="firstRowHeaders">First row contains column headers</label></div>`;
+                }
                 
             } else {
                 html += '<div class="alert alert-warning">No data found in the selected sheet.</div>';
@@ -2125,11 +2139,11 @@
         }
         
         function hideInsightsStatus() {
-            const statusDiv = document.getElementById('loadingStatus');
-            if (statusDiv) {
-                console.log('Hiding insights status');
-                statusDiv.style.display = 'none';
-            }
+            //const statusDiv = document.getElementById('loadingStatus');
+            //if (statusDiv) {
+            //    console.log('Resetting insights status to ready');
+            //    statusDiv.textContent = 'Ready for AI analysis';
+            //}
         }
         
         function showAIInsightsSection() {
@@ -2227,7 +2241,7 @@
             }
             
             // Show status that cached data is loaded, then hide after 5 seconds
-            showInsightsStatus('Cached Gemini analysis loaded successfully');
+            showInsightsStatus('Gemini analysis from browser cache');
             setTimeout(() => {
                 hideInsightsStatus();
             }, 5000);
@@ -2267,7 +2281,7 @@
             }
             
             // Show status that cached data is loaded, then hide after 5 seconds
-            showInsightsStatus('Cached Claude analysis loaded successfully');
+            showInsightsStatus('Claude analysis from browser cache');
             setTimeout(() => {
                 hideInsightsStatus();
             }, 5000);
@@ -3505,14 +3519,6 @@ Please analyze this dataset according to the request above.`;
             showMessage('Claude Insights button clicked - checking for existing analysis...', 'info');
             showInsightsStatus('Checking for cached Claude analysis...');
             
-            // Test - show a test status for 5 seconds to verify it's working
-            setTimeout(() => {
-                showInsightsStatus('🔍 TEST: Status field is working! This will disappear in 5 seconds...');
-                setTimeout(() => {
-                    hideInsightsStatus();
-                }, 5000);
-            }, 500);
-            
             if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
                 showMessage('No dataset available for analysis. Please load a file first.', 'warning');
                 hideInsightsStatus();
@@ -3545,14 +3551,6 @@ Please analyze this dataset according to the request above.`;
             // Show immediate status update
             showMessage('Gemini Insights button clicked - checking for existing analysis...', 'info');
             showInsightsStatus('Checking for cached Gemini analysis...');
-            
-            // Test - show a test status for 5 seconds to verify it's working
-            setTimeout(() => {
-                showInsightsStatus('🔍 TEST: Gemini status field is working! This will disappear in 5 seconds...');
-                setTimeout(() => {
-                    hideInsightsStatus();
-                }, 5000);
-            }, 500);
             
             if (!previewDataResult || !previewDataResult.full_dataset || previewDataResult.full_dataset.length === 0) {
                 showMessage('No dataset available for analysis. Please load a file first.', 'warning');
