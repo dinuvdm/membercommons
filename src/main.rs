@@ -270,7 +270,8 @@ async fn get_env_config() -> Result<HttpResponse> {
             }
             
             database_connections.push(DatabaseConnection {
-                name: display_name,
+                name: prefix.to_string(),
+                display_name: display_name,
                 config,
             });
         }
@@ -554,9 +555,28 @@ async fn test_database_connection(path: web::Path<String>) -> Result<HttpRespons
     let connection_name = path.into_inner();
     
     // Get the database URL for this connection
-    let database_url = match std::env::var(&connection_name) {
-        Ok(url) => url,
-        Err(_) => {
+    let database_url = if let Ok(url) = std::env::var(&connection_name) {
+        // Direct URL environment variable
+        url
+    } else {
+        // Try component-based configuration
+        let host_key = format!("{}_HOST", connection_name);
+        let port_key = format!("{}_PORT", connection_name);
+        let name_key = format!("{}_NAME", connection_name);
+        let user_key = format!("{}_USER", connection_name);
+        let password_key = format!("{}_PASSWORD", connection_name);
+        let ssl_key = format!("{}_SSL_MODE", connection_name);
+        
+        if let (Ok(host), Ok(port), Ok(name), Ok(user), Ok(password)) = (
+            std::env::var(&host_key),
+            std::env::var(&port_key),
+            std::env::var(&name_key),
+            std::env::var(&user_key),
+            std::env::var(&password_key)
+        ) {
+            let ssl_mode = std::env::var(&ssl_key).unwrap_or_else(|_| "require".to_string());
+            format!("postgres://{}:{}@{}:{}/{}?sslmode={}", user, password, host, port, name, ssl_mode)
+        } else {
             return Ok(HttpResponse::BadRequest().json(json!({
                 "success": false,
                 "error": format!("Connection '{}' not found in environment variables", connection_name)

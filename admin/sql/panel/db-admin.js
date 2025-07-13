@@ -7,7 +7,7 @@ class DatabaseAdmin {
             : 'http://localhost:8081/api';
         this.log = [];
         this.envConfig = null;
-        this.selectedConnection = 'DATABASE_URL'; // Default to DATABASE_URL
+        this.selectedConnection = 'COMMONS'; // Default to COMMONS
         this.init();
     }
 
@@ -56,8 +56,8 @@ class DatabaseAdmin {
             option.value = connection.name;
             option.textContent = connection.display_name;
             
-            // Select DATABASE_URL as default
-            if (connection.name === 'DATABASE_URL') {
+            // Select COMMONS as default
+            if (connection.name === 'COMMONS') {
                 option.selected = true;
                 this.selectedConnection = connection.name;
             }
