@@ -873,10 +873,62 @@ async fn db_list_tables(
 async fn db_get_table_info(
     data: web::Data<Arc<ApiState>>,
     path: web::Path<String>,
+    query: web::Query<std::collections::HashMap<String, String>>,
 ) -> Result<HttpResponse> {
     let table_name = path.into_inner();
     
-    match get_table_details(&data.db, &table_name).await {
+    // Check if a specific connection is requested
+    let pool = if let Some(connection_name) = query.get("connection") {
+        // Get the database URL for this connection
+        let database_url = if let Ok(url) = std::env::var(connection_name) {
+            // Direct URL environment variable
+            url
+        } else {
+            // Try component-based configuration
+            let host_key = format!("{}_HOST", connection_name);
+            let port_key = format!("{}_PORT", connection_name);
+            let name_key = format!("{}_NAME", connection_name);
+            let user_key = format!("{}_USER", connection_name);
+            let password_key = format!("{}_PASSWORD", connection_name);
+            let ssl_key = format!("{}_SSL_MODE", connection_name);
+            
+            if let (Ok(host), Ok(port), Ok(name), Ok(user), Ok(password)) = (
+                std::env::var(&host_key),
+                std::env::var(&port_key),
+                std::env::var(&name_key),
+                std::env::var(&user_key),
+                std::env::var(&password_key)
+            ) {
+                let ssl_mode = std::env::var(&ssl_key).unwrap_or_else(|_| "require".to_string());
+                format!("postgres://{}:{}@{}:{}/{}?sslmode={}", user, password, host, port, name, ssl_mode)
+            } else {
+                return Ok(HttpResponse::BadRequest().json(DatabaseResponse {
+                    success: false,
+                    message: None,
+                    error: Some(format!("Connection '{}' not found in environment variables", connection_name)),
+                    data: None,
+                }));
+            }
+        };
+        
+        // Use the specified connection
+        match sqlx::postgres::PgPool::connect(&database_url).await {
+            Ok(pool) => pool,
+            Err(e) => {
+                return Ok(HttpResponse::InternalServerError().json(DatabaseResponse {
+                    success: false,
+                    message: None,
+                    error: Some(format!("Failed to connect to {}: {}", connection_name, e)),
+                    data: None,
+                }));
+            }
+        }
+    } else {
+        // Use default connection
+        data.db.clone()
+    };
+    
+    match get_table_details(&pool, &table_name).await {
         Ok(info) => Ok(HttpResponse::Ok().json(DatabaseResponse {
             success: true,
             message: Some(format!("Table {} found", table_name)),
@@ -896,10 +948,11 @@ async fn db_get_table_info(
 async fn db_execute_query(
     data: web::Data<Arc<ApiState>>,
     query_req: web::Json<QueryRequest>,
+    query: web::Query<std::collections::HashMap<String, String>>,
 ) -> Result<HttpResponse> {
     // Only allow safe SELECT queries for security
-    let query = query_req.query.trim().to_lowercase();
-    if !query.starts_with("select") {
+    let query_text = query_req.query.trim().to_lowercase();
+    if !query_text.starts_with("select") {
         return Ok(HttpResponse::BadRequest().json(DatabaseResponse {
             success: false,
             message: None,
@@ -908,7 +961,58 @@ async fn db_execute_query(
         }));
     }
 
-    match execute_safe_query(&data.db, &query_req.query).await {
+    // Check if a specific connection is requested
+    let pool = if let Some(connection_name) = query.get("connection") {
+        // Get the database URL for this connection
+        let database_url = if let Ok(url) = std::env::var(connection_name) {
+            // Direct URL environment variable
+            url
+        } else {
+            // Try component-based configuration
+            let host_key = format!("{}_HOST", connection_name);
+            let port_key = format!("{}_PORT", connection_name);
+            let name_key = format!("{}_NAME", connection_name);
+            let user_key = format!("{}_USER", connection_name);
+            let password_key = format!("{}_PASSWORD", connection_name);
+            let ssl_key = format!("{}_SSL_MODE", connection_name);
+            
+            if let (Ok(host), Ok(port), Ok(name), Ok(user), Ok(password)) = (
+                std::env::var(&host_key),
+                std::env::var(&port_key),
+                std::env::var(&name_key),
+                std::env::var(&user_key),
+                std::env::var(&password_key)
+            ) {
+                let ssl_mode = std::env::var(&ssl_key).unwrap_or_else(|_| "require".to_string());
+                format!("postgres://{}:{}@{}:{}/{}?sslmode={}", user, password, host, port, name, ssl_mode)
+            } else {
+                return Ok(HttpResponse::BadRequest().json(DatabaseResponse {
+                    success: false,
+                    message: None,
+                    error: Some(format!("Connection '{}' not found in environment variables", connection_name)),
+                    data: None,
+                }));
+            }
+        };
+        
+        // Use the specified connection
+        match sqlx::postgres::PgPool::connect(&database_url).await {
+            Ok(pool) => pool,
+            Err(e) => {
+                return Ok(HttpResponse::InternalServerError().json(DatabaseResponse {
+                    success: false,
+                    message: None,
+                    error: Some(format!("Failed to connect to {}: {}", connection_name, e)),
+                    data: None,
+                }));
+            }
+        }
+    } else {
+        // Use default connection
+        data.db.clone()
+    };
+
+    match execute_safe_query(&pool, &query_req.query).await {
         Ok(result) => Ok(HttpResponse::Ok().json(DatabaseResponse {
             success: true,
             message: Some("Query executed successfully".to_string()),
@@ -1522,6 +1626,44 @@ async fn get_table_details(pool: &Pool<Postgres>, table_name: &str) -> Result<Ha
     .fetch_one(pool)
     .await?;
 
+    // Get column information
+    let column_rows = sqlx::query(
+        r#"
+        SELECT 
+            column_name,
+            data_type,
+            is_nullable,
+            column_default,
+            character_maximum_length,
+            numeric_precision,
+            numeric_scale
+        FROM information_schema.columns 
+        WHERE table_name = $1 
+        ORDER BY ordinal_position
+        "#,
+    )
+    .bind(table_name)
+    .fetch_all(pool)
+    .await?;
+
+    let mut columns = Vec::new();
+    for col_row in column_rows {
+        let mut column_info = serde_json::Map::new();
+        column_info.insert("name".to_string(), serde_json::Value::String(col_row.get::<String, _>("column_name")));
+        column_info.insert("type".to_string(), serde_json::Value::String(col_row.get::<String, _>("data_type")));
+        column_info.insert("nullable".to_string(), serde_json::Value::String(col_row.get::<String, _>("is_nullable")));
+        
+        if let Some(default_value) = col_row.get::<Option<String>, _>("column_default") {
+            column_info.insert("default".to_string(), serde_json::Value::String(default_value));
+        }
+        
+        if let Some(max_length) = col_row.get::<Option<i32>, _>("character_maximum_length") {
+            column_info.insert("max_length".to_string(), serde_json::json!(max_length));
+        }
+        
+        columns.push(serde_json::Value::Object(column_info));
+    }
+
     let mut info = HashMap::new();
     info.insert("table_name".to_string(), serde_json::Value::String(table_name.to_string()));
     info.insert("estimated_rows".to_string(), serde_json::json!(row.get::<Option<i64>, _>("estimated_rows")));
@@ -1529,6 +1671,7 @@ async fn get_table_details(pool: &Pool<Postgres>, table_name: &str) -> Result<Ha
     info.insert("description".to_string(), serde_json::Value::String(
         get_table_description(table_name).unwrap_or_else(|| "No description available".to_string())
     ));
+    info.insert("columns".to_string(), serde_json::Value::Array(columns));
 
     Ok(info)
 }

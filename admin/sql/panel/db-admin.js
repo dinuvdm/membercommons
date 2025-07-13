@@ -343,16 +343,27 @@ class DatabaseAdmin {
     }
 
     async checkTable(tableName) {
-        this.addLog(`🔍 Checking table: ${tableName}`);
+        this.addLog(`🔍 Checking table: ${tableName} using connection: ${this.selectedConnection}`);
         
         try {
-            const response = await this.makeRequest(`/db/table/${tableName}`, {
+            const response = await this.makeRequest(`/db/table/${tableName}?connection=${this.selectedConnection}`, {
                 method: 'GET'
             });
 
             if (response.success) {
-                this.showSuccess(`Table ${tableName}: ${response.info}`, 'quick-actions-result');
-                this.addLog(`✅ Table ${tableName} check successful`);
+                const data = response.data;
+                let tableInfo = data ? 
+                    `${data.description || 'Table found'} (${data.column_count || 'unknown'} columns)` : 
+                    'Table found';
+                
+                // Add column list if available
+                if (data && data.columns && Array.isArray(data.columns)) {
+                    const columnNames = data.columns.map(col => col.name).join(', ');
+                    tableInfo += `<br><strong>Columns:</strong> ${columnNames}`;
+                }
+                
+                this.showSuccess(`Table ${tableName}: ${tableInfo}`, 'quick-actions-result');
+                this.addLog(`✅ Table ${tableName} check successful: ${JSON.stringify(data)}`);
             } else {
                 throw new Error(response.error || 'Table check failed');
             }
@@ -363,10 +374,10 @@ class DatabaseAdmin {
     }
 
     async testSimpleQuery() {
-        this.addLog('🔍 Testing simple database query...');
+        this.addLog(`🔍 Testing simple database query using connection: ${this.selectedConnection}...`);
         
         try {
-            const response = await this.makeRequest('/db/query', {
+            const response = await this.makeRequest(`/db/query?connection=${this.selectedConnection}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -376,9 +387,9 @@ class DatabaseAdmin {
                 })
             });
 
-            if (response.success && response.result) {
-                this.showSuccess(`Query executed successfully: ${JSON.stringify(response.result)}`, 'quick-actions-result');
-                this.addLog(`✅ Query result: ${JSON.stringify(response.result, null, 2)}`);
+            if (response.success && response.data) {
+                this.showSuccess(`Query executed successfully: ${JSON.stringify(response.data)}`, 'quick-actions-result');
+                this.addLog(`✅ Query result: ${JSON.stringify(response.data, null, 2)}`);
             } else {
                 throw new Error(response.error || 'Query execution failed');
             }
