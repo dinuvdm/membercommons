@@ -2275,7 +2275,7 @@
             // Display cached insights
             if (cachedData.success) {
                 console.log('Displaying successful cached Gemini analysis');
-                displayGeminiInsights(cachedData.analysis, cachedData.totalRecords, cachedData.sampleSize);
+                displayGeminiInsights(cachedData.analysis, cachedData.totalRecords, cachedData.sampleSize, false);
                 
                 // Update button to show cached status
                 const geminiInsightsText = document.getElementById('geminiInsightsText');
@@ -2589,30 +2589,31 @@ Keep the response structured and actionable for a data import workflow.`;
                 }
                 
                 if (result.success) {
-                    // Cache successful result
-                    aiInsightsCache[cacheKey] = {
+                    // Show status that new analysis is complete
+                    showInsightsStatus('✅ Gemini analysis complete! Choose Save to keep or Cancel to revert.');
+                    showMessage(`Gemini analysis completed with standard prompt. Analysis length: ${result.analysis.length} characters`, 'success');
+                    
+                    // Store in pending analysis (don't save to cache yet)
+                    pendingGeminiAnalysis = {
                         success: true,
                         analysis: result.analysis,
                         totalRecords: dataset.length,
                         sampleSize: sampleSize,
                         timestamp: new Date().toISOString(),
-                        sheetName: sheetName
+                        sheetName: sheetName,
+                        customPrompt: 'Standard data analysis prompt'
                     };
-                    saveCacheToStorage(); // Persist to localStorage
                     
-                    displayGeminiInsights(result.analysis, dataset.length, sampleSize);
+                    // Display with Save/Cancel buttons
+                    displayGeminiInsights(result.analysis, dataset.length, sampleSize, true);
                     
-                    // Hide loading status
-                    hideInsightsStatus();
-                    
-                    // Update button to cached state and show refresh button
+                    // Update button to pending state
                     geminiInsightsBtn.disabled = false;
-                    geminiInsightsText.textContent = 'Gemini Insights (Cached)';
-                    geminiRefreshBtn.style.display = 'flex';
+                    geminiInsightsText.textContent = 'Gemini Insights (Pending)';
+                    // Don't show refresh button until saved
+                    geminiRefreshBtn.style.display = 'none';
                 } else {
-                    const error = new Error(result.error || 'Analysis failed');
-                    error.details = result.error_details;
-                    throw error;
+                    throw new Error(result.error || 'Analysis failed');
                 }
 
             } catch (error) {
@@ -2643,23 +2644,45 @@ Keep the response structured and actionable for a data import workflow.`;
             }
         }
 
-        async function displayGeminiInsights(analysis, totalRecords, sampleSize) {
+        async function displayGeminiInsights(analysis, totalRecords, sampleSize, isNewAnalysis = false) {
             const insightsContent = document.getElementById('insightsContent');
             
             // Check if this is cached data
             const cacheKey = getCurrentCacheKey();
             const cachedData = aiInsightsCache[cacheKey];
-            const isCached = cachedData && cachedData.success;
+            const isCached = cachedData && cachedData.success && !isNewAnalysis;
             
             try {
                 // Use the same markdown processing as displayFile
                 const processedHTML = await processGeminiMarkdown(analysis);
                 
+                // Get the prompt from cache if available
+                const cacheData = isCached ? cachedData : (isNewAnalysis ? pendingGeminiAnalysis : null);
+                const promptText = cacheData?.customPrompt || 'Standard data analysis prompt';
+                
+                // Add Save/Cancel buttons if this is a new analysis
+                const saveButtonsHTML = isNewAnalysis ? `
+                    <div class="save-cancel-buttons" style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: flex-end;">
+                        <button class="btn btn-secondary" onclick="cancelGeminiAnalysis()">Don't Save</button>
+                        <button class="btn btn-primary" onclick="saveGeminiAnalysis()">Save Changes</button>
+                    </div>
+                ` : '';
+
+                // Add prompt display (after buttons)
+                const promptHTML = `
+                    <div class="insight-section" style="background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-md); margin-bottom: 16px; border-left: 4px solid var(--accent-green);">
+                        <strong>📝 Analysis Prompt:</strong> <span style="font-style: italic; color: var(--text-secondary);">${promptText}</span>
+                    </div>
+                `;
+                
                 let html = `
                     <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
-                        <strong>📊 Dataset Overview:</strong> ${totalRecords} total records analyzed (${sampleSize} sample)
+                        <strong>📊 Gemini Analysis:</strong> ${totalRecords} total records analyzed (${sampleSize} sample)
                         ${isCached ? '<span style="color: var(--text-muted); font-size: 12px; margin-left: 8px; cursor: pointer; text-decoration: underline;" onclick="showRawMarkdown(\'gemini\')">💾 Cached Gemini Analysis</span>' : ''}
+                        ${isNewAnalysis ? '<span style="color: var(--accent-green); font-size: 12px; margin-left: 8px;">✨ New Analysis</span>' : ''}
                     </div>
+                    ${saveButtonsHTML}
+                    ${promptHTML}
                     <div class="insight-section readme-content">
                         ${processedHTML}
                     </div>
@@ -2673,7 +2696,7 @@ Keep the response structured and actionable for a data import workflow.`;
             } catch (error) {
                 console.error('Error processing Gemini markdown:', error);
                 // Fallback to simple processing
-                displayGeminiInsightsSimple(analysis, totalRecords, sampleSize);
+                displayGeminiInsightsSimple(analysis, totalRecords, sampleSize, isNewAnalysis);
             }
         }
         
@@ -2774,18 +2797,44 @@ Keep the response structured and actionable for a data import workflow.`;
         }
         
         // Fallback function for simple processing (keeps existing functionality)
-        function displayGeminiInsightsSimple(analysis, totalRecords, sampleSize) {
+        function displayGeminiInsightsSimple(analysis, totalRecords, sampleSize, isNewAnalysis = false) {
             const insightsContent = document.getElementById('insightsContent');
             
             // Check if this is cached data
             const cacheKey = getCurrentCacheKey();
             const cachedData = aiInsightsCache[cacheKey];
-            const isCached = cachedData && cachedData.success;
+            const isCached = cachedData && cachedData.success && !isNewAnalysis;
+            
+            // Get the prompt from cache if available
+            const cacheData = isCached ? cachedData : (isNewAnalysis ? pendingGeminiAnalysis : null);
+            const promptText = cacheData?.customPrompt || 'Standard data analysis prompt';
+            
+            // Add Save/Cancel buttons if this is a new analysis
+            const saveButtonsHTML = isNewAnalysis ? `
+                <div class="save-cancel-buttons" style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="cancelGeminiAnalysis()">Don't Save</button>
+                    <button class="btn btn-primary" onclick="saveGeminiAnalysis()">Save Changes</button>
+                </div>
+            ` : '';
+
+            // Add prompt display (after buttons)
+            const promptHTML = `
+                <div class="insight-section" style="background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-md); margin-bottom: 16px; border-left: 4px solid var(--accent-green);">
+                    <strong>📝 Analysis Prompt:</strong> <span style="font-style: italic; color: var(--text-secondary);">${promptText}</span>
+                </div>
+            `;
             
             // Parse the analysis response and format it
             const sections = parseGeminiResponse(analysis);
             
             let html = `
+                <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
+                    <strong>📊 Gemini Analysis:</strong> ${totalRecords} total records analyzed (${sampleSize} sample)
+                    ${isCached ? '<span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">💾 Cached analysis</span>' : ''}
+                    ${isNewAnalysis ? '<span style="color: var(--accent-green); font-size: 12px; margin-left: 8px;">✨ New Analysis</span>' : ''}
+                </div>
+                ${saveButtonsHTML}
+                ${promptHTML}
                 <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
                     <strong>📊 Dataset Overview:</strong> ${totalRecords} total records analyzed (${sampleSize} sample)
                     ${isCached ? '<span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">💾 Cached analysis</span>' : ''}
@@ -3106,13 +3155,24 @@ Please analyze this dataset according to the request above.`;
                 // Use the same markdown processing as Gemini
                 const processedHTML = await processGeminiMarkdown(analysis);
                 
+                // Get the prompt from cache if available
+                const cacheData = isCached ? cachedData : (isNewAnalysis ? pendingClaudeAnalysis : null);
+                const promptText = cacheData?.customPrompt || 'Standard data analysis prompt';
+                
                 // Add Save/Cancel buttons if this is a new analysis
                 const saveButtonsHTML = isNewAnalysis ? `
                     <div class="save-cancel-buttons" style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: flex-end;">
-                        <button class="btn btn-secondary" onclick="cancelClaudeAnalysis()">Cancel</button>
+                        <button class="btn btn-secondary" onclick="cancelClaudeAnalysis()">Don't Save</button>
                         <button class="btn btn-primary" onclick="saveClaudeAnalysis()">Save Changes</button>
                     </div>
                 ` : '';
+
+                // Add prompt display (after buttons)
+                const promptHTML = `
+                    <div class="insight-section" style="background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-md); margin-bottom: 16px; border-left: 4px solid var(--accent-blue);">
+                        <strong>📝 Analysis Prompt:</strong> <span style="font-style: italic; color: var(--text-secondary);">${promptText}</span>
+                    </div>
+                `;
 
                 let html = `
                     <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
@@ -3121,6 +3181,7 @@ Please analyze this dataset according to the request above.`;
                         ${isNewAnalysis ? '<span style="color: var(--accent-blue); font-size: 12px; margin-left: 8px;">✨ New Analysis</span>' : ''}
                     </div>
                     ${saveButtonsHTML}
+                    ${promptHTML}
                     <div class="insight-section readme-content">
                         ${processedHTML}
                     </div>
@@ -3146,13 +3207,24 @@ Please analyze this dataset according to the request above.`;
             const cachedData = claudeInsightsCache[cacheKey];
             const isCached = cachedData && cachedData.success && !isNewAnalysis;
             
+            // Get the prompt from cache if available
+            const cacheData = isCached ? cachedData : (isNewAnalysis ? pendingClaudeAnalysis : null);
+            const promptText = cacheData?.customPrompt || 'Standard data analysis prompt';
+            
             // Add Save/Cancel buttons if this is a new analysis
             const saveButtonsHTML = isNewAnalysis ? `
                 <div class="save-cancel-buttons" style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: flex-end;">
-                    <button class="btn btn-secondary" onclick="cancelClaudeAnalysis()">Cancel</button>
+                    <button class="btn btn-secondary" onclick="cancelClaudeAnalysis()">Don't Save</button>
                     <button class="btn btn-primary" onclick="saveClaudeAnalysis()">Save Changes</button>
                 </div>
             ` : '';
+
+            // Add prompt display (after buttons)
+            const promptHTML = `
+                <div class="insight-section" style="background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-md); margin-bottom: 16px; border-left: 4px solid var(--accent-blue);">
+                    <strong>📝 Analysis Prompt:</strong> <span style="font-style: italic; color: var(--text-secondary);">${promptText}</span>
+                </div>
+            `;
             
             let html = `
                 <div class="insight-section" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
@@ -3161,6 +3233,7 @@ Please analyze this dataset according to the request above.`;
                     ${isNewAnalysis ? '<span style="color: var(--accent-blue); font-size: 12px; margin-left: 8px;">✨ New Analysis</span>' : ''}
                 </div>
                 ${saveButtonsHTML}
+                ${promptHTML}
                 <div class="insight-section readme-content">
                     <pre style="white-space: pre-wrap; font-family: inherit;">${analysis}</pre>
                 </div>
@@ -3469,9 +3542,16 @@ Please analyze this dataset according to the request above.`;
             modalTitle.textContent = aiType === 'claude' ? 'Claude AI Analysis' : 'Gemini AI Analysis';
             submitBtn.textContent = aiType === 'claude' ? 'Analyze with Claude' : 'Analyze with Gemini';
             
-            // Reset to default prompt - clear first, then set
-            promptInput.value = '';
-            promptInput.value = 'Tell me an amazing poem about this data.';
+            // Load saved prompt from browser storage, or use default
+            const savedPrompt = loadPromptFromStorage();
+            if (savedPrompt) {
+                promptInput.value = savedPrompt;
+                console.log('Restored saved prompt from browser storage');
+            } else {
+                // Use default prompt if no saved prompt exists
+                promptInput.value = 'Tell me an amazing poem about this data.';
+                console.log('Using default prompt (no saved prompt found)');
+            }
             
             modal.classList.remove('hidden');
             promptInput.focus();
@@ -3516,6 +3596,9 @@ Please analyze this dataset according to the request above.`;
                 alert('Please enter a prompt.');
                 return;
             }
+            
+            // Save prompt to browser storage when sending to model
+            savePromptToStorage(customPrompt);
             
             // Show immediate status message
             showMessage(`Starting ${currentPromptAI === 'claude' ? 'Claude' : 'Gemini'} analysis...`, 'info');
@@ -3627,6 +3710,30 @@ Please analyze this dataset according to the request above.`;
 
         // Temporary storage for new analysis before saving
         let pendingClaudeAnalysis = null;
+        let pendingGeminiAnalysis = null;
+
+        // Browser storage for prompt input
+        const PROMPT_STORAGE_KEY = 'membercommons_prompt_input';
+        
+        function savePromptToStorage(prompt) {
+            if (prompt && prompt.trim()) {
+                localStorage.setItem(PROMPT_STORAGE_KEY, prompt.trim());
+                console.log('Saved prompt to browser storage:', prompt.substring(0, 50) + (prompt.length > 50 ? '...' : ''));
+            } else {
+                // Clear storage when prompt is blank
+                localStorage.removeItem(PROMPT_STORAGE_KEY);
+                console.log('Cleared prompt from browser storage (blank prompt)');
+            }
+        }
+        
+        function loadPromptFromStorage() {
+            const savedPrompt = localStorage.getItem(PROMPT_STORAGE_KEY);
+            if (savedPrompt) {
+                console.log('Loaded prompt from browser storage:', savedPrompt.substring(0, 50) + (savedPrompt.length > 50 ? '...' : ''));
+                return savedPrompt;
+            }
+            return null;
+        }
 
         // Save/Cancel functions for Claude analysis
         function saveClaudeAnalysis() {
@@ -3710,6 +3817,94 @@ Please analyze this dataset according to the request above.`;
                 } else {
                     // No cached data, show empty state
                     console.log('No cached Claude analysis found, showing empty state');
+                    showAIInsightsButtons();
+                    showMessage('New analysis canceled. No previous analysis found.', 'info');
+                }
+            }
+        }
+
+        // Save/Cancel functions for Gemini analysis
+        function saveGeminiAnalysis() {
+            if (pendingGeminiAnalysis) {
+                const cacheKey = getCurrentCacheKey();
+                console.log('Saving Gemini analysis to cache with key:', cacheKey);
+                
+                // Show status that we're saving the new analysis
+                showInsightsStatus('💾 Saving new Gemini analysis to cache...');
+                showMessage('Saving new Gemini analysis to browser storage', 'success');
+                
+                // Now it's safe to clear the old cache and save the new one
+                delete aiInsightsCache[cacheKey]; // Remove old version
+                aiInsightsCache[cacheKey] = pendingGeminiAnalysis; // Add new version
+                saveCacheToStorage();
+                
+                // Clear pending analysis
+                pendingGeminiAnalysis = null;
+                
+                // Re-display without Save/Cancel buttons
+                displayGeminiInsights(aiInsightsCache[cacheKey].analysis, aiInsightsCache[cacheKey].totalRecords, aiInsightsCache[cacheKey].sampleSize, false);
+                
+                // Update button text
+                const geminiInsightsText = document.getElementById('geminiInsightsText');
+                if (geminiInsightsText) {
+                    geminiInsightsText.textContent = 'Gemini Insights (Cached)';
+                }
+                
+                // Show refresh button
+                const geminiRefreshBtn = document.getElementById('geminiRefreshBtn');
+                if (geminiRefreshBtn) {
+                    geminiRefreshBtn.style.display = 'flex';
+                }
+                
+                showMessage('Gemini analysis saved successfully!', 'success');
+            }
+        }
+
+        function cancelGeminiAnalysis() {
+            if (pendingGeminiAnalysis) {
+                const cacheKey = getCurrentCacheKey();
+                console.log('Canceling Gemini analysis, reverting to cached version');
+                console.log('Current cache key:', cacheKey);
+                console.log('Available cache keys:', Object.keys(aiInsightsCache));
+                
+                // Show status that we're reverting to cached version
+                showInsightsStatus('🔄 Cancelled new analysis - reverting to cached version...');
+                showMessage('New analysis cancelled - restoring previous cached Gemini analysis', 'info');
+                
+                // Clear pending analysis
+                pendingGeminiAnalysis = null;
+                
+                // Check if we have cached data to revert to
+                if (aiInsightsCache[cacheKey]) {
+                    console.log('Restoring cached Gemini analysis from browser storage');
+                    console.log('Cached data:', {
+                        analysisLength: aiInsightsCache[cacheKey].analysis?.length,
+                        totalRecords: aiInsightsCache[cacheKey].totalRecords,
+                        sampleSize: aiInsightsCache[cacheKey].sampleSize,
+                        timestamp: aiInsightsCache[cacheKey].timestamp
+                    });
+                    
+                    // Display the cached analysis
+                    displayGeminiInsights(
+                        aiInsightsCache[cacheKey].analysis, 
+                        aiInsightsCache[cacheKey].totalRecords, 
+                        aiInsightsCache[cacheKey].sampleSize, 
+                        false // Not a new analysis
+                    );
+                    
+                    // Update button states to show cached status
+                    const geminiInsightsBtn = document.getElementById('geminiInsightsBtn');
+                    const geminiInsightsText = document.getElementById('geminiInsightsText');
+                    const geminiRefreshBtn = document.getElementById('geminiRefreshBtn');
+                    
+                    if (geminiInsightsBtn) geminiInsightsBtn.disabled = false;
+                    if (geminiInsightsText) geminiInsightsText.textContent = 'Gemini Insights (Cached)';
+                    if (geminiRefreshBtn) geminiRefreshBtn.style.display = 'flex';
+                    
+                    showMessage('Reverted to previous Gemini analysis from browser storage.', 'info');
+                } else {
+                    // No cached data, show empty state
+                    console.log('No cached Gemini analysis found, showing empty state');
                     showAIInsightsButtons();
                     showMessage('New analysis canceled. No previous analysis found.', 'info');
                 }
@@ -3934,11 +4129,11 @@ ${JSON.stringify(sampleData, null, 2)}`;
                 
                 if (result.success) {
                     // Show status that new analysis is complete
-                    showInsightsStatus('✅ NEW Gemini analysis complete and saved!');
-                    showMessage(`Fresh Gemini analysis completed and saved. Analysis length: ${result.analysis.length} characters`, 'success');
+                    showInsightsStatus('✅ NEW Gemini analysis complete! Choose Save to keep or Cancel to revert.');
+                    showMessage(`Fresh Gemini analysis completed with custom prompt. Analysis length: ${result.analysis.length} characters`, 'success');
                     
-                    // Cache successful result
-                    aiInsightsCache[cacheKey] = {
+                    // Store in pending analysis (don't save to cache yet)
+                    pendingGeminiAnalysis = {
                         success: true,
                         analysis: result.analysis,
                         totalRecords: dataset.length,
@@ -3947,18 +4142,17 @@ ${JSON.stringify(sampleData, null, 2)}`;
                         sheetName: sheetName,
                         customPrompt: customPrompt
                     };
-                    saveCacheToStorage();
                     
-                    displayGeminiInsights(result.analysis, dataset.length, sampleSize);
+                    // Display with Save/Cancel buttons
+                    displayGeminiInsights(result.analysis, dataset.length, sampleSize, true);
                     
-                    // Update button to cached state and show refresh button
+                    // Update button to pending state
                     geminiInsightsBtn.disabled = false;
-                    geminiInsightsText.textContent = 'Gemini Insights (Cached)';
-                    geminiRefreshBtn.style.display = 'flex';
+                    geminiInsightsText.textContent = 'Gemini Insights (Pending)';
+                    // Don't show refresh button until saved
+                    geminiRefreshBtn.style.display = 'none';
                 } else {
-                    const error = new Error(result.error || 'Analysis failed');
-                    error.details = result.error_details;
-                    throw error;
+                    throw new Error(result.error || 'Analysis failed');
                 }
                 
             } catch (error) {
@@ -4111,6 +4305,31 @@ ${JSON.stringify(sampleData, null, 2)}`;
             
             // Restore cached insights after data loads
             restoreCachedInsights();
+            
+            // Set up prompt input monitoring for browser storage
+            const promptInput = document.getElementById('promptInput');
+            if (promptInput) {
+                // Monitor input changes to clear storage when blank
+                promptInput.addEventListener('input', function() {
+                    const currentValue = this.value.trim();
+                    if (!currentValue) {
+                        // Clear storage when prompt input becomes blank
+                        savePromptToStorage(''); // This will trigger removal
+                        console.log('Prompt input cleared, removed from browser storage');
+                    }
+                });
+                
+                // Also monitor on blur to catch paste/cut operations
+                promptInput.addEventListener('blur', function() {
+                    const currentValue = this.value.trim();
+                    if (!currentValue) {
+                        savePromptToStorage(''); // This will trigger removal
+                        console.log('Prompt input blank on blur, removed from browser storage');
+                    }
+                });
+                
+                console.log('Prompt input monitoring initialized for browser storage');
+            }
             
             // If mode=gemini, default to Gemini Insights after data loads
             if (mode === 'gemini') {
