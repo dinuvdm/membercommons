@@ -220,7 +220,63 @@ async fn get_env_config() -> Result<HttpResponse> {
     let mut database_config = None;
     let mut database_connections = Vec::new();
     
-    // Scan for all database URLs in environment variables
+    // Helper function to build config from components
+    let build_config_from_components = |prefix: &str| -> Option<(String, EnvDatabaseConfig)> {
+        let host_key = format!("{}_HOST", prefix);
+        let port_key = format!("{}_PORT", prefix);
+        let name_key = format!("{}_NAME", prefix);
+        let user_key = format!("{}_USER", prefix);
+        let password_key = format!("{}_PASSWORD", prefix);
+        let ssl_key = format!("{}_SSL_MODE", prefix);
+        
+        if let (Ok(host), Ok(port), Ok(name), Ok(user), Ok(password)) = (
+            std::env::var(&host_key),
+            std::env::var(&port_key),
+            std::env::var(&name_key),
+            std::env::var(&user_key),
+            std::env::var(&password_key)
+        ) {
+            let ssl_mode = std::env::var(&ssl_key).unwrap_or_else(|_| "require".to_string());
+            let port_num: u16 = port.parse().unwrap_or(5432);
+            let ssl = ssl_mode == "require";
+            
+            let config = EnvDatabaseConfig {
+                server: format!("{}:{}", host, port_num),
+                database: name.clone(),
+                username: user.clone(),
+                port: port_num,
+                ssl,
+            };
+            
+            let display_name = match prefix {
+                "COMMONS" => "MemberCommons Database (Default)".to_string(),
+                "EXIOBASE" => "EXIOBASE Database".to_string(),
+                _ => format!("{} Database", prefix.replace("_", " ")),
+            };
+            
+            Some((display_name, config))
+        } else {
+            None
+        }
+    };
+    
+    // Check for component-based configurations first
+    let component_prefixes = ["COMMONS", "EXIOBASE", "DB"];
+    for prefix in component_prefixes.iter() {
+        if let Some((display_name, config)) = build_config_from_components(prefix) {
+            // Set COMMONS as the default database config
+            if *prefix == "COMMONS" {
+                database_config = Some(config.clone());
+            }
+            
+            database_connections.push(DatabaseConnection {
+                name: display_name,
+                config,
+            });
+        }
+    }
+    
+    // Scan for all database URLs in environment variables (legacy support)
     for (key, value) in std::env::vars() {
         if key.ends_with("_URL") && value.starts_with("postgres://") {
             if let Ok(url) = Url::parse(&value) {

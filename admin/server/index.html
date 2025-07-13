@@ -81,6 +81,10 @@
                 Loading configuration...
             </div>
 
+            <div id="test-instruction" style="margin-bottom: 10px;">
+                Start the Rust API first. Then you can test the Gemini API.
+            </div>
+
             <div class="actions">
                 <button class="btn btn-primary" id="test-gemini" disabled>
                     <span class="loading-spinner" id="test-spinner" style="display: none;"></span>
@@ -168,6 +172,7 @@
         const testButton = document.getElementById('test-gemini');
         const testSpinner = document.getElementById('test-spinner');
         const testResult = document.getElementById('test-result');
+        const testInstruction = document.getElementById('test-instruction');
         const configTitle = document.querySelector('#api-configuration-panel .card-title');
         const geminiKeyContainer = document.getElementById('gemini-key-container');
         
@@ -260,7 +265,7 @@
                         <button class="btn btn-secondary" onclick="loadConfiguration()">
                             Reload Config Files
                         </button>
-                        <button class="btn btn-secondary" onclick="restartServer()">
+                        <button class="btn btn-secondary" onclick="stopServer()">
                             Stop Server
                         </button>
                     </div>
@@ -316,8 +321,8 @@
                         <button class="btn btn-secondary" onclick="loadConfiguration()">
                             Reload Config Files
                         </button>
-                        <button class="btn btn-secondary" onclick="restartServer()">
-                            Restart Server
+                        <button class="btn btn-secondary" onclick="stopServer()">
+                            Stop Server
                         </button>
                     </div>
                 `;
@@ -639,6 +644,9 @@
                 testButton.disabled = !mergedConfig.gemini_api_key_present;
                 document.getElementById('analyze-data').style.display = 'none';
                 
+                // Hide instruction when backend is available
+                testInstruction.style.display = 'none';
+                
                 // Clear previous test results
                 testResult.innerHTML = '';
                 
@@ -652,8 +660,8 @@
                 if (envFileExists && envFileData.GEMINI_API_KEY) {
                     // We have .env file data, use it for configuration
                     const hasValidKey = envFileData.gemini_api_key_present;
-                    const statusClass = 'error'; // Always show error when backend is down
-                    const titleText = 'Rust API Inactive';
+                    const statusClass = hasValidKey ? 'connected' : 'error';
+                    const titleText = hasValidKey ? 'Gemini API Key Present' : 'Gemini API Key Needed';
                     
                     apiStatus.className = `status-indicator ${statusClass}`;
                     configTitle.innerHTML = `
@@ -668,6 +676,9 @@
                         database: null // We don't have database info without backend
                     });
                     
+                    // Show instruction when backend is unavailable
+                    testInstruction.style.display = 'block';
+                    
                     // Backend status is now handled by the rust-api-panel
                     
                     // Show connection help for troubleshooting
@@ -678,13 +689,16 @@
                     apiStatus.className = 'status-indicator error';
                     configTitle.innerHTML = `
                         <span class="status-indicator error" id="api-status"></span>
-                        Rust API Inactive
+                        Gemini API Key Needed
                     `;
                     
                     configDisplay.innerHTML = `
                         <strong>Configuration Source:</strong> .env file (backend unavailable)<br>
                         <strong>Gemini API Key:</strong> <span style="color: var(--accent-red);">Not configured or invalid</span><br>
                     `;
+                    
+                    // Show instruction when backend is unavailable
+                    testInstruction.style.display = 'block';
                     
                     // Show connection help for troubleshooting
                     showConnectionHelp();
@@ -694,8 +708,11 @@
                     apiStatus.className = 'status-indicator error';
                     configTitle.innerHTML = `
                         <span class="status-indicator error" id="api-status"></span>
-                        Rust API Inactive
+                        Gemini API Key Needed
                     `;
+                    
+                    // Show instruction when backend is unavailable
+                    testInstruction.style.display = 'block';
                     
                     // Try to create .env from .env.example
                     await createEnvFromExample();
@@ -879,70 +896,48 @@
             }
         }
 
-        // Restart server function
-        async function restartServer() {
-            if (!confirm('This will restart the development server. Continue?')) {
+        // Stop server function
+        async function stopServer() {
+            if (!confirm('This will stop the Rust API server. Continue?')) {
                 return;
             }
             
             try {
-                // Get the restart button from the current context
-                const restartBtn = document.activeElement;
-                if (restartBtn) {
-                    restartBtn.disabled = true;
-                    restartBtn.textContent = 'Restarting...';
+                // Get the stop button from the current context
+                const stopBtn = document.activeElement;
+                if (stopBtn) {
+                    stopBtn.disabled = true;
+                    stopBtn.textContent = 'Stopping...';
                 }
                 
-                // First, try to call the restart endpoint
-                const response = await fetch(`${GEMINI_API_BASE}/admin/restart`, {
-                    method: 'POST'
-                });
-                
-                if (response.ok) {
-                    alert('Server restart initiated. The page will reload automatically when the server is back online.');
-                    
-                    // Poll for server availability
-                    let attempts = 0;
-                    const maxAttempts = 30; // 30 seconds
-                    
-                    const pollServer = async () => {
-                        try {
-                            const healthCheck = await fetch(`${GEMINI_API_BASE}/health`);
-                            if (healthCheck.ok) {
-                                await loadConfiguration();
-                                alert('Server restarted successfully!');
-                                return;
-                            }
-                        } catch (e) {
-                            // Server still down
-                        }
-                        
-                        attempts++;
-                        if (attempts < maxAttempts) {
-                            setTimeout(pollServer, 1000);
-                        } else {
-                            alert('Server restart took longer than expected. Please check manually.');
-                        }
-                    };
-                    
-                    // Start polling after a brief delay
-                    setTimeout(pollServer, 2000);
-                    
-                } else {
-                    alert('Failed to restart server automatically.\n\nYou can tell Claude Code CLI to restart the server:\n"Go ahead and restart now"\n\nOr restart manually using:\nkill -9 $(lsof -ti:8081)\ncargo run serve');
+                // Try to call the restart endpoint to stop the server
+                try {
+                    const response = await fetch(`${GEMINI_API_BASE}/admin/restart`, {
+                        method: 'POST'
+                    });
+                } catch (e) {
+                    // Server likely stopped, which is expected
                 }
+                
+                // Wait a moment for server to stop
+                setTimeout(() => {
+                    // Refresh the page to update the UI
+                    window.location.reload();
+                }, 2000);
                 
             } catch (error) {
-                alert('Error restarting server: ' + error.message + '\n\nYou can tell Claude Code CLI to restart the server:\n"Go ahead and restart now"\n\nOr restart manually using:\nkill -9 $(lsof -ti:8081)\ncargo run serve');
-            } finally {
+                console.error('Error stopping server:', error);
+                // Still refresh the page to update the UI
                 setTimeout(() => {
-                    const restartBtn = document.activeElement;
-                    if (restartBtn) {
-                        restartBtn.disabled = false;
-                        restartBtn.textContent = 'Restart Server';
-                    }
-                }, 3000);
+                    window.location.reload();
+                }, 1000);
             }
+        }
+
+        // Restart server function (kept for compatibility)
+        async function restartServer() {
+            // Redirect to stop server function
+            await stopServer();
         }
 
         // Test Gemini API key
