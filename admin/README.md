@@ -15,3 +15,5 @@ On Windows:
 
 
 Next, fork [membercommons](https://github.com/localsite/membercommons/) and clone into your webroot.
+
+Then [start your Rust REST API](server/)
