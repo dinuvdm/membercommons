@@ -732,21 +732,41 @@ async fn call_claude_code_cli(prompt: &str, dataset_info: &Option<serde_json::Va
 async fn get_tables(data: web::Data<Arc<ApiState>>, query: web::Query<std::collections::HashMap<String, String>>) -> Result<HttpResponse> {
     // Check if a specific connection is requested
     let pool = if let Some(connection_name) = query.get("connection") {
-        // Use the specified connection
-        match std::env::var(connection_name) {
-            Ok(database_url) => {
-                match sqlx::postgres::PgPool::connect(&database_url).await {
-                    Ok(pool) => pool,
-                    Err(e) => {
-                        return Ok(HttpResponse::InternalServerError().json(json!({
-                            "error": format!("Failed to connect to {}: {}", connection_name, e)
-                        })));
-                    }
-                }
-            }
-            Err(_) => {
+        // Get the database URL for this connection
+        let database_url = if let Ok(url) = std::env::var(connection_name) {
+            // Direct URL environment variable
+            url
+        } else {
+            // Try component-based configuration
+            let host_key = format!("{}_HOST", connection_name);
+            let port_key = format!("{}_PORT", connection_name);
+            let name_key = format!("{}_NAME", connection_name);
+            let user_key = format!("{}_USER", connection_name);
+            let password_key = format!("{}_PASSWORD", connection_name);
+            let ssl_key = format!("{}_SSL_MODE", connection_name);
+            
+            if let (Ok(host), Ok(port), Ok(name), Ok(user), Ok(password)) = (
+                std::env::var(&host_key),
+                std::env::var(&port_key),
+                std::env::var(&name_key),
+                std::env::var(&user_key),
+                std::env::var(&password_key)
+            ) {
+                let ssl_mode = std::env::var(&ssl_key).unwrap_or_else(|_| "require".to_string());
+                format!("postgres://{}:{}@{}:{}/{}?sslmode={}", user, password, host, port, name, ssl_mode)
+            } else {
                 return Ok(HttpResponse::BadRequest().json(json!({
                     "error": format!("Connection '{}' not found in environment variables", connection_name)
+                })));
+            }
+        };
+        
+        // Use the specified connection
+        match sqlx::postgres::PgPool::connect(&database_url).await {
+            Ok(pool) => pool,
+            Err(e) => {
+                return Ok(HttpResponse::InternalServerError().json(json!({
+                    "error": format!("Failed to connect to {}: {}", connection_name, e)
                 })));
             }
         }
