@@ -901,7 +901,7 @@
                                 <i class="subnav-icon" data-feather="heart"></i>
                                 <span>Interests</span>
                             </a>
-                            <a href="admin/" class="subnav-link">
+                            <a href="admin/" class="subnav-link external-link">
                                 <i class="subnav-icon" data-feather="settings"></i>
                                 <span>Admin Dashboard</span>
                             </a>
@@ -1050,6 +1050,13 @@
                                     <div style="margin-bottom: 8px;">• New opportunity posted: "Database Optimization for Government Services"</div>
                                     <div style="margin-bottom: 8px;">• Team "Innovation Catalysts" completed milestone review</div>
                                 </div>
+                            </div>
+                            
+                            <div style="margin-top: 24px;">
+                                <a href="admin/" class="btn btn-primary" style="text-decoration: none;">
+                                    <i data-feather="settings"></i>
+                                    Admin Dashboard
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -2550,6 +2557,11 @@
             // Handle subnav clicks
             document.querySelectorAll('.subnav-link').forEach(link => {
                 link.addEventListener('click', function(e) {
+                    // Don't prevent default for external links
+                    if (this.classList.contains('external-link')) {
+                        return; // Let the browser handle the navigation naturally
+                    }
+                    
                     e.preventDefault();
                     const tab = this.getAttribute('data-tab');
                     if (tab) {
@@ -2699,7 +2711,10 @@
                 'account': 'My Account'
             };
             
-            document.getElementById('page-title').textContent = titles[sectionName] || 'MemberCommons';
+            const pageTitle = document.getElementById('page-title');
+            if (pageTitle) {
+                pageTitle.textContent = titles[sectionName] || 'MemberCommons';
+            }
         }
 
         function switchTab(tabName) {

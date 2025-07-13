@@ -905,6 +905,43 @@ async fn db_execute_query(
 }
 
 // Create a new project
+// Get all projects from database
+async fn get_projects(data: web::Data<Arc<ApiState>>) -> Result<HttpResponse> {
+    let projects_query = sqlx::query(
+        "SELECT id, name, description, status, date_entered, date_modified FROM projects ORDER BY date_modified DESC LIMIT 50"
+    )
+    .fetch_all(&data.db)
+    .await;
+    
+    match projects_query {
+        Ok(rows) => {
+            let projects: Vec<serde_json::Value> = rows.into_iter().map(|row| {
+                json!({
+                    "id": row.get::<Uuid, _>("id"),
+                    "name": row.get::<String, _>("name"),
+                    "description": row.get::<Option<String>, _>("description"),
+                    "status": row.get::<Option<String>, _>("status"),
+                    "created_date": row.get::<chrono::DateTime<Utc>, _>("date_entered"),
+                    "modified_date": row.get::<chrono::DateTime<Utc>, _>("date_modified")
+                })
+            }).collect();
+            
+            Ok(HttpResponse::Ok().json(json!({
+                "success": true,
+                "data": projects
+            })))
+        },
+        Err(e) => {
+            println!("Error fetching projects: {}", e);
+            // Return empty array if database query fails
+            Ok(HttpResponse::Ok().json(json!({
+                "success": true,
+                "data": []
+            })))
+        }
+    }
+}
+
 async fn create_project(
     data: web::Data<Arc<ApiState>>,
     req: web::Json<CreateProjectRequest>,
@@ -1574,6 +1611,7 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                     .route("/health", web::get().to(health_check))
                     .route("/tables", web::get().to(get_tables))
                     .route("/tables/mock", web::get().to(get_tables_mock))
+                    .route("/projects", web::get().to(get_projects))
                     .route("/projects", web::post().to(create_project))
                     .service(
                         web::scope("/db")
