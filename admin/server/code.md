@@ -46,17 +46,3 @@ View the website locally at: [localhost:8887/membercommons](http://localhost:888
   # View server logs
   tail -f server.log
 -->
-
-### Run Google Gemini CLI
-
-	npm install -g @google/gemini-cli
-
-<!--
-# Conda option
-
-	conda create -n gemini-env python=3.9
-	conda activate gemini-env
-
-# npm worked above, pip didn't for L.
-    pip install -q -U google-genai
--->

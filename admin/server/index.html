@@ -392,48 +392,25 @@
         // Start server without Claude
         function startWithoutClaude() {
             rustApiContent.innerHTML = `
-                <div style="color: var(--accent-blue); margin-bottom: 16px;">
-                    ⚙️ Manual Server Start Instructions
-                </div>
-                <div style="background: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md); margin-bottom: 16px;">
-                    <strong>Step 1: Check if server is running</strong>
-                    <div style="background: var(--bg-secondary); padding: 8px; border-radius: var(--radius-sm); margin: 8px 0; font-family: monospace;">
-                        curl http://localhost:8081/api/health
-                    </div>
-                    
-                    <strong>Step 2: Stop existing server (if needed)</strong>
-                    <div style="background: var(--bg-secondary); padding: 8px; border-radius: var(--radius-sm); margin: 8px 0; font-family: monospace;">
-                        lsof -ti:8081 | xargs kill -9
-                    </div>
-                    
-                    <strong>Step 3: Start the server</strong>
-                    <div style="background: var(--bg-secondary); padding: 8px; border-radius: var(--radius-sm); margin: 8px 0; font-family: monospace;">
-                        cargo run serve
-                    </div>
-                    
-                    <strong>Step 4: Verify it's running</strong>
-                    <div style="background: var(--bg-secondary); padding: 8px; border-radius: var(--radius-sm); margin: 8px 0; font-family: monospace;">
-                        curl http://localhost:8081/api/health
-                    </div>
-                </div>
-                
-                <div class="actions">
-                    <button class="btn btn-primary" onclick="loadConfiguration()">
-                        🔄 Check Status
-                    </button>
-                    <button class="btn btn-secondary" onclick="updateRustApiPanel(false)">
-                        ← Back to Options
-                    </button>
-                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    ⚙️ Alternative tools and manual setup options for running the server without Claude Code CLI.
+                </p>
+                <button class="btn btn-secondary" onclick="updateRustApiPanel(false)" style="margin-top: 12px;">
+                    ← Back to Options
+                </button>
                 
                 <div style="margin-top: 24px; padding: 24px; background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-light);">
-                    <div id="manual-webserver-status"></div>
+                    <div id="other-tools-content" class="readme-content">
+                        <p style="color: var(--text-secondary); font-style: italic;">
+                            Loading other.md...
+                        </p>
+                    </div>
                 </div>
             `;
             
-            // Load content into the manual instructions
+            // Load other.md content
             setTimeout(() => {
-                loadWebServerStatus("manual-webserver-status");
+                displayFile("other.md", "other-tools-content", "_parent", null, false);
             }, 100);
         }
 
@@ -538,10 +515,8 @@
                     <strong>Manual Setup Required:</strong><br>
                     1. Copy .env.example to .env<br>
                     2. Edit the GEMINI_API_KEY value<br>
-                    3. Start the backend server<br><br>
-                    <div style="color: var(--text-secondary);">
-                        Or run locally using the commands on our <a href="/admin" style="color: var(--accent-blue); text-decoration: underline;">Admin Page</a>
-                    </div>
+                    3. Start the backend server<br>
+                    Or run locally using the commands on our <a href="../admin" style="color: var(--accent-blue); text-decoration: underline;">Admin Page</a>
                 `;
                 
                 // Show connection help for troubleshooting
