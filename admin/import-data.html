@@ -1732,7 +1732,8 @@
                             showSection(resultsSection);
                             
                             const resultsContent = document.getElementById('resultsContent');
-                            resultsContent.innerHTML = `
+                            
+                            let csvHtml = `
                                 <div class="alert alert-success">
                                     <h3>✅ CSV Import Complete</h3>
                                     <p><strong>File:</strong> Google Sheets CSV</p>
@@ -1741,6 +1742,28 @@
                                     <p><strong>Status:</strong> Import successful</p>
                                 </div>
                             `;
+                            
+                            // Add duplicate information if available
+                            if (result.skipped_count > 0 || result.duplicate_check_columns) {
+                                csvHtml += `
+                                    <div style="margin: 20px 0; padding: 16px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+                                        <h4 style="margin: 0 0 8px 0; color: var(--text-primary);">Duplicate Detection</h4>
+                                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                                            <strong>Columns used to check for existing rows:</strong> ${result.duplicate_check_columns || 'Name (when available: + Industry)'}
+                                        </p>
+                                        ${result.skipped_count > 0 ? 
+                                            `<p style="margin: 8px 0 0 0; color: var(--accent-yellow); font-size: 14px;">
+                                                ⚠️ ${result.skipped_count} records were skipped to avoid duplicates
+                                            </p>` : 
+                                            `<p style="margin: 8px 0 0 0; color: var(--accent-green); font-size: 14px;">
+                                                ✅ No duplicate records found
+                                            </p>`
+                                        }
+                                    </div>
+                                `;
+                            }
+                            
+                            resultsContent.innerHTML = csvHtml;
                         } else {
                             throw new Error(result.error || 'Import failed');
                         }
@@ -2032,11 +2055,35 @@
                         <div style="font-size: 14px; color: var(--text-secondary);">Records Inserted</div>
                     </div>
                     <div style="text-align: center; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                        <div style="font-size: 24px; font-weight: 700; color: var(--accent-yellow);">${result.records_skipped || 0}</div>
+                        <div style="font-size: 14px; color: var(--text-secondary);">Duplicates Skipped</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
                         <div style="font-size: 24px; font-weight: 700; color: var(--accent-red);">${result.errors ? result.errors.length : 0}</div>
                         <div style="font-size: 14px; color: var(--text-secondary);">Errors</div>
                     </div>
                 </div>
             `;
+
+            // Add duplicate check information if available
+            if (result.duplicate_check_columns) {
+                html += `
+                    <div style="margin: 20px 0; padding: 16px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+                        <h4 style="margin: 0 0 8px 0; color: var(--text-primary);">Duplicate Detection</h4>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                            <strong>Columns used to check for existing rows:</strong> ${result.duplicate_check_columns}
+                        </p>
+                        ${result.records_skipped > 0 ? 
+                            `<p style="margin: 8px 0 0 0; color: var(--accent-yellow); font-size: 14px;">
+                                ⚠️ ${result.records_skipped} records were skipped to avoid duplicates
+                            </p>` : 
+                            `<p style="margin: 8px 0 0 0; color: var(--accent-green); font-size: 14px;">
+                                ✅ No duplicate records found
+                            </p>`
+                        }
+                    </div>
+                `;
+            }
 
             if (result.errors && result.errors.length > 0) {
                 html += '<h3 style="margin-top: 24px; margin-bottom: 12px;">Error Details</h3>';

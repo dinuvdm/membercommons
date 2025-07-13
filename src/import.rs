@@ -21,6 +21,8 @@ pub struct ImportResponse {
     pub message: String,
     pub records_processed: Option<usize>,
     pub records_inserted: Option<usize>,
+    pub records_skipped: Option<usize>,
+    pub duplicate_check_columns: Option<String>,
     pub errors: Vec<String>,
 }
 
@@ -54,6 +56,8 @@ pub struct DataImportResponse {
     pub success: bool,
     pub message: String,
     pub imported_count: Option<usize>,
+    pub skipped_count: Option<usize>,
+    pub duplicate_check_columns: Option<String>,
     pub errors: Vec<String>,
 }
 
@@ -73,6 +77,8 @@ pub async fn import_excel_data(
                 message: format!("Failed to read Excel file at '{}': {}", req.file_path, e),
                 records_processed: None,
                 records_inserted: None,
+                records_skipped: None,
+                duplicate_check_columns: None,
                 errors: vec![format!("File path: {} - {}", req.file_path, e.to_string())],
             }));
         }
@@ -80,26 +86,37 @@ pub async fn import_excel_data(
 
     // Process and insert records
     let mut inserted_count = 0;
+    let mut skipped_count = 0;
     let total_records = records.len();
 
     for (index, record) in records.iter().enumerate() {
         match insert_project_record(&pool.db, record).await {
-            Ok(_) => inserted_count += 1,
+            Ok(InsertResult::Inserted) => inserted_count += 1,
+            Ok(InsertResult::Skipped) => skipped_count += 1,
             Err(e) => {
                 errors.push(format!("Row {}: {}", index + 1, e));
             }
         }
     }
 
+    let message = if errors.is_empty() {
+        if skipped_count > 0 {
+            format!("Successfully imported {} records, skipped {} duplicates", inserted_count, skipped_count)
+        } else {
+            format!("Successfully imported {} records", inserted_count)
+        }
+    } else {
+        format!("Imported {} of {} records with {} errors, skipped {} duplicates", 
+                inserted_count, total_records, errors.len(), skipped_count)
+    };
+
     Ok(HttpResponse::Ok().json(ImportResponse {
         success: errors.is_empty() || inserted_count > 0,
-        message: if errors.is_empty() {
-            format!("Successfully imported {} records", inserted_count)
-        } else {
-            format!("Imported {} of {} records with {} errors", inserted_count, total_records, errors.len())
-        },
+        message,
         records_processed: Some(total_records),
         records_inserted: Some(inserted_count),
+        records_skipped: Some(skipped_count),
+        duplicate_check_columns: Some("Name + Region + Department".to_string()),
         errors,
     }))
 }
@@ -117,6 +134,8 @@ pub async fn preview_excel_data(
                 message: format!("Failed to read Excel file at '{}': {}", req.file_path, e),
                 records_processed: None,
                 records_inserted: None,
+                records_skipped: None,
+                duplicate_check_columns: None,
                 errors: vec![format!("File path: {} - {}", req.file_path, e.to_string())],
             }));
         }
@@ -248,10 +267,40 @@ fn get_excel_sheet_names(file_path: &str) -> Result<Vec<String>, Box<dyn std::er
     Ok(workbook.sheet_names().clone())
 }
 
+#[derive(Debug)]
+enum InsertResult {
+    Inserted,
+    Skipped,
+}
+
 async fn insert_project_record(
     pool: &Pool<Postgres>,
     record: &ProjectRecord,
-) -> Result<(), sqlx::Error> {
+) -> Result<InsertResult, sqlx::Error> {
+    // Check for existing record based on name, region, and department
+    let existing_count = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*) FROM projects 
+        WHERE name = $1 
+        AND (description LIKE '%Region: ' || $2 || '%' OR $2 IS NULL)
+        AND (description LIKE '%Department: ' || $3 || '%' OR $3 IS NULL)
+        "#
+    )
+    .bind(&record.project_name)
+    .bind(&record.region)
+    .bind(&record.department)
+    .fetch_one(pool)
+    .await?;
+
+    if existing_count > 0 {
+        // Record already exists, skip insertion
+        println!("Skipping duplicate project: {} (Region: {:?}, Department: {:?})", 
+                 record.project_name.as_deref().unwrap_or("Unknown"),
+                 record.region,
+                 record.department);
+        return Ok(InsertResult::Skipped);
+    }
+
     let id = Uuid::new_v4();
     let now = Utc::now();
     
@@ -328,7 +377,7 @@ async fn insert_project_record(
     .execute(pool)
     .await?;
 
-    Ok(())
+    Ok(InsertResult::Inserted)
 }
 
 /// Import JSON data directly into specified table
@@ -338,6 +387,8 @@ pub async fn import_data(
 ) -> Result<HttpResponse> {
     let mut errors = Vec::new();
     let mut imported_count = 0;
+    let mut skipped_count = 0;
+    let mut actual_duplicate_check_columns = None;
     
     println!("Data import request - table: {}, source: {}, records: {}", 
         req.table_name, req.source, req.data.len());
@@ -346,7 +397,18 @@ pub async fn import_data(
         "accounts" => {
             for (index, record) in req.data.iter().enumerate() {
                 match import_account_record(&pool.db, record).await {
-                    Ok(()) => imported_count += 1,
+                    Ok((InsertResult::Inserted, fields_used)) => {
+                        imported_count += 1;
+                        if actual_duplicate_check_columns.is_none() {
+                            actual_duplicate_check_columns = Some(fields_used);
+                        }
+                    },
+                    Ok((InsertResult::Skipped, fields_used)) => {
+                        skipped_count += 1;
+                        if actual_duplicate_check_columns.is_none() {
+                            actual_duplicate_check_columns = Some(fields_used);
+                        }
+                    },
                     Err(e) => {
                         let error_msg = format!("Row {}: {}", index + 1, e);
                         println!("Import error: {}", error_msg);
@@ -367,31 +429,44 @@ pub async fn import_data(
     let success = errors.is_empty() || (imported_count > 0 && errors.len() < req.data.len());
     let message = if success {
         if errors.is_empty() {
-            format!("Successfully imported {} records into {}", imported_count, req.table_name)
+            if skipped_count > 0 {
+                format!("Successfully imported {} records into {}, skipped {} duplicates", 
+                        imported_count, req.table_name, skipped_count)
+            } else {
+                format!("Successfully imported {} records into {}", imported_count, req.table_name)
+            }
         } else {
-            format!("Imported {} of {} records into {} (some errors occurred)", 
-                imported_count, req.data.len(), req.table_name)
+            format!("Imported {} of {} records into {} with {} errors, skipped {} duplicates", 
+                imported_count, req.data.len(), req.table_name, errors.len(), skipped_count)
         }
     } else {
         format!("Failed to import data into {}", req.table_name)
     };
     
+    let duplicate_check_columns = actual_duplicate_check_columns.or_else(|| {
+        match req.table_name.as_str() {
+            "accounts" => Some("Name + Industry".to_string()),
+            "projects" => Some("Name + Region + Department".to_string()),
+            _ => None,
+        }
+    });
+    
     Ok(HttpResponse::Ok().json(DataImportResponse {
         success,
         message,
         imported_count: Some(imported_count),
+        skipped_count: Some(skipped_count),
+        duplicate_check_columns,
         errors,
     }))
 }
 
 /// Helper function to import a single account record
+/// Returns (InsertResult, fields_used_for_duplicate_check)
 async fn import_account_record(
     pool: &Pool<Postgres>,
     record: &HashMap<String, serde_json::Value>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let id = Uuid::new_v4();
-    let now = Utc::now().naive_utc();
-    
+) -> Result<(InsertResult, String), Box<dyn std::error::Error>> {
     // Extract fields from the record
     let name = record.get("Name")
         .or_else(|| record.get("name"))
@@ -415,6 +490,53 @@ async fn import_account_record(
         .or_else(|| record.get("Sector"))
         .or_else(|| record.get("sector"))
         .and_then(|v| v.as_str());
+    
+    // Check for existing record based on available fields
+    let existing_count = if industry.is_some() {
+        // Use name + industry if industry is available
+        sqlx::query_scalar::<_, i64>(
+            r#"
+            SELECT COUNT(*) FROM accounts 
+            WHERE name = $1 AND industry = $2
+            "#
+        )
+        .bind(name)
+        .bind(industry)
+        .fetch_one(pool)
+        .await?
+    } else {
+        // Use only name if industry is not available
+        sqlx::query_scalar::<_, i64>(
+            r#"
+            SELECT COUNT(*) FROM accounts 
+            WHERE name = $1
+            "#
+        )
+        .bind(name)
+        .fetch_one(pool)
+        .await?
+    };
+
+    // Determine which fields were used for duplicate checking
+    let duplicate_check_fields = if industry.is_some() {
+        "Name + Industry".to_string()
+    } else {
+        "Name".to_string()
+    };
+
+    if existing_count > 0 {
+        // Record already exists, skip insertion
+        let fields_used = if industry.is_some() {
+            format!("Name + Industry: {} (Industry: {:?})", name, industry)
+        } else {
+            format!("Name: {}", name)
+        };
+        println!("Skipping duplicate account: {}", fields_used);
+        return Ok((InsertResult::Skipped, duplicate_check_fields));
+    }
+
+    let id = Uuid::new_v4();
+    let now = Utc::now().naive_utc();
     
     // Set account type based on available data
     let account_type = if email.is_some() || phone.is_some() {
@@ -444,5 +566,5 @@ async fn import_account_record(
     .execute(pool)
     .await?;
 
-    Ok(())
+    Ok((InsertResult::Inserted, duplicate_check_fields))
 }
