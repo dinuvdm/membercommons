@@ -31,7 +31,45 @@
             We've created a robust page for <a href="../google/meetup/">Coding Meetup Integration</a></p>
         </div>
 
-        <div class="card">
+        <div class="card" id="web-server-panel">
+            <h2 class="card-title">
+                <span class="status-indicator" id="web-server-status"></span>
+                <span id="web-server-title">Local Web Server</span>
+            </h2>
+            <div id="web-server-content">
+                <p style="color: var(--text-secondary);">
+                    Checking web server status...
+                </p>
+            </div>
+        </div>
+
+        <div class="card" id="rust-api-panel">
+            <h2 class="card-title">
+                <span class="status-indicator" id="rust-api-status"></span>
+                <span id="rust-api-title">Rust API Inactive</span>
+            </h2>
+            <div id="rust-api-content">
+                <div style="color: var(--accent-yellow); margin-bottom: 16px;">
+                    ⚠️ Backend API unavailable - showing .env file data only
+                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    The Rust backend server needs to be started to access full configuration and testing capabilities.
+                </p>
+                <div class="actions">
+                    <button class="btn btn-primary" id="start-with-claude">
+                        🤖 Use Claude (Recommended)
+                    </button>
+                    <button class="btn btn-secondary" id="start-without-claude">
+                        ⚙️ Without Claude
+                    </button>
+                </div>
+                <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+                    Claude option will automatically start the server for you. Manual option shows commands to run yourself.
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="api-configuration-panel">
             <h2 class="card-title">
                 <span class="status-indicator" id="api-status"></span>
                 API Configuration Status
@@ -48,22 +86,17 @@
                     <span class="loading-spinner" id="test-spinner" style="display: none;"></span>
                     Test Gemini API
                 </button>
-                <button class="btn btn-secondary" id="refresh-config">
-                    Reload Config Files
-                </button>
-                <button class="btn btn-secondary" id="restart-server" style="display: none;">
-                    Restart Server
-                </button>
             </div>
 
             <div id="test-result"></div>
             
             <div class="actions" style="margin-top: 16px;">
                 <button class="btn btn-primary" id="analyze-data" style="display: none;" onclick="window.location.href='../import-data.html#m=gemini'">
-                    Analyze Data
+                    Analyze Data using Gemini
                 </button>
             </div>
         </div>
+
 
         <div class="card">
             <h2 class="card-title">About Gemini AI Integration</h2>
@@ -133,12 +166,112 @@
         const apiStatus = document.getElementById('api-status');
         const configDisplay = document.getElementById('config-display');
         const testButton = document.getElementById('test-gemini');
-        const refreshButton = document.getElementById('refresh-config');
         const testSpinner = document.getElementById('test-spinner');
         const testResult = document.getElementById('test-result');
-        const configTitle = document.querySelector('.card-title');
+        const configTitle = document.querySelector('#api-configuration-panel .card-title');
         const geminiKeyContainer = document.getElementById('gemini-key-container');
-        const restartServerBtn = document.getElementById('restart-server');
+        
+        // New Rust API panel elements
+        const rustApiPanel = document.getElementById('rust-api-panel');
+        const rustApiStatus = document.getElementById('rust-api-status');
+        const rustApiTitle = document.getElementById('rust-api-title');
+        const rustApiContent = document.getElementById('rust-api-content');
+        const startWithClaudeBtn = document.getElementById('start-with-claude');
+        const startWithoutClaudeBtn = document.getElementById('start-without-claude');
+        
+        // Web Server panel elements
+        const webServerPanel = document.getElementById('web-server-panel');
+        const webServerStatus = document.getElementById('web-server-status');
+        const webServerTitle = document.getElementById('web-server-title');
+        const webServerContent = document.getElementById('web-server-content');
+
+        // Update Web Server panel status
+        function updateWebServerPanel() {
+            const currentHost = window.location.hostname;
+            const currentPort = window.location.port;
+            const isLocalhost8887 = currentHost === 'localhost' && currentPort === '8887';
+            
+            if (isLocalhost8887) {
+                webServerStatus.className = 'status-indicator connected';
+                webServerTitle.textContent = 'Web Server Running';
+                const currentUrl = window.location.origin;
+                webServerContent.innerHTML = `
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        Your local http server is <a href="${currentUrl}" target="_blank" style="color: var(--accent-blue); text-decoration: underline;">${currentUrl}</a>
+                    </p>
+                    <div class="actions">
+                        <button class="btn btn-secondary" onclick="showWebserverCommand()">
+                            Webserver Command
+                        </button>
+                    </div>
+                `;
+            } else {
+                webServerStatus.className = 'status-indicator loading'; // grey dot for non-localhost
+                webServerTitle.textContent = 'Local Web Server';
+                webServerContent.innerHTML = `
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        Not running on localhost:8887. See setup instructions below.
+                    </p>
+                    <div class="actions">
+                        <button class="btn btn-primary" onclick="showWebserverCommand()">
+                            Webserver Command
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Show webserver command instructions
+        function showWebserverCommand() {
+            webServerContent.innerHTML = `
+                <div id="webserver-command-content">
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        Webserver setup instructions and commands:
+                    </p>
+                    <div id="claude-webserver-status"></div>
+                    <button class="btn btn-secondary" onclick="updateWebServerPanel()" style="margin-top: 16px;">
+                        ← Back to Status
+                    </button>
+                </div>
+            `;
+            
+            // Load webserver status content
+            setTimeout(() => {
+                loadWebServerStatus("claude-webserver-status");
+            }, 100);
+        }
+
+        // Show Rust API commands and README
+        function showRustApiCommands() {
+            rustApiContent.innerHTML = `
+                <div id="rust-api-commands-content">
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        Rust API server commands and setup:
+                    </p>
+                    <div id="rust-api-readme-content" class="readme-content">
+                        <p style="color: var(--text-secondary); font-style: italic;">
+                            Loading README.md...
+                        </p>
+                    </div>
+                    <div class="actions" style="margin-top: 16px;">
+                        <button class="btn btn-secondary" onclick="updateRustApiPanel(true)">
+                            ← Back to Status
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadConfiguration()">
+                            Reload Config Files
+                        </button>
+                        <button class="btn btn-secondary" onclick="restartServer()">
+                            Stop Server
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Load README content
+            setTimeout(() => {
+                displayFile("../README.md", "rust-api-readme-content", "_parent", null, false);
+            }, 100);
+        }
 
         // Parse .env file content
         function parseEnvFile(envText) {
@@ -162,6 +295,163 @@
                 config.GEMINI_API_KEY !== 'get-key-at-aistudio.google.com');
                 
             return config;
+        }
+
+        // Update Rust API panel status
+        function updateRustApiPanel(isActive) {
+            if (isActive) {
+                rustApiStatus.className = 'status-indicator connected';
+                rustApiTitle.textContent = 'Rust API Active';
+                rustApiContent.innerHTML = `
+                    <div style="color: var(--accent-green); margin-bottom: 16px;">
+                        ✅ Backend API is running and accessible
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        Full configuration and testing capabilities are available.
+                    </p>
+                    <div class="actions">
+                        <button class="btn btn-secondary" onclick="showRustApiCommands()">
+                            View Cmds
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadConfiguration()">
+                            Reload Config Files
+                        </button>
+                        <button class="btn btn-secondary" onclick="restartServer()">
+                            Restart Server
+                        </button>
+                    </div>
+                `;
+            } else {
+                rustApiStatus.className = 'status-indicator error';
+                rustApiTitle.textContent = 'Rust API Inactive';
+                rustApiContent.innerHTML = `
+                    <div style="color: var(--accent-yellow); margin-bottom: 16px;">
+                        ⚠️ Backend API unavailable - showing .env file data only
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        The Rust backend server needs to be started to access full configuration and testing capabilities.
+                    </p>
+                    <div class="actions">
+                        <button class="btn btn-primary" id="start-with-claude-btn" onclick="startWithClaude()">
+                            🤖 Use Claude (Recommended)
+                        </button>
+                        <button class="btn btn-secondary" id="start-without-claude-btn" onclick="startWithoutClaude()">
+                            ⚙️ Without Claude
+                        </button>
+                    </div>
+                    <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+                        Claude option will automatically start the server for you. Manual option shows commands to run yourself.
+                    </div>
+                `;
+            }
+        }
+
+        // Start server with Claude
+        async function startWithClaude() {
+            const button = document.getElementById('start-with-claude-btn');
+            if (button) {
+                button.disabled = true;
+                button.textContent = '🤖 Starting...';
+            }
+            
+            try {
+                // Show instructions to user
+                rustApiContent.innerHTML = `
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        🤖 If you already have Claude Code running, say: <strong>"Start  Server"</strong> or <strong>"Start the Rust API"</strong> or similar.
+                    </p>
+                    <button class="btn btn-secondary" onclick="updateRustApiPanel(false)" style="margin-top: 12px;">
+                        ← Back to Options
+                    </button>
+                    
+                    <div style="margin-top: 24px; padding: 24px; background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-light);">
+                        <div id="claude-code-content" class="readme-content">
+                            <p style="color: var(--text-secondary); font-style: italic;">
+                                Loading code.md...
+                            </p>
+                        </div>
+                    </div>
+                `;
+                
+                // Load content into the Claude instructions
+                setTimeout(() => {
+                    displayFile("code.md", "claude-code-content", "_parent", null, false);
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error with Claude start option:', error);
+                updateRustApiPanel(false);
+            }
+        }
+
+        // Start server without Claude
+        function startWithoutClaude() {
+            rustApiContent.innerHTML = `
+                <div style="color: var(--accent-blue); margin-bottom: 16px;">
+                    ⚙️ Manual Server Start Instructions
+                </div>
+                <div style="background: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md); margin-bottom: 16px;">
+                    <strong>Step 1: Check if server is running</strong>
+                    <div style="background: var(--bg-secondary); padding: 8px; border-radius: var(--radius-sm); margin: 8px 0; font-family: monospace;">
+                        curl http://localhost:8081/api/health
+                    </div>
+                    
+                    <strong>Step 2: Stop existing server (if needed)</strong>
+                    <div style="background: var(--bg-secondary); padding: 8px; border-radius: var(--radius-sm); margin: 8px 0; font-family: monospace;">
+                        lsof -ti:8081 | xargs kill -9
+                    </div>
+                    
+                    <strong>Step 3: Start the server</strong>
+                    <div style="background: var(--bg-secondary); padding: 8px; border-radius: var(--radius-sm); margin: 8px 0; font-family: monospace;">
+                        cargo run serve
+                    </div>
+                    
+                    <strong>Step 4: Verify it's running</strong>
+                    <div style="background: var(--bg-secondary); padding: 8px; border-radius: var(--radius-sm); margin: 8px 0; font-family: monospace;">
+                        curl http://localhost:8081/api/health
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="loadConfiguration()">
+                        🔄 Check Status
+                    </button>
+                    <button class="btn btn-secondary" onclick="updateRustApiPanel(false)">
+                        ← Back to Options
+                    </button>
+                </div>
+                
+                <div style="margin-top: 24px; padding: 24px; background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-light);">
+                    <div id="manual-webserver-status"></div>
+                </div>
+            `;
+            
+            // Load content into the manual instructions
+            setTimeout(() => {
+                loadWebServerStatus("manual-webserver-status");
+            }, 100);
+        }
+
+        // Load README content for setup instructions
+        function loadWebServerStatus(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            // Always show README content for local setup (web server status is now in its own panel)
+            const readmeId = `${containerId}-readme`;
+            container.innerHTML = `
+                <h3 style="margin-bottom: 16px; color: var(--text-primary);">🛡️ Run Webserver Locally</h3>
+                <div id="${readmeId}" class="readme-content">
+                    <p style="color: var(--text-secondary); font-style: italic;">
+                        Loading README.md...
+                    </p>
+                </div>
+            `;
+            
+            // Load README content
+            setTimeout(() => {
+                displayFile("../README.md", readmeId, "_parent", null, false);
+            }, 50);
         }
 
         // Show connection help (now displayed as a separate card below)
@@ -200,7 +490,6 @@
                         </div>
                         <strong>Configuration Source:</strong> .env file (newly created)<br>
                         <strong>Gemini API Key:</strong> <span style="color: var(--accent-red);">Needs to be configured</span><br>
-                        <div style="color: var(--accent-yellow); margin-top: 16px;">⚠️ Backend API unavailable - showing .env file data only</div>
                     `;
                     
                     // Show the Gemini key input field
@@ -284,9 +573,20 @@
                     envFileExists = false;
                 }
                 
-                // Load .env configuration from backend
-                const envResponse = await fetch(`${GEMINI_API_BASE}/config/env`);
-                const envData = await envResponse.json();
+                // Try to load .env configuration from backend
+                let envData = {};
+                try {
+                    const envResponse = await fetch(`${GEMINI_API_BASE}/config/env`);
+                    if (envResponse.ok) {
+                        envData = await envResponse.json();
+                    } else {
+                        throw new Error(`Backend returned ${envResponse.status}`);
+                    }
+                } catch (backendError) {
+                    console.log('Backend API unavailable:', backendError.message);
+                    // Continue with .env file data only
+                    throw new Error('Backend API unavailable');
+                }
                 
                 // Load settings.js configuration from frontend (if available)
                 let settingsData = {};
@@ -319,6 +619,9 @@
                 currentConfig = mergedConfig;
                 displayConfiguration(mergedConfig);
                 
+                // Update Rust API panel to show active state
+                updateRustApiPanel(true);
+                
                 // Update title based on configuration status
                 const hasIssues = !mergedConfig.gemini_api_key_present || !mergedConfig.database;
                 const statusClass = hasIssues ? 'error' : 'connected';
@@ -339,23 +642,18 @@
                 // Clear previous test results
                 testResult.innerHTML = '';
                 
-                // Show restart server button if running locally and there's a mismatch
-                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                const keyMismatch = envFileData.GEMINI_API_KEY && envFileData.GEMINI_API_KEY !== envData.GEMINI_API_KEY;
-                
-                if (isLocalhost && (keyMismatch || envFileData.gemini_api_key_present !== envData.gemini_api_key_present)) {
-                    restartServerBtn.style.display = 'inline-block';
-                } else {
-                    restartServerBtn.style.display = 'none';
-                }
+                // Restart server functionality is now handled in the Rust API panel
                 
             } catch (error) {
+                // Update Rust API panel to show inactive state
+                updateRustApiPanel(false);
+                
                 // Even if backend is down, we can still use .env file data if available
                 if (envFileExists && envFileData.GEMINI_API_KEY) {
                     // We have .env file data, use it for configuration
                     const hasValidKey = envFileData.gemini_api_key_present;
-                    const statusClass = hasValidKey ? 'connected' : 'error';
-                    const titleText = hasValidKey ? 'API Configuration Good' : 'Gemini API Key Needed';
+                    const statusClass = 'error'; // Always show error when backend is down
+                    const titleText = 'Rust API Inactive';
                     
                     apiStatus.className = `status-indicator ${statusClass}`;
                     configTitle.innerHTML = `
@@ -370,8 +668,7 @@
                         database: null // We don't have database info without backend
                     });
                     
-                    // Show a warning about backend being down
-                    configDisplay.innerHTML += '<br><br><div style="color: var(--accent-yellow); font-weight: bold;">⚠️ Backend API unavailable - showing .env file data only</div>';
+                    // Backend status is now handled by the rust-api-panel
                     
                     // Show connection help for troubleshooting
                     showConnectionHelp();
@@ -381,13 +678,12 @@
                     apiStatus.className = 'status-indicator error';
                     configTitle.innerHTML = `
                         <span class="status-indicator error" id="api-status"></span>
-                        Gemini API Key Needed
+                        Rust API Inactive
                     `;
                     
                     configDisplay.innerHTML = `
                         <strong>Configuration Source:</strong> .env file (backend unavailable)<br>
                         <strong>Gemini API Key:</strong> <span style="color: var(--accent-red);">Not configured or invalid</span><br>
-                        <div style="color: var(--accent-yellow); margin-top: 16px;">⚠️ Backend API unavailable - limited configuration shown</div>
                     `;
                     
                     // Show connection help for troubleshooting
@@ -398,7 +694,7 @@
                     apiStatus.className = 'status-indicator error';
                     configTitle.innerHTML = `
                         <span class="status-indicator error" id="api-status"></span>
-                        Gemini API Key Needed
+                        Rust API Inactive
                     `;
                     
                     // Try to create .env from .env.example
@@ -590,8 +886,12 @@
             }
             
             try {
-                restartServerBtn.disabled = true;
-                restartServerBtn.textContent = 'Restarting...';
+                // Get the restart button from the current context
+                const restartBtn = document.activeElement;
+                if (restartBtn) {
+                    restartBtn.disabled = true;
+                    restartBtn.textContent = 'Restarting...';
+                }
                 
                 // First, try to call the restart endpoint
                 const response = await fetch(`${GEMINI_API_BASE}/admin/restart`, {
@@ -636,8 +936,11 @@
                 alert('Error restarting server: ' + error.message + '\n\nYou can tell Claude Code CLI to restart the server:\n"Go ahead and restart now"\n\nOr restart manually using:\nkill -9 $(lsof -ti:8081)\ncargo run serve');
             } finally {
                 setTimeout(() => {
-                    restartServerBtn.disabled = false;
-                    restartServerBtn.textContent = 'Restart Server';
+                    const restartBtn = document.activeElement;
+                    if (restartBtn) {
+                        restartBtn.disabled = false;
+                        restartBtn.textContent = 'Restart Server';
+                    }
                 }, 3000);
             }
         }
@@ -706,10 +1009,10 @@ Ready: AI features are available`;
 
         // Event listeners
         testButton.addEventListener('click', testGeminiAPI);
-        refreshButton.addEventListener('click', loadConfiguration);
-        restartServerBtn.addEventListener('click', restartServer);
 
         // Initialize page
+        updateWebServerPanel(); // Check web server status
+        updateRustApiPanel(false); // Start with inactive state
         loadConfiguration();
         
         // Load README without logging to keep the interface clean
