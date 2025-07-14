@@ -742,6 +742,7 @@
                     <select id="fileSelect" class="form-select">
                         <option value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh5-bIR4hC1f9H3NtDCNT19hZXnqz8WRrBwTuLGnZiA5PWhFILUv2nS2FKE2TZ4dZ-RnJkZwHx1t2Y/pub?gid=1054734503&single=true&output=csv" selected>Google Sheets - Individuals (CSV → accounts table)</option>
                         <option value="../preferences/projects/DFC-ActiveProjects.xlsx">DFC Active Projects (Excel → projects table)</option>
+                        <option value="democracylab">DemocracyLab Projects (JSON → projects table)</option>
                         <option value="custom">Choose File...</option>
                     </select>
                 </div>
@@ -987,6 +988,15 @@
                     hideSection(resultsSection);
                     analyzeCustomFile();
                 }
+            } else if (value === 'democracylab') {
+                // Handle DemocracyLab import
+                hideSection(customFileSection);
+                hideSection(analyzeSection);
+                hideSection(sheetSelection);
+                hideSection(previewSection);
+                hideSection(resultsSection);
+                selectedFile = 'democracylab';
+                importDemocracyLabData();
             } else {
                 // Hide custom file upload and use predefined file
                 hideSection(customFileSection);
@@ -1839,6 +1849,44 @@
                 showMessage('Error importing data: ' + error.message, 'error');
             } finally {
                 hideLoading(importBtn, 'Import Data');
+            }
+        }
+
+        async function importDemocracyLabData() {
+            if (!confirm('Are you sure you want to import projects from DemocracyLab?')) {
+                return;
+            }
+
+            showLoading(document.getElementById('importBtn'), 'Importing...');
+            showMessage('Fetching projects from DemocracyLab...', 'info');
+
+            try {
+                const response = await fetch('https://www.democracylab.org/api/projects?page=2&sortField=-project_date_modified');
+                const projects = await response.json();
+
+                showMessage(`Found ${projects.length} projects. Importing...`, 'info');
+
+                const importResponse = await fetch(`${API_BASE}/import/democracylab`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(projects),
+                });
+
+                const result = await importResponse.json();
+
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                    displayResults(result);
+                    showSection(resultsSection);
+                } else {
+                    showMessage(result.message || 'Import failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Error importing data from DemocracyLab: ' + error.message, 'error');
+            } finally {
+                hideLoading(document.getElementById('importBtn'), 'Import Data');
             }
         }
 

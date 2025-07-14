@@ -61,6 +61,16 @@ pub struct DataImportResponse {
     pub errors: Vec<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DemocracyLabProject {
+    #[serde(rename = "project_name")]
+    pub name: String,
+    #[serde(rename = "project_description")]
+    pub description: Option<String>,
+    #[serde(rename = "project_url")]
+    pub url: Option<String>,
+}
+
 /// Import Excel data into the projects table
 pub async fn import_excel_data(
     pool: web::Data<std::sync::Arc<crate::ApiState>>,
@@ -338,7 +348,9 @@ async fn insert_project_record(
     let description = if description_parts.is_empty() {
         None
     } else {
-        Some(description_parts.join("\n\n"))
+        Some(description_parts.join("
+
+"))
     };
 
     // Set priority based on committed amount
@@ -418,8 +430,27 @@ pub async fn import_data(
             }
         }
         "projects" => {
-            // Future: Handle projects import via JSON data
-            errors.push("Projects table import via JSON data not yet implemented".to_string());
+            for (index, record) in req.data.iter().enumerate() {
+                match import_project_record_from_json(&pool.db, record).await {
+                    Ok((InsertResult::Inserted, fields_used)) => {
+                        imported_count += 1;
+                        if actual_duplicate_check_columns.is_none() {
+                            actual_duplicate_check_columns = Some(fields_used);
+                        }
+                    },
+                    Ok((InsertResult::Skipped, fields_used)) => {
+                        skipped_count += 1;
+                        if actual_duplicate_check_columns.is_none() {
+                            actual_duplicate_check_columns = Some(fields_used);
+                        }
+                    },
+                    Err(e) => {
+                        let error_msg = format!("Row {}: {}", index + 1, e);
+                        println!("Import error: {}", error_msg);
+                        errors.push(error_msg);
+                    }
+                }
+            }
         }
         _ => {
             errors.push(format!("Unsupported table: {}", req.table_name));
@@ -567,4 +598,158 @@ async fn import_account_record(
     .await?;
 
     Ok((InsertResult::Inserted, duplicate_check_fields))
+}
+
+async fn import_project_record_from_json(
+    pool: &Pool<Postgres>,
+    record: &HashMap<String, serde_json::Value>,
+) -> Result<(InsertResult, String), Box<dyn std::error::Error>> {
+    let name = record.get("name").and_then(|v| v.as_str()).unwrap_or("Unknown");
+    let description = record.get("description").and_then(|v| v.as_str());
+
+    // Check for existing record based on name
+    let existing_count = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*) FROM projects 
+        WHERE name = $1
+        "#
+    )
+    .bind(name)
+    .fetch_one(pool)
+    .await?;
+
+    if existing_count > 0 {
+        println!("Skipping duplicate project: {}", name);
+        return Ok((InsertResult::Skipped, "Name".to_string()));
+    }
+
+    let id = Uuid::new_v4();
+    let now = Utc::now();
+
+    sqlx::query(
+        r#"
+        INSERT INTO projects (
+            id, name, description, status,
+            date_entered, date_modified, created_by, modified_user_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        "#
+    )
+    .bind(id)
+    .bind(name)
+    .bind(description)
+    .bind("Active") // Default status
+    .bind(now)
+    .bind(now)
+    .bind("json-import")
+    .bind("json-import")
+    .execute(pool)
+    .await?;
+
+    Ok((InsertResult::Inserted, "Name".to_string()))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DemocracyLabApiResponse {
+    pub projects: Vec<DemocracyLabProject>,
+}
+
+pub async fn import_democracylab_projects(
+    pool: web::Data<std::sync::Arc<crate::ApiState>>,
+    req: web::Json<DemocracyLabApiResponse>,
+) -> Result<HttpResponse> {
+    let mut errors = Vec::new();
+    let mut inserted_count = 0;
+    let mut skipped_count = 0;
+    let total_records = req.projects.len();
+
+    for (index, project) in req.projects.iter().enumerate() {
+        match insert_democracylab_project(&pool.db, project).await {
+            Ok(InsertResult::Inserted) => inserted_count += 1,
+            Ok(InsertResult::Skipped) => skipped_count += 1,
+            Err(e) => {
+                errors.push(format!("Row {}: {}", index + 1, e));
+            }
+        }
+    }
+
+    let message = if errors.is_empty() {
+        if skipped_count > 0 {
+            format!("Successfully imported {} projects, skipped {} duplicates", inserted_count, skipped_count)
+        } else {
+            format!("Successfully imported {} projects", inserted_count)
+        }
+    } else {
+        format!("Imported {} of {} projects with {} errors, skipped {} duplicates",
+                inserted_count, total_records, errors.len(), skipped_count)
+    };
+
+    Ok(HttpResponse::Ok().json(ImportResponse {
+        success: errors.is_empty() || inserted_count > 0,
+        message,
+        records_processed: Some(total_records),
+        records_inserted: Some(inserted_count),
+        records_skipped: Some(skipped_count),
+        duplicate_check_columns: Some("Name".to_string()),
+        errors,
+    }))
+}
+
+async fn insert_democracylab_project(
+    pool: &Pool<Postgres>,
+    project: &DemocracyLabProject,
+) -> Result<InsertResult, sqlx::Error> {
+    // Check for existing record based on name
+    let existing_count = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*) FROM projects
+        WHERE name = $1
+        "#
+    )
+    .bind(&project.name)
+    .fetch_one(pool)
+    .await?;
+
+    if existing_count > 0 {
+        println!("Skipping duplicate project: {}", &project.name);
+        return Ok(InsertResult::Skipped);
+    }
+
+    let id = Uuid::new_v4();
+    let now = Utc::now();
+
+    let mut description_parts = Vec::new();
+    if let Some(desc) = &project.description {
+        description_parts.push(desc.clone());
+    }
+    if let Some(url) = &project.url {
+        description_parts.push(format!("Project URL: {}", url));
+    }
+    let description = if description_parts.is_empty() {
+        None
+    } else {
+        Some(description_parts.join("
+
+"))
+    };
+
+    sqlx::query(
+        r#"
+        INSERT INTO projects (
+            id, name, description, status,
+            date_entered, date_modified, created_by, modified_user_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        "#
+    )
+    .bind(id)
+    .bind(&project.name)
+    .bind(&description)
+    .bind("Active") // Default status
+    .bind(now)
+    .bind(now)
+    .bind("democracylab-import")
+    .bind("democracylab-import")
+    .execute(pool)
+    .await?;
+
+    Ok(InsertResult::Inserted)
 }
