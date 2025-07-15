@@ -67,6 +67,9 @@ MemberCommons/
 │   └── main.rs            # Main server application
 ├── sql/                    # Database schema
 │   └── suitecrm-postgres.sql
+├── team/                   # Team meetup integration
+│   ├── index.html         # Coding meetup admin interface
+│   └── README.md          # Team meetup documentation
 └── project/               # Additional frontend assets
     └── edit.html
 ```

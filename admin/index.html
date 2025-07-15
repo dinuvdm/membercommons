@@ -265,7 +265,7 @@
 
         <div class="admin-grid">
 
-            <div class="admin-card clickable-card" onclick="window.location.href='google/meetup/'">
+            <div class="admin-card clickable-card" onclick="window.location.href='../team/'">
                 <div class="admin-card-header">
                     <div class="admin-card-header-content">
                         <div class="admin-card-icon" style="background: var(--accent-purple); color: white;">
@@ -343,7 +343,7 @@
                             <i data-feather="upload"></i>
                         </div>
                         <div>
-                            <h3>Data Import Tool</h3>
+                            <h3>Data Insights / Import</h3>
                             <span class="status-badge active">Active</span>
                         </div>
                     </div>
@@ -381,6 +381,59 @@
                         <li>README.md loading demonstration</li>
                     </ul>
                 </div>
+            </div>
+
+            <!-- Claude API Usage Monitor -->
+            <div class="admin-card" id="claude-usage-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-header-content">
+                        <div class="admin-card-icon" style="background: linear-gradient(45deg, #FF6B35, #F7931E); color: white;">
+                            <i data-feather="activity"></i>
+                        </div>
+                        <div>
+                            <h3>Claude API Usage Monitor</h3>
+                            <span class="status-badge active">Live</span>
+                        </div>
+                    </div>
+                </div>
+                <p>Monitor your Claude API usage across both terminal CLI and website integrations with real-time quota tracking.</p>
+                
+                <div class="usage-sections" style="margin-top: 16px;">
+                    <!-- CLI Usage Section -->
+                    <div class="usage-section" style="margin-bottom: 20px; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                        <h4 style="color: var(--text-primary); margin-bottom: 12px; font-size: 14px; font-weight: 600;">
+                            <i data-feather="terminal" style="width: 16px; height: 16px; margin-right: 8px;"></i>
+                            Terminal CLI Usage
+                        </h4>
+                        <div class="usage-stats" id="cli-usage-stats">
+                            <div style="color: var(--text-secondary); font-size: 13px;">Click "Check Usage" to load current statistics</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Website Usage Section -->
+                    <div class="usage-section" style="margin-bottom: 20px; padding: 16px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                        <h4 style="color: var(--text-primary); margin-bottom: 12px; font-size: 14px; font-weight: 600;">
+                            <i data-feather="globe" style="width: 16px; height: 16px; margin-right: 8px;"></i>
+                            Website API Usage
+                        </h4>
+                        <div class="usage-stats" id="website-usage-stats">
+                            <div style="color: var(--text-secondary); font-size: 13px;">Click "Check Usage" to load current statistics</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="usage-controls" style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" id="check-usage-btn" onclick="checkClaudeUsage()" style="padding: 8px 16px; background: var(--accent-blue); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-size: 14px;">
+                        <i data-feather="refresh-cw" style="width: 16px; height: 16px; margin-right: 4px;"></i>
+                        Check Usage
+                    </button>
+                    <button class="btn btn-secondary" id="export-usage-btn" onclick="exportUsageData()" style="padding: 8px 16px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-light); border-radius: var(--radius-md); cursor: pointer; font-size: 14px;">
+                        <i data-feather="download" style="width: 16px; height: 16px; margin-right: 4px;"></i>
+                        Export Data
+                    </button>
+                </div>
+                
+                <div id="usage-status" style="margin-top: 12px; padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px; display: none;"></div>
             </div>
 
         </div>
@@ -470,6 +523,184 @@
                 overallStatus.innerHTML = '<span style="color: #EF4444;">✗ Systems offline</span>';
             }
         }
+
+        // Claude API Usage Monitoring Functions
+        async function checkClaudeUsage() {
+            const button = document.getElementById('check-usage-btn');
+            const status = document.getElementById('usage-status');
+            const cliStats = document.getElementById('cli-usage-stats');
+            const websiteStats = document.getElementById('website-usage-stats');
+            
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = '<i data-feather="loader" style="width: 16px; height: 16px; margin-right: 4px; animation: spin 1s linear infinite;"></i>Checking...';
+            status.style.display = 'block';
+            status.className = 'info';
+            status.style.background = 'rgba(59, 130, 246, 0.1)';
+            status.style.color = 'var(--accent-blue)';
+            status.textContent = 'Fetching usage data from Claude API...';
+            
+            try {
+                // Check CLI usage via backend endpoint
+                const cliResponse = await fetch('http://localhost:8081/api/claude/usage/cli');
+                const websiteResponse = await fetch('http://localhost:8081/api/claude/usage/website');
+                
+                let cliData = null;
+                let websiteData = null;
+                
+                if (cliResponse.ok) {
+                    cliData = await cliResponse.json();
+                }
+                
+                if (websiteResponse.ok) {
+                    websiteData = await websiteResponse.json();
+                }
+                
+                // Update CLI usage display
+                if (cliData && cliData.success) {
+                    cliStats.innerHTML = formatUsageData(cliData.usage, 'CLI');
+                } else {
+                    cliStats.innerHTML = `
+                        <div style="color: var(--text-secondary); font-size: 13px; line-height: 1.5;">
+                            <strong>Manual Check Available:</strong><br>
+                            Run <code style="background: var(--bg-secondary); padding: 2px 4px; border-radius: 3px; font-family: monospace;">claude --usage</code> in terminal<br>
+                            <small style="color: var(--text-muted);">Shows tokens used today and monthly limits</small>
+                        </div>
+                    `;
+                }
+                
+                // Update website usage display
+                if (websiteData && websiteData.success) {
+                    websiteStats.innerHTML = formatUsageData(websiteData.usage, 'Website');
+                } else {
+                    websiteStats.innerHTML = `
+                        <div style="color: var(--text-secondary); font-size: 13px; line-height: 1.5;">
+                            <strong>Backend Integration Needed:</strong><br>
+                            Add Claude API usage tracking to your Rust backend<br>
+                            <small style="color: var(--text-muted);">Monitor website API calls and token consumption</small>
+                        </div>
+                    `;
+                }
+                
+                // Store data for export
+                window.claudeUsageData = {
+                    cli: cliData,
+                    website: websiteData,
+                    timestamp: new Date().toISOString()
+                };
+                
+                status.style.background = 'rgba(16, 185, 129, 0.1)';
+                status.style.color = 'var(--accent-green)';
+                status.textContent = '✓ Usage data updated successfully';
+                
+            } catch (error) {
+                console.error('Error fetching Claude usage:', error);
+                
+                // Show manual alternative instructions
+                cliStats.innerHTML = `
+                    <div style="color: var(--text-secondary); font-size: 13px; line-height: 1.5;">
+                        <strong>Manual Check Available:</strong><br>
+                        Run <code style="background: var(--bg-secondary); padding: 2px 4px; border-radius: 3px; font-family: monospace;">claude --usage</code> in terminal<br>
+                        <small style="color: var(--text-muted);">Shows tokens used today and monthly limits</small>
+                    </div>
+                `;
+                
+                websiteStats.innerHTML = `
+                    <div style="color: var(--text-secondary); font-size: 13px; line-height: 1.5;">
+                        <strong>Backend Integration Needed:</strong><br>
+                        Add Claude API usage tracking to your Rust backend<br>
+                        <small style="color: var(--text-muted);">Monitor website API calls and token consumption</small>
+                    </div>
+                `;
+                
+                status.style.background = 'rgba(239, 68, 68, 0.1)';
+                status.style.color = '#EF4444';
+                status.textContent = '⚠ Backend API not available. See manual options above.';
+            } finally {
+                // Reset button
+                button.disabled = false;
+                button.innerHTML = '<i data-feather="refresh-cw" style="width: 16px; height: 16px; margin-right: 4px;"></i>Check Usage';
+                feather.replace();
+                
+                // Hide status after 5 seconds
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        function formatUsageData(usage, source) {
+            if (!usage) return `<div style="color: var(--text-secondary);">No data available</div>`;
+            
+            const dailyUsed = usage.daily_tokens_used || 0;
+            const dailyLimit = usage.daily_limit || 50000;
+            const monthlyUsed = usage.monthly_tokens_used || 0;
+            const monthlyLimit = usage.monthly_limit || 1000000;
+            
+            const dailyPercent = Math.round((dailyUsed / dailyLimit) * 100);
+            const monthlyPercent = Math.round((monthlyUsed / monthlyLimit) * 100);
+            
+            return `
+                <div style="font-size: 13px; line-height: 1.4;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: var(--text-primary); font-weight: 500;">Daily Usage:</span>
+                        <span style="color: ${dailyPercent > 80 ? '#EF4444' : dailyPercent > 60 ? '#F59E0B' : 'var(--accent-green)'};">
+                            ${dailyUsed.toLocaleString()} / ${dailyLimit.toLocaleString()} (${dailyPercent}%)
+                        </span>
+                    </div>
+                    <div class="progress-bar" style="width: 100%; height: 4px; background: var(--border-light); border-radius: 2px; margin-bottom: 12px;">
+                        <div style="width: ${dailyPercent}%; height: 100%; background: ${dailyPercent > 80 ? '#EF4444' : dailyPercent > 60 ? '#F59E0B' : 'var(--accent-green)'}; border-radius: 2px; transition: width 0.3s;"></div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: var(--text-primary); font-weight: 500;">Monthly Usage:</span>
+                        <span style="color: ${monthlyPercent > 80 ? '#EF4444' : monthlyPercent > 60 ? '#F59E0B' : 'var(--accent-green)'};">
+                            ${monthlyUsed.toLocaleString()} / ${monthlyLimit.toLocaleString()} (${monthlyPercent}%)
+                        </span>
+                    </div>
+                    <div class="progress-bar" style="width: 100%; height: 4px; background: var(--border-light); border-radius: 2px; margin-bottom: 8px;">
+                        <div style="width: ${monthlyPercent}%; height: 100%; background: ${monthlyPercent > 80 ? '#EF4444' : monthlyPercent > 60 ? '#F59E0B' : 'var(--accent-green)'}; border-radius: 2px; transition: width 0.3s;"></div>
+                    </div>
+                    
+                    <div style="color: var(--text-secondary); font-size: 12px;">
+                        Last updated: ${new Date().toLocaleTimeString()}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function exportUsageData() {
+            if (!window.claudeUsageData) {
+                alert('No usage data available. Please check usage first.');
+                return;
+            }
+            
+            const data = {
+                ...window.claudeUsageData,
+                exported_at: new Date().toISOString(),
+                report_type: 'Claude API Usage Report'
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `claude-usage-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Add CSS for spinning animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
 
         // Load README with logging
         displayFile("README.md", "readmeDiv", "_parent");
