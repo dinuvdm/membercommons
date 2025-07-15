@@ -226,6 +226,153 @@
             color: var(--text-secondary);
         }
         
+        /* 3-dot menu styles */
+        .menu-container {
+            position: relative;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        
+        .menu-button {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .menu-button:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        .menu-button.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+        
+        .menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            min-width: 180px;
+            z-index: 1000;
+            margin-top: 4px;
+            display: none;
+        }
+        
+        .menu-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+        
+        .menu-item:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        
+        .menu-item.active {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+        
+        /* Fullscreen styles */
+        .fullscreen-mode {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9999 !important;
+            background: var(--bg-primary) !important;
+            overflow: auto !important;
+            padding: 20px !important;
+            box-sizing: border-box !important;
+        }
+        
+        .fullscreen-mode .container {
+            max-width: none !important;
+            margin: 0 !important;
+        }
+        
+        .fullscreen-mode .breadcrumb {
+            display: none !important;
+        }
+        
+        /* Condensed layout styles */
+        .condensed-mode .view-buttons {
+            display: none;
+        }
+        
+        .condensed-mode .view-buttons-condensed {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .condensed-mode .legend-controls {
+            display: none;
+        }
+        
+        .condensed-mode .legend-controls-condensed {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .view-buttons-condensed {
+            display: none;
+        }
+        
+        .legend-controls-condensed {
+            display: none;
+        }
+        
+        .condensed-icon-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .condensed-icon-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        .condensed-icon-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+        
         @media (max-width: 600px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -773,11 +920,37 @@
                         Gallery
                     </button>
                 </div>
+                <div class="view-buttons-condensed">
+                    <button class="condensed-icon-btn" id="column-view-condensed" data-view="column" title="Columns">
+                        ▦
+                    </button>
+                    <button class="condensed-icon-btn" id="table-view-condensed" data-view="table" title="Table">
+                        ☰
+                    </button>
+                    <button class="condensed-icon-btn" id="gallery-view-condensed" data-view="gallery" title="Gallery">
+                        ⊞
+                    </button>
+                </div>
                 <div class="table-info">
                     <span id="participant-count" style="margin-right:10px">0 participants</span>
-                    <button class="btn btn-secondary" id="export-csv">
-                        Export CSV
-                    </button>
+                    <div style="display: flex; align-items: center;">
+                        <button class="btn btn-secondary" id="export-csv">
+                            Export CSV
+                        </button>
+                        <div class="menu-container">
+                            <button class="menu-button" id="menu-toggle">
+                                ⋯
+                            </button>
+                            <div class="menu-dropdown" id="menu-dropdown">
+                                <div class="menu-item" id="fullscreen-toggle">
+                                    <span id="fullscreen-text">View Fullscreen</span>
+                                </div>
+                                <div class="menu-item" id="condensed-toggle">
+                                    <span id="condensed-text">Condense Layout</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -788,6 +961,15 @@
                     <div class="legend-controls">
                         <button class="btn btn-sm" id="sort-toggle">Sort by</button>
                         <button class="btn btn-sm" id="status-toggle">Status</button>
+                    </div>
+                    <div class="legend-controls-condensed">
+                        <button class="condensed-icon-btn" id="filters-toggle" title="Filters">
+                            ⚙
+                        </button>
+                        <div class="menu-dropdown" id="filters-dropdown" style="display: none;">
+                            <div class="menu-item" id="condensed-sort-toggle">Sort by</div>
+                            <div class="menu-item" id="condensed-status-toggle">Status</div>
+                        </div>
                         
                         <!-- Sort Dropdown -->
                         <div class="sort-dropdown" id="sort-dropdown" style="display: none;">
@@ -1162,6 +1344,10 @@
         let currentTeamFilter = localStorage.getItem('participantsTeamFilter') || null;
         let allParticipantsData = [];
         let presentParticipants = new Set();
+        
+        // Layout state
+        let isFullscreen = JSON.parse(localStorage.getItem('isFullscreen') || 'false');
+        let isCondensed = JSON.parse(localStorage.getItem('isCondensed') || 'false');
         
         // Sort functionality
         let currentSortColumn = localStorage.getItem('participantsSortColumn') || 'Rows';
@@ -1811,11 +1997,14 @@
             // Show selected view
             document.getElementById(viewType + '-view').style.display = 'block';
             
-            // Update button states
+            // Update button states for expanded view
             document.querySelectorAll('.view-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             document.getElementById(viewType + '-view-btn').classList.add('active');
+            
+            // Update button states for condensed view
+            updateCondensedViewButtons();
             
             // Apply present highlighting after view switch
             setTimeout(() => updatePresentHighlighting(), 100);
@@ -2540,6 +2729,109 @@
             switchView(currentView);
         }
         
+        // 3-dot menu functionality
+        function toggleMenu() {
+            const dropdown = document.getElementById('menu-dropdown');
+            const button = document.getElementById('menu-toggle');
+            const isVisible = dropdown.style.display === 'block';
+            
+            if (isVisible) {
+                dropdown.style.display = 'none';
+                button.classList.remove('active');
+            } else {
+                dropdown.style.display = 'block';
+                button.classList.add('active');
+            }
+        }
+        
+        function toggleFullscreen() {
+            isFullscreen = !isFullscreen;
+            localStorage.setItem('isFullscreen', JSON.stringify(isFullscreen));
+            
+            const card = document.getElementById('participants-table-card');
+            const fullscreenText = document.getElementById('fullscreen-text');
+            
+            if (isFullscreen) {
+                card.classList.add('fullscreen-mode');
+                fullscreenText.textContent = 'Exit Fullscreen';
+                document.body.style.overflow = 'hidden';
+            } else {
+                card.classList.remove('fullscreen-mode');
+                fullscreenText.textContent = 'View Fullscreen';
+                document.body.style.overflow = 'auto';
+            }
+            
+            // Close menu
+            document.getElementById('menu-dropdown').style.display = 'none';
+            document.getElementById('menu-toggle').classList.remove('active');
+        }
+        
+        function toggleCondensed() {
+            isCondensed = !isCondensed;
+            localStorage.setItem('isCondensed', JSON.stringify(isCondensed));
+            
+            const card = document.getElementById('participants-table-card');
+            const condensedText = document.getElementById('condensed-text');
+            
+            if (isCondensed) {
+                card.classList.add('condensed-mode');
+                condensedText.textContent = 'Expand Layout';
+            } else {
+                card.classList.remove('condensed-mode');
+                condensedText.textContent = 'Condense Layout';
+            }
+            
+            // Close menu
+            document.getElementById('menu-dropdown').style.display = 'none';
+            document.getElementById('menu-toggle').classList.remove('active');
+        }
+        
+        function updateCondensedViewButtons() {
+            // Update active state for condensed view buttons
+            document.querySelectorAll('.view-buttons-condensed .condensed-icon-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const activeBtn = document.getElementById(currentView + '-view-condensed');
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+        }
+        
+        function toggleFiltersDropdown() {
+            const dropdown = document.getElementById('filters-dropdown');
+            const isVisible = dropdown.style.display === 'block';
+            
+            if (isVisible) {
+                dropdown.style.display = 'none';
+            } else {
+                dropdown.style.display = 'block';
+            }
+        }
+        
+        function restoreLayoutState() {
+            const card = document.getElementById('participants-table-card');
+            const fullscreenText = document.getElementById('fullscreen-text');
+            const condensedText = document.getElementById('condensed-text');
+            
+            // Restore fullscreen state
+            if (isFullscreen) {
+                card.classList.add('fullscreen-mode');
+                fullscreenText.textContent = 'Exit Fullscreen';
+                document.body.style.overflow = 'hidden';
+            } else {
+                fullscreenText.textContent = 'View Fullscreen';
+            }
+            
+            // Restore condensed state
+            if (isCondensed) {
+                card.classList.add('condensed-mode');
+                condensedText.textContent = 'Expand Layout';
+            } else {
+                condensedText.textContent = 'Condense Layout';
+            }
+        }
+        
         // Load README documentation and configuration
         document.addEventListener('DOMContentLoaded', function() {
             displayFile("README.md", "readmeDiv", "_parent");
@@ -2547,12 +2839,60 @@
             
             // Restore saved view state
             restoreViewState();
+            restoreLayoutState();
+            
+            // Initialize condensed view buttons
+            updateCondensedViewButtons();
             
             // Auto-load Google Sheet data if URL is present
             const meetupLink = document.getElementById('meetup-link').value.trim();
             if (meetupLink) {
                 getMeetupParticipants();
             }
+            
+            // Add event listeners for 3-dot menu
+            document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
+            document.getElementById('fullscreen-toggle').addEventListener('click', toggleFullscreen);
+            document.getElementById('condensed-toggle').addEventListener('click', toggleCondensed);
+            
+            // Add event listeners for condensed view controls
+            document.getElementById('filters-toggle').addEventListener('click', toggleFiltersDropdown);
+            
+            // Add event listeners for condensed view buttons
+            document.querySelectorAll('.view-buttons-condensed .condensed-icon-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const view = this.dataset.view;
+                    switchView(view);
+                });
+            });
+            
+            // Add event listeners for condensed filters dropdown
+            document.getElementById('condensed-sort-toggle').addEventListener('click', function() {
+                document.getElementById('filters-dropdown').style.display = 'none';
+                toggleSortDropdown();
+            });
+            
+            document.getElementById('condensed-status-toggle').addEventListener('click', function() {
+                document.getElementById('filters-dropdown').style.display = 'none';
+                toggleStatusDropdown();
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                const menuDropdown = document.getElementById('menu-dropdown');
+                const menuToggle = document.getElementById('menu-toggle');
+                const filtersDropdown = document.getElementById('filters-dropdown');
+                const filtersToggle = document.getElementById('filters-toggle');
+                
+                if (!menuDropdown.contains(e.target) && !menuToggle.contains(e.target)) {
+                    menuDropdown.style.display = 'none';
+                    menuToggle.classList.remove('active');
+                }
+                
+                if (!filtersDropdown.contains(e.target) && !filtersToggle.contains(e.target)) {
+                    filtersDropdown.style.display = 'none';
+                }
+            });
         });
     </script>
 </body>
