@@ -812,6 +812,10 @@
                             <button id="geminiRefreshBtn" class="btn btn-primary refresh-btn" onclick="showRefreshPrompt('gemini')" title="Refresh with custom prompt" style="display: none;">
                                 <span>↻</span>
                             </button>
+                            <div class="max-rows-control" style="display: flex; align-items: center; gap: 6px; margin-left: 8px; font-size: 12px;">
+                                <label for="maxRowsInput" style="color: var(--text-secondary); white-space: nowrap;">Max rows:</label>
+                                <input type="number" id="maxRowsInput" value="20" min="1" max="100" style="width: 50px; padding: 4px 6px; border: 1px solid var(--border-light); border-radius: 4px; font-size: 12px;" title="Maximum number of rows to send to Gemini API">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3200,8 +3204,12 @@ ${basicAnalysis.replace('## 📊 Data Analysis (Offline Mode)', '').replace('---
                 geminiInsightsText.textContent = 'Analyzing...';
                 insightsContent.innerHTML = '';
                 
-                // Prepare data sample for analysis (first 50 records to stay within API limits)
-                const sampleSize = Math.min(50, dataset.length);
+                // Get configurable max rows from UI (default to 20 if not found)
+                const maxRowsInput = document.getElementById('maxRowsInput');
+                const maxRows = maxRowsInput ? parseInt(maxRowsInput.value) || 20 : 20;
+                
+                // Prepare data sample for analysis (limited to configured max rows)
+                const sampleSize = Math.min(maxRows, dataset.length);
                 const sampleData = dataset.slice(0, sampleSize);
                 
                 // Create analysis prompt
@@ -3582,10 +3590,37 @@ Keep the response structured and actionable for a data import workflow.`;
                     ${basicInsights}
                 `;
             } else {
+                // Enhanced error message with detailed explanation
+                let errorExplanation = '';
+                if (errorMessage.includes('500')) {
+                    errorExplanation = `
+                        <div style="margin-top: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 13px;">
+                            <strong>Error 500 (Internal Server Error):</strong> The Gemini API server encountered an error processing your request. This typically happens when:
+                            <ul style="margin: 4px 0 0 16px; font-size: 12px;">
+                                <li>The dataset is too large (current: ${totalRecords} records)</li>
+                                <li>API rate limits are exceeded</li>
+                                <li>The API service is temporarily overloaded</li>
+                                <li>Request size exceeds API limits</li>
+                            </ul>
+                            <em>Try reducing the "Max rows" setting above or retry later.</em>
+                        </div>`;
+                } else if (errorMessage.includes('503')) {
+                    errorExplanation = `
+                        <div style="margin-top: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 13px;">
+                            <strong>Error 503 (Service Unavailable):</strong> The Gemini API is temporarily overloaded. Wait a few minutes and try again.
+                        </div>`;
+                } else if (errorMessage.includes('429')) {
+                    errorExplanation = `
+                        <div style="margin-top: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 13px;">
+                            <strong>Error 429 (Rate Limited):</strong> Too many requests. Wait before retrying.
+                        </div>`;
+                }
+                
                 insightsContent.innerHTML = `
                     <div class="insights-error">
                         <strong>Analysis unavailable:</strong> ${errorMessage}
                         <br><small>Dataset contains ${totalRecords} records - manual review recommended</small>
+                        ${errorExplanation}
                         <br><br>
                         <button onclick="retryGeminiAnalysis()" class="btn btn-secondary" style="margin-top: 8px;">
                             🔄 Retry Analysis
@@ -4699,8 +4734,12 @@ Please analyze this dataset according to the request above.`;
                 claudeInsightsText.textContent = 'Analyzing...';
                 insightsContent.innerHTML = '';
                 
+                // Get configurable max rows from UI (default to 20 if not found)
+                const maxRowsInput = document.getElementById('maxRowsInput');
+                const maxRows = maxRowsInput ? parseInt(maxRowsInput.value) || 20 : 20;
+                
                 // Prepare data sample
-                const sampleSize = Math.min(50, dataset.length);
+                const sampleSize = Math.min(maxRows, dataset.length);
                 const sampleData = dataset.slice(0, sampleSize);
                 
                 // Create custom prompt with dataset context
@@ -4795,8 +4834,12 @@ ${JSON.stringify(sampleData, null, 2)}`;
                 geminiInsightsText.textContent = 'Analyzing...';
                 insightsContent.innerHTML = '';
                 
+                // Get configurable max rows from UI (default to 20 if not found)
+                const maxRowsInput = document.getElementById('maxRowsInput');
+                const maxRows = maxRowsInput ? parseInt(maxRowsInput.value) || 20 : 20;
+                
                 // Prepare data sample
-                const sampleSize = Math.min(50, dataset.length);
+                const sampleSize = Math.min(maxRows, dataset.length);
                 const sampleData = dataset.slice(0, sampleSize);
                 
                 // Create custom prompt with dataset context
