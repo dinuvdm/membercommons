@@ -658,6 +658,20 @@ struct ClaudeAnalysisResponse {
     error: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct ProxyRequest {
+    url: String,
+    method: Option<String>,
+    headers: Option<std::collections::HashMap<String, String>>,
+}
+
+#[derive(Debug, Serialize)]
+struct ProxyResponse {
+    success: bool,
+    data: Option<serde_json::Value>,
+    error: Option<String>,
+}
+
 
 
 
@@ -726,6 +740,64 @@ async fn call_claude_code_cli(prompt: &str, dataset_info: &Option<serde_json::Va
     println!("Claude Code CLI analysis completed - Length: {} chars", analysis.len());
     
     Ok(analysis)
+}
+
+// Proxy external requests to bypass CORS restrictions
+async fn proxy_external_request(req: web::Json<ProxyRequest>) -> Result<HttpResponse> {
+    println!("Proxy request to: {}", req.url);
+    
+    // Create HTTP client
+    let client = reqwest::Client::new();
+    
+    // Build request
+    let mut request_builder = match req.method.as_deref().unwrap_or("GET") {
+        "POST" => client.post(&req.url),
+        "PUT" => client.put(&req.url),
+        "DELETE" => client.delete(&req.url),
+        "PATCH" => client.patch(&req.url),
+        _ => client.get(&req.url),
+    };
+    
+    // Add headers if provided
+    if let Some(headers) = &req.headers {
+        for (key, value) in headers {
+            request_builder = request_builder.header(key, value);
+        }
+    }
+    
+    // Set a reasonable timeout
+    request_builder = request_builder.timeout(std::time::Duration::from_secs(30));
+    
+    match request_builder.send().await {
+        Ok(response) => {
+            match response.json::<serde_json::Value>().await {
+                Ok(json_data) => {
+                    println!("Proxy request successful, returning {} bytes", serde_json::to_string(&json_data).unwrap_or_default().len());
+                    Ok(HttpResponse::Ok().json(ProxyResponse {
+                        success: true,
+                        data: Some(json_data),
+                        error: None,
+                    }))
+                }
+                Err(parse_error) => {
+                    eprintln!("Failed to parse response as JSON: {}", parse_error);
+                    Ok(HttpResponse::InternalServerError().json(ProxyResponse {
+                        success: false,
+                        data: None,
+                        error: Some(format!("Failed to parse response as JSON: {}", parse_error)),
+                    }))
+                }
+            }
+        }
+        Err(request_error) => {
+            eprintln!("Proxy request failed: {}", request_error);
+            Ok(HttpResponse::InternalServerError().json(ProxyResponse {
+                success: false,
+                data: None,
+                error: Some(format!("Request failed: {}", request_error)),
+            }))
+        }
+    }
 }
 
 // Get list of tables with row counts - returns real database tables with accurate counts
@@ -1817,6 +1889,7 @@ async fn run_api_server(config: Config) -> anyhow::Result<()> {
                             .route("/meetup/participants", web::post().to(google::get_meetup_participants))
                             .route("/fetch-csv", web::post().to(fetch_csv))
                     )
+                    .route("/proxy", web::post().to(proxy_external_request))
             )
             // Add health check route at root level as well
             .route("/health", web::get().to(health_check))

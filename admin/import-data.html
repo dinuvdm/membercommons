@@ -968,13 +968,19 @@
         function handleFileDropdownChange(event) {
             const value = event.target.value;
             
+            // Hide insights and preview section when dropdown changes
+            const aiInsights = document.getElementById('aiInsights');
+            if (aiInsights) {
+                aiInsights.classList.add('hidden');
+            }
+            hideSection(previewSection);
+            hideSection(resultsSection);
+            
             if (value === 'custom') {
                 // Show custom file upload section
                 showSection(customFileSection);
                 showSection(analyzeSection);
                 hideSection(sheetSelection);
-                hideSection(previewSection);
-                hideSection(resultsSection);
                 selectedFile = null;
             } else if (value.startsWith('custom_')) {
                 // This is a previously uploaded custom file
@@ -985,27 +991,20 @@
                     selectedFile = customFile;
                     hideSection(customFileSection);
                     hideSection(analyzeSection);
-                    hideSection(resultsSection);
                     analyzeCustomFile();
-                }
-            } else if (value === 'democracylab') {
-                // Handle DemocracyLab import
-                hideSection(customFileSection);
-                hideSection(analyzeSection);
-                hideSection(sheetSelection);
-                hideSection(previewSection);
-                hideSection(resultsSection);
-                selectedFile = 'democracylab';
-                importDemocracyLabData();
+                }  
             } else {
                 // Hide custom file upload and use predefined file
                 hideSection(customFileSection);
                 hideSection(analyzeSection);
                 selectedFile = value;
-                hideSection(resultsSection);
-                
-                // Automatically analyze predefined file and show preview
-                autoAnalyzeAndPreview();
+                if (value === 'democracylab') {
+                    // Show preview for DemocracyLab projects
+                    autoAnalyzeAndPreviewWithRustToAvoidsCORS();
+                } else {
+                    // Automatically analyze predefined file and show preview
+                    autoAnalyzeAndPreview();
+                }
             }
         }
 
@@ -1203,6 +1202,166 @@
             } catch (error) {
                 console.error('Auto-analyze error:', error);
                 showMessage('Auto-preview failed. Use the manual controls below.', 'warning', false);
+            }
+        }
+
+        // Reusable function for external API calls with CORS handling
+        async function fetchExternalAPI(url, options = {}) {
+            // Check if we're on model.earth domain (allow-listed for direct access)
+            const isModelEarthDomain = window.location.hostname.includes('model.earth');
+            
+            if (isModelEarthDomain) {
+                // Direct fetch for model.earth domain (CORS allow-listed)
+                showMessage('Using direct API access for model.earth domain...', 'info');
+                const response = await fetch(url, options);
+                return await response.json();
+            } else {
+                // For other domains, try direct fetch first and fallback to Rust backend
+                try {
+                    showMessage('Attempting direct API access...', 'info');
+                    const response = await fetch(url, options);
+                    return await response.json();
+                } catch (corsError) {
+                    // If CORS fails, use Rust backend to proxy the request
+                    console.log('CORS blocked direct access:', corsError.message);
+                    showMessage('Direct API access blocked by CORS. Using Rust backend proxy...', 'info');
+                    
+                    try {
+                        // Use Rust backend to fetch the external URL
+                        const proxyResponse = await fetch(`${API_BASE}/proxy`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                url: url,
+                                method: options.method || 'GET',
+                                headers: options.headers || {}
+                            })
+                        });
+
+                        if (!proxyResponse.ok) {
+                            throw new Error(`Proxy request failed: ${proxyResponse.status} ${proxyResponse.statusText}`);
+                        }
+
+                        const proxyResult = await proxyResponse.json();
+                        
+                        if (proxyResult.success) {
+                            showMessage('Successfully fetched data via Rust backend proxy', 'success');
+                            return proxyResult.data;
+                        } else {
+                            throw new Error(proxyResult.error || 'Proxy request failed');
+                        }
+                    } catch (proxyError) {
+                        console.error('Rust backend proxy failed:', proxyError.message);
+                        showMessage('Both direct access and proxy failed. Using fallback data...', 'warning');
+                        
+                        // Return mock data structure for DemocracyLab as last resort
+                        if (url.includes('democracylab.org')) {
+                            return [
+                                {
+                                    project_name: "Sample DemocracyLab Project",
+                                    project_description: "This is sample data. Both direct access and backend proxy failed.",
+                                    project_url: "https://www.democracylab.org",
+                                    project_location: "Various",
+                                    project_date_created: new Date().toISOString(),
+                                    project_date_modified: new Date().toISOString()
+                                }
+                            ];
+                        }
+                        throw proxyError;
+                    }
+                }
+            }
+        }
+
+        async function autoAnalyzeAndPreviewWithRustToAvoidsCORS() {
+            try {
+                showMessage('Loading DemocracyLab projects preview...', 'info');
+                
+                // Hide sheet selection since DemocracyLab doesn't use sheets
+                hideSection(sheetSelection);
+                
+                // Use Rust to load external API to avoid CORS restriction on Javascript.
+                const response = await fetchExternalAPI('https://www.democracylab.org/api/projects?page=2&sortField=-project_date_modified');
+                
+                console.log('DemocracyLab API response:', response);
+                console.log('Response type:', typeof response);
+                console.log('Is array:', Array.isArray(response));
+                
+                // Handle different response structures more flexibly
+                let projects;
+                
+                if (Array.isArray(response)) {
+                    // Direct API response (array)
+                    projects = response;
+                } else if (response && response.data && Array.isArray(response.data)) {
+                    // Proxy response with data property
+                    projects = response.data;
+                } else if (response && response.projects && Array.isArray(response.projects)) {
+                    // Response with projects property
+                    projects = response.projects;
+                } else if (response && response.results && Array.isArray(response.results)) {
+                    // Response with results property
+                    projects = response.results;
+                } else if (response && Array.isArray(response.project_tiles)) {
+                    // DemocracyLab specific format with project_tiles
+                    projects = response.project_tiles;
+                } else if (response && typeof response === 'object') {
+                    // Check for any array property in the response
+                    const keys = Object.keys(response);
+                    console.log('Response keys:', keys);
+                    
+                    for (const key of keys) {
+                        if (Array.isArray(response[key])) {
+                            console.log(`Found array at key: ${key}, length: ${response[key].length}`);
+                            projects = response[key];
+                            break;
+                        }
+                    }
+                }
+                
+                if (!Array.isArray(projects)) {
+                    console.error('Unable to find project array in response:', response);
+                    throw new Error(`Invalid data format received from API. Response type: ${typeof response}, keys: ${response && typeof response === 'object' ? Object.keys(response).join(', ') : 'none'}`);
+                }
+                
+                console.log('Successfully extracted projects array, length:', projects.length);
+                showMessage(`Found ${projects.length} DemocracyLab projects`, 'success');
+                
+                // Create preview data structure similar to Excel/CSV files
+                const previewData = {
+                    preview: projects.slice(0, 5), // Show first 5 projects
+                    total_records: projects.length,
+                    loaded_records: projects.length,
+                    headers: ['project_name', 'project_description', 'project_url', 'project_location', 'project_date_created', 'project_date_modified'],
+                    source: 'democracylab'
+                };
+                
+                // Store the full dataset for later import
+                previewDataResult = {
+                    preview: previewData.preview,
+                    total_records: previewData.total_records,
+                    loaded_records: previewData.loaded_records,
+                    headers: previewData.headers,
+                    full_dataset: projects,
+                    source: 'democracylab',
+                    sheet_name: 'DemocracyLab Projects'
+                };
+                
+                // Display the preview
+                displayPreview(previewData);
+                showSection(previewSection);
+                
+                // Enable import button
+                importBtn.disabled = false;
+                
+                // Show AI insights section
+                showAIInsightsButtons();
+                
+            } catch (error) {
+                console.error('DemocracyLab preview error:', error);
+                showMessage('Failed to load DemocracyLab projects: ' + error.message, 'error');
             }
         }
 
@@ -1437,6 +1596,8 @@
         function getImportTableForFile(filePath) {
             if (isCSVFile(filePath)) {
                 return 'accounts'; // CSV files go to accounts table
+            } else if (filePath === 'democracylab') {
+                return 'projects'; // DemocracyLab projects go to projects table
             } else {
                 return 'projects'; // Excel files go to projects table
             }
@@ -1697,8 +1858,8 @@
             const targetTable = getImportTableForFile(selectedFile);
             const recordType = targetTable === 'accounts' ? 'individuals' : 'projects';
             
-            // For CSV files, sheet selection is not required
-            if (!isCSVFile(selectedFile) && !selectedSheet) {
+            // For CSV files and DemocracyLab, sheet selection is not required
+            if (!isCSVFile(selectedFile) && selectedFile !== 'democracylab' && !selectedSheet) {
                 showMessage('Please select a sheet first', 'error');
                 return;
             }
@@ -1811,6 +1972,146 @@
                     return;
                 }
                 
+                // For DemocracyLab projects, use the data import endpoint with fetched data
+                if (selectedFile === 'democracylab') {
+                    showMessage('Importing DemocracyLab projects with duplicate checking...', 'info');
+                    
+                    try {
+                        // Use the standard data import endpoint with our pre-loaded dataset
+                        const response = await fetch(`${API_BASE}/import/data`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                data: previewDataResult.full_dataset || previewDataResult.preview,
+                                headers: previewDataResult.headers,
+                                table_name: targetTable,
+                                source: 'democracylab',
+                                file_source: 'DemocracyLab API'
+                            })
+                        });
+
+                        // Check if response is ok before trying to parse JSON
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            showMessage(result.message || `Successfully imported ${result.imported_count || previewDataResult.total_records} records to ${targetTable} table`, 'success');
+                            showSection(resultsSection);
+                            
+                            const resultsContent = document.getElementById('resultsContent');
+                            
+                            let dlHtml = `
+                                <div class="alert alert-success">
+                                    <h3>✅ DemocracyLab Import Complete</h3>
+                                    <p><strong>Source:</strong> DemocracyLab API</p>
+                                    <p><strong>Records Imported:</strong> ${result.imported_count || previewDataResult.total_records}</p>
+                                    <p><strong>Target Table:</strong> ${targetTable}</p>
+                                    <p><strong>Status:</strong> Import successful</p>
+                                </div>
+                            `;
+                            
+                            // Add duplicate information if available
+                            if (result.skipped_count > 0 || result.duplicate_check_columns) {
+                                dlHtml += `
+                                    <div style="margin: 20px 0; padding: 16px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+                                        <h4 style="margin: 0 0 8px 0; color: var(--text-primary);">Duplicate Detection</h4>
+                                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                                            <strong>Columns used to check for existing rows:</strong> ${result.duplicate_check_columns || 'project_name (when available: + project_location)'}
+                                        </p>
+                                        ${result.skipped_count > 0 ? 
+                                            `<p style="margin: 8px 0 0 0; color: var(--accent-yellow); font-size: 14px;">
+                                                ⚠️ ${result.skipped_count} records were skipped to avoid duplicates
+                                            </p>` : 
+                                            `<p style="margin: 8px 0 0 0; color: var(--accent-green); font-size: 14px;">
+                                                ✅ No duplicate records found
+                                            </p>`
+                                        }
+                                    </div>
+                                `;
+                            }
+                            
+                            resultsContent.innerHTML = dlHtml;
+                        } else {
+                            // Show detailed error information
+                            let errorDetails = `Import failed`;
+                            if (result.message) {
+                                errorDetails += `: ${result.message}`;
+                            }
+                            if (result.errors && result.errors.length > 0) {
+                                errorDetails += `\n\nDetailed errors:\n${result.errors.join('\n')}`;
+                            }
+                            if (result.imported_count !== undefined) {
+                                errorDetails += `\n\nRecords imported: ${result.imported_count}`;
+                            }
+                            if (result.skipped_count !== undefined) {
+                                errorDetails += `\nRecords skipped (duplicates): ${result.skipped_count}`;
+                            }
+                            
+                            // Show detailed results even if there were errors
+                            showSection(resultsSection);
+                            const resultsContent = document.getElementById('resultsContent');
+                            
+                            let dlHtml = `
+                                <div class="alert alert-warning">
+                                    <h3>⚠️ DemocracyLab Import Partially Completed</h3>
+                                    <p><strong>Source:</strong> DemocracyLab API</p>
+                                    <p><strong>Records Imported:</strong> ${result.imported_count || 0}</p>
+                                    <p><strong>Records Skipped:</strong> ${result.skipped_count || 0}</p>
+                                    <p><strong>Target Table:</strong> ${targetTable}</p>
+                                    <p><strong>Status:</strong> ${result.message || 'Import completed with errors'}</p>
+                                </div>
+                            `;
+                            
+                            // Add detailed error information if available
+                            if (result.errors && result.errors.length > 0) {
+                                dlHtml += `
+                                    <div style="margin: 20px 0; padding: 16px; background: var(--bg-secondary); border: 1px solid var(--accent-red); border-radius: var(--radius-md);">
+                                        <h4 style="margin: 0 0 8px 0; color: var(--accent-red);">Import Errors (${result.errors.length})</h4>
+                                        <div style="max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                                            ${result.errors.map(error => `<div style="margin: 4px 0; padding: 4px; background: var(--bg-tertiary); border-radius: 2px;">${error}</div>`).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                            
+                            // Add duplicate information if available
+                            if (result.skipped_count > 0 || result.duplicate_check_columns) {
+                                dlHtml += `
+                                    <div style="margin: 20px 0; padding: 16px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+                                        <h4 style="margin: 0 0 8px 0; color: var(--text-primary);">Duplicate Detection</h4>
+                                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                                            <strong>Columns used to check for existing rows:</strong> ${result.duplicate_check_columns || 'project_name (when available: + project_location)'}
+                                        </p>
+                                        ${result.skipped_count > 0 ? 
+                                            `<p style="margin: 8px 0 0 0; color: var(--accent-yellow); font-size: 14px;">
+                                                ⚠️ ${result.skipped_count} records were skipped to avoid duplicates
+                                            </p>` : 
+                                            `<p style="margin: 8px 0 0 0; color: var(--accent-green); font-size: 14px;">
+                                                ✅ No duplicate records found
+                                            </p>`
+                                        }
+                                    </div>
+                                `;
+                            }
+                            
+                            resultsContent.innerHTML = dlHtml;
+                            
+                            throw new Error(errorDetails);
+                        }
+                        
+                    } catch (error) {
+                        console.error('DemocracyLab import error:', error);
+                        showMessage('Error importing data from DemocracyLab: ' + error.message, 'error');
+                    }
+                    
+                    return;
+                }
+                
                 // For Excel files, use the existing API endpoint
                 const response = await fetch(`${API_BASE}/import/excel`, {
                     method: 'POST',
@@ -1852,43 +2153,6 @@
             }
         }
 
-        async function importDemocracyLabData() {
-            if (!confirm('Are you sure you want to import projects from DemocracyLab?')) {
-                return;
-            }
-
-            showLoading(document.getElementById('importBtn'), 'Importing...');
-            showMessage('Fetching projects from DemocracyLab...', 'info');
-
-            try {
-                const response = await fetch('https://www.democracylab.org/api/projects?page=2&sortField=-project_date_modified');
-                const projects = await response.json();
-
-                showMessage(`Found ${projects.length} projects. Importing...`, 'info');
-
-                const importResponse = await fetch(`${API_BASE}/import/democracylab`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(projects),
-                });
-
-                const result = await importResponse.json();
-
-                if (result.success) {
-                    showMessage(result.message, 'success');
-                    displayResults(result);
-                    showSection(resultsSection);
-                } else {
-                    showMessage(result.message || 'Import failed', 'error');
-                }
-            } catch (error) {
-                showMessage('Error importing data from DemocracyLab: ' + error.message, 'error');
-            } finally {
-                hideLoading(document.getElementById('importBtn'), 'Import Data');
-            }
-        }
 
         function populateSheetSelect(sheets) {
             const currentValue = selectedSheet; // Preserve current selection

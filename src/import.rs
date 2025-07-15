@@ -604,8 +604,23 @@ async fn import_project_record_from_json(
     pool: &Pool<Postgres>,
     record: &HashMap<String, serde_json::Value>,
 ) -> Result<(InsertResult, String), Box<dyn std::error::Error>> {
-    let name = record.get("name").and_then(|v| v.as_str()).unwrap_or("Unknown");
-    let description = record.get("description").and_then(|v| v.as_str());
+    // Handle different field name formats for DemocracyLab vs other sources
+    let raw_name = record.get("project_name")
+        .and_then(|v| v.as_str())
+        .or_else(|| record.get("name").and_then(|v| v.as_str()))
+        .unwrap_or("Unknown");
+    
+    // Truncate name to fit database constraint (50 characters max)
+    let name = if raw_name.len() > 50 {
+        let truncated = &raw_name[..47]; // Leave room for "..."
+        format!("{}...", truncated)
+    } else {
+        raw_name.to_string()
+    };
+    
+    let description = record.get("project_description")
+        .and_then(|v| v.as_str())
+        .or_else(|| record.get("description").and_then(|v| v.as_str()));
 
     // Check for existing record based on name
     let existing_count = sqlx::query_scalar::<_, i64>(
@@ -614,7 +629,7 @@ async fn import_project_record_from_json(
         WHERE name = $1
         "#
     )
-    .bind(name)
+    .bind(&name)
     .fetch_one(pool)
     .await?;
 
@@ -635,7 +650,7 @@ async fn import_project_record_from_json(
         "#
     )
     .bind(id)
-    .bind(name)
+    .bind(&name)
     .bind(description)
     .bind("Active") // Default status
     .bind(now)
