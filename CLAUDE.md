@@ -219,3 +219,11 @@ Run `cargo run -- init-db` to create all tables with proper relationships and co
 - Interest ratings: 20 categories with 5-star ratings (Agriculture, Climate Resilience, etc.)
 - Sankey charts showing response correlations (green=positive, mauve=negative)
 - Location, age, and demographic data collection
+
+## Submodules and Sample Code
+
+### Submodules (Do Not Document Unless Specifically Referenced)
+- **localhost/**: Submodule containing occasional sample code for local development
+- **planet/**: Submodule containing occasional sample code and examples
+
+**Important**: These submodules are not part of the main MemberCommons application and should not be documented or investigated by the CLI unless specific processes and files within them are explicitly referenced in the prompt. They contain sample code that may be used for reference but are not part of the core application functionality.
