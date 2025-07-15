@@ -120,6 +120,13 @@
             display: block;
         }
 
+        /* File select dropdown - fit content width */
+        #fileSelect {
+            width: auto;
+            min-width: 200px;
+            max-width: 100%;
+        }
+
         /* Fix mobile dropdown positioning */
         @media (max-width: 768px) {
             .form-select {
@@ -127,6 +134,11 @@
                 background-image: none;
                 padding-right: 16px;
                 font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            #fileSelect {
+                width: 100%; /* Full width on mobile for better usability */
+                min-width: auto;
             }
         }
 
@@ -968,6 +980,9 @@
         function handleFileDropdownChange(event) {
             const value = event.target.value;
             
+            // Save file selection to browser storage
+            saveFileSelectionToStorage(value);
+            
             // Hide insights and preview section when dropdown changes
             const aiInsights = document.getElementById('aiInsights');
             if (aiInsights) {
@@ -1329,12 +1344,30 @@
                 console.log('Successfully extracted projects array, length:', projects.length);
                 showMessage(`Found ${projects.length} DemocracyLab projects`, 'success');
                 
+                // Flatten nested objects in the projects data
+                console.log('Flattening nested objects in project data...');
+                const flattenedProjects = projects.map(project => {
+                    const flattened = flattenObject(project);
+                    console.log('Original project keys:', Object.keys(project));
+                    console.log('Flattened project keys:', Object.keys(flattened));
+                    return flattened;
+                });
+                
+                // Get all unique headers from flattened data
+                const allHeaders = new Set();
+                flattenedProjects.forEach(project => {
+                    Object.keys(project).forEach(key => allHeaders.add(key));
+                });
+                const headers = Array.from(allHeaders).sort();
+                
+                console.log('All headers after flattening:', headers);
+                
                 // Create preview data structure similar to Excel/CSV files
                 const previewData = {
-                    preview: projects.slice(0, 5), // Show first 5 projects
-                    total_records: projects.length,
-                    loaded_records: projects.length,
-                    headers: ['project_name', 'project_description', 'project_url', 'project_location', 'project_date_created', 'project_date_modified'],
+                    preview: flattenedProjects.slice(0, 5), // Show first 5 projects
+                    total_records: flattenedProjects.length,
+                    loaded_records: flattenedProjects.length,
+                    headers: headers,
                     source: 'democracylab'
                 };
                 
@@ -1344,7 +1377,7 @@
                     total_records: previewData.total_records,
                     loaded_records: previewData.loaded_records,
                     headers: previewData.headers,
-                    full_dataset: projects,
+                    full_dataset: flattenedProjects,
                     source: 'democracylab',
                     sheet_name: 'DemocracyLab Projects'
                 };
@@ -2186,6 +2219,101 @@
             }
         }
 
+        // Helper function to flatten nested objects for database import
+        function flattenObject(obj, prefix = '', maxDepth = 3, currentDepth = 0) {
+            const flattened = {};
+            
+            if (currentDepth >= maxDepth || obj === null || obj === undefined) {
+                return flattened;
+            }
+            
+            for (const key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    const value = obj[key];
+                    const newKey = prefix ? `${prefix}_${key}` : key;
+                    
+                    if (value === null || value === undefined) {
+                        flattened[newKey] = null;
+                    } else if (Array.isArray(value)) {
+                        // Handle arrays by extracting useful information
+                        if (value.length === 0) {
+                            flattened[newKey] = null;
+                        } else if (value.length === 1 && typeof value[0] === 'object') {
+                            // If array has one object, flatten that object
+                            const subFlattened = flattenObject(value[0], newKey, maxDepth, currentDepth + 1);
+                            Object.assign(flattened, subFlattened);
+                        } else {
+                            // For multiple items or primitive arrays, join them
+                            flattened[newKey] = value.map(item => 
+                                typeof item === 'object' ? extractObjectValues(item, 1) : String(item)
+                            ).join(', ');
+                        }
+                    } else if (typeof value === 'object') {
+                        // Recursively flatten nested objects
+                        const subFlattened = flattenObject(value, newKey, maxDepth, currentDepth + 1);
+                        Object.assign(flattened, subFlattened);
+                    } else {
+                        // Primitive value
+                        flattened[newKey] = value;
+                    }
+                }
+            }
+            
+            return flattened;
+        }
+
+        // Helper function to extract meaningful values from nested objects
+        function extractObjectValues(obj, maxDepth = 2, currentDepth = 0) {
+            if (obj === null || obj === undefined) {
+                return '';
+            }
+            
+            if (typeof obj !== 'object') {
+                return String(obj);
+            }
+            
+            if (Array.isArray(obj)) {
+                if (obj.length === 0) return '[]';
+                if (obj.length === 1) return extractObjectValues(obj[0], maxDepth, currentDepth + 1);
+                return `[${obj.length} items: ${obj.slice(0, 3).map(item => extractObjectValues(item, maxDepth, currentDepth + 1)).join(', ')}${obj.length > 3 ? '...' : ''}]`;
+            }
+            
+            // Stop recursion if we've gone too deep
+            if (currentDepth >= maxDepth) {
+                return '{...}';
+            }
+            
+            const keys = Object.keys(obj);
+            if (keys.length === 0) return '{}';
+            
+            // For objects, extract key-value pairs up to a limit
+            const pairs = [];
+            const maxPairs = 3;
+            
+            for (let i = 0; i < Math.min(keys.length, maxPairs); i++) {
+                const key = keys[i];
+                const value = obj[key];
+                const extractedValue = extractObjectValues(value, maxDepth, currentDepth + 1);
+                
+                // Format the key-value pair
+                if (extractedValue && extractedValue !== '{}' && extractedValue !== '[]') {
+                    pairs.push(`${key}: ${extractedValue}`);
+                }
+            }
+            
+            if (pairs.length === 0) {
+                // If no meaningful pairs found, just show the keys
+                return `{${keys.slice(0, 3).join(', ')}${keys.length > 3 ? '...' : ''}}`;
+            }
+            
+            let result = pairs.join(', ');
+            if (keys.length > maxPairs) {
+                result += `... (+${keys.length - maxPairs} more)`;
+            }
+            
+            return result;
+        }
+
         function displayPreview(data) {
             const content = document.getElementById('previewContent');
             
@@ -2293,7 +2421,11 @@
                         html += `<td style="font-weight: bold; background-color: var(--bg-tertiary);">Row ${index + startRowNumber}</td>`;
                         headers.forEach(header => {
                             const value = record[header];
-                            const displayValue = value ? String(value).substring(0, 50) + (String(value).length > 50 ? '...' : '') : '';
+                            let displayValue = '';
+                            if (value !== null && value !== undefined) {
+                                const extractedValue = extractObjectValues(value);
+                                displayValue = extractedValue.length > 50 ? extractedValue.substring(0, 47) + '...' : extractedValue;
+                            }
                             html += `<td>${displayValue}</td>`;
                         });
                         html += '</tr>';
@@ -2307,7 +2439,11 @@
                         html += `<td style="font-weight: bold; background-color: var(--bg-tertiary);">Row ${index + 1}</td>`;
                         headers.forEach(header => {
                             const value = record[header];
-                            const displayValue = value ? String(value).substring(0, 50) + (String(value).length > 50 ? '...' : '') : '';
+                            let displayValue = '';
+                            if (value !== null && value !== undefined) {
+                                const extractedValue = extractObjectValues(value);
+                                displayValue = extractedValue.length > 50 ? extractedValue.substring(0, 47) + '...' : extractedValue;
+                            }
                             html += `<td>${displayValue}</td>`;
                         });
                         html += '</tr>';
@@ -4047,6 +4183,29 @@ Please analyze this dataset according to the request above.`;
             return null;
         }
 
+        // Browser storage for selected file
+        const FILE_SELECT_STORAGE_KEY = 'membercommons_selected_file';
+        
+        function saveFileSelectionToStorage(fileValue) {
+            if (fileValue && fileValue !== 'custom') {
+                localStorage.setItem(FILE_SELECT_STORAGE_KEY, fileValue);
+                console.log('Saved file selection to browser storage:', fileValue);
+            } else {
+                // Don't store custom file selections as they won't be available on reload
+                localStorage.removeItem(FILE_SELECT_STORAGE_KEY);
+                console.log('Cleared file selection from browser storage');
+            }
+        }
+        
+        function loadFileSelectionFromStorage() {
+            const savedFileSelection = localStorage.getItem(FILE_SELECT_STORAGE_KEY);
+            if (savedFileSelection) {
+                console.log('Loaded file selection from browser storage:', savedFileSelection);
+                return savedFileSelection;
+            }
+            return null;
+        }
+
         // Save/Cancel functions for Claude analysis
         function saveClaudeAnalysis() {
             if (pendingClaudeAnalysis) {
@@ -4603,17 +4762,43 @@ ${JSON.stringify(sampleData, null, 2)}`;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            // Get the pre-selected option from the dropdown
-            const selectedOption = fileSelect.options[fileSelect.selectedIndex];
-            selectedFile = selectedOption.value;
+            // Try to restore saved file selection from browser storage
+            const savedFileSelection = loadFileSelectionFromStorage();
+            let selectedOption;
+            
+            if (savedFileSelection) {
+                // Check if the saved selection is still available in the dropdown
+                const savedOption = Array.from(fileSelect.options).find(option => option.value === savedFileSelection);
+                if (savedOption) {
+                    fileSelect.value = savedFileSelection;
+                    selectedOption = savedOption;
+                    selectedFile = savedFileSelection;
+                    console.log('Restored file selection from browser storage:', savedFileSelection);
+                } else {
+                    // Saved selection no longer available, use default
+                    selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                    selectedFile = selectedOption.value;
+                    console.log('Saved file selection not available, using default:', selectedFile);
+                }
+            } else {
+                // No saved selection, use default
+                selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                selectedFile = selectedOption.value;
+                console.log('No saved file selection, using default:', selectedFile);
+            }
             
             // Check for hash parameters
             const urlParams = new URLSearchParams(window.location.hash.substring(1));
             const mode = urlParams.get('m');
             
-            showMessage(`Import tool loaded. ${selectedOption.text} is pre-selected.`, 'info');
-            // Auto-load the pre-selected file on page load
-            autoAnalyzeAndPreview();
+            showMessage(`Import tool loaded. ${selectedOption.text} is selected.`, 'info');
+            
+            // Auto-load the selected file on page load
+            if (selectedFile === 'democracylab') {
+                autoAnalyzeAndPreviewWithRustToAvoidsCORS();
+            } else {
+                autoAnalyzeAndPreview();
+            }
             
             // Restore cached insights after data loads
             restoreCachedInsights();
