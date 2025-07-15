@@ -9,22 +9,116 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css">
     
     <link rel="stylesheet" href="../../css/common.css">
-
-    <!-- Shared Navigation Styles -->
-    <script src="../../js/common.js"></script>
-    
-    <link rel="stylesheet" href="../../css/navigation.css">
     <!-- Formatting for pre code in readme -->
     <link rel="stylesheet" href="../../css/shared-styles.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-primary, #F9FAFB);
+            color: var(--text-primary, #1A1A1A);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .breadcrumb {
+            margin-bottom: 24px;
+        }
+        
+        .breadcrumb a {
+            color: var(--accent-blue, #3B82F6);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 16px 0 8px 0;
+        }
+        
+        .card {
+            background: var(--bg-secondary, #FFFFFF);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-light, #E5E7EB);
+        }
+        
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary, #F3F4F6);
+            color: var(--text-primary, #1A1A1A);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border-medium, #D1D5DB);
+        }
+        
+        .log-output {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .readme-content {
+            background: var(--bg-secondary, #FFFFFF);
+        }
+    </style>
 </head>
 <body>
-    <!-- Navigation will be injected here by navigation.js -->
-    
-    <!-- Page content in the main content area -->
-    <div id="admin-log-content" class="page-content active">
+    <div id="admin-log-content">
         <div class="container">
+            <div class="breadcrumb">
+                <a href="../">← Admin Dashboard</a>
+            </div>
+            
             <div class="header">
-                <a href="../">Admin Dashboard</a>
                 <h1>📊 Admin Log Output</h1>
                 <p>Real-time logging demonstration of the enhanced displayFile() function</p>
             </div>
@@ -53,49 +147,15 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.min.js"></script>
-    <script src="../../js/navigation.js"></script>
+    <script src="../../js/common.js"></script>
     <script src="../../admin/sql/panel/db-admin.js"></script>
     <script>
-        // Application State for this page
-        const AppState = {
-            currentUser: null,
-            currentSection: 'admin',
-            currentTab: 'log-output',
-            isAuthenticated: false,
-            navigation: null
-        };
-
         // Wait for DOM and initialize everything
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize shared navigation
-            setTimeout(() => {
-                AppState.navigation = initializeNavigation({
-                    defaultSection: 'admin',
-                    defaultTab: 'log-output',
-                    onSectionChange: (section, tab) => {
-                        console.log('Section changed to:', section, tab);
-                    },
-                    onTabChange: (tab, section) => {
-                        console.log('Tab changed to:', tab, section);
-                    },
-                    onSidebarToggle: (collapsed) => {
-                        console.log('Sidebar toggled:', collapsed ? 'collapsed' : 'expanded');
-                    }
-                });
-
-                // Move the admin content into the navigation structure
-                const adminContent = document.getElementById('admin-log-content');
-                const tabContent = document.getElementById('tab-content');
-                if (tabContent && adminContent) {
-                    tabContent.appendChild(adminContent);
-                    adminContent.classList.add('active');
-                }
-
-                // Initialize feather icons
-                if (window.feather) {
-                    feather.replace();
-                }
-            }, 100);
+            // Initialize feather icons
+            if (window.feather) {
+                feather.replace();
+            }
 
             // Setup logging output to capture displayFile logs
             function setupLogging() {
