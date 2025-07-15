@@ -347,16 +347,24 @@ class NavigationSystem {
             link.addEventListener('click', (e) => {
                 const section = e.currentTarget.dataset.section;
                 if (section) {
-                    // Handle subnav expansion/collapse (allow multiple open)
+                    // Always expand subnav and switch to section on first click
                     const subnav = e.currentTarget.parentElement.querySelector('.subnav');
                     const arrow = e.currentTarget.querySelector('.nav-arrow');
                     
-                    if (subnav && arrow) {
-                        subnav.classList.toggle('expanded');
-                        arrow.classList.toggle('expanded');
+                    // If clicking on the same section, just toggle subnav expansion
+                    if (section === this.currentSection) {
+                        if (subnav && arrow) {
+                            subnav.classList.toggle('expanded');
+                            arrow.classList.toggle('expanded');
+                        }
+                    } else {
+                        // Different section - always expand subnav and switch
+                        if (subnav && arrow) {
+                            subnav.classList.add('expanded');
+                            arrow.classList.add('expanded');
+                        }
+                        this.switchSection(section);
                     }
-                    
-                    this.switchSection(section);
                 }
             });
         });
@@ -771,8 +779,9 @@ class NavigationSystem {
     }
 
     switchSection(sectionName) {
-        if (this.currentSection === sectionName) return;
-
+        // Always switch to the section and show its subnav, even if it's already active
+        // This ensures first click goes to the section instead of just scrolling
+        
         // Update section state
         this.currentSection = sectionName;
         

@@ -2501,9 +2501,7 @@
                 link.addEventListener('click', function(e) {
                     const section = this.getAttribute('data-section');
                     if (section) {
-                        // Check if page is scrolled to top
-                        const isAtTop = window.scrollY <= 10; // Allow small tolerance
-                        
+                        // Always navigate to section on first click, regardless of scroll position
                         // Toggle subnav for clicked section (don't close others)
                         const subnav = this.nextElementSibling;
                         const arrow = this.querySelector('.nav-arrow');
@@ -2523,33 +2521,37 @@
                                 return; // Don't navigate when clicking arrow
                             }
                             
-                            // If not at top, scroll to top instead of toggling subnav
-                            if (!isAtTop) {
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                return; // Don't toggle subnav or navigate
-                            }
-                            
-                            // At top: handle subnav toggling
-                            if (isCurrentlyExpanded) {
-                                // If subnav is expanded, close it (regardless of active state)
-                                subnav.classList.remove('expanded');
-                                arrow?.classList.remove('expanded');
-                                return; // Don't navigate if we're just closing
+                            // If same section is already active, just toggle subnav
+                            if (section === router.currentSection) {
+                                if (isCurrentlyExpanded) {
+                                    subnav.classList.remove('expanded');
+                                    arrow?.classList.remove('expanded');
+                                } else {
+                                    subnav.classList.add('expanded');
+                                    arrow?.classList.add('expanded');
+                                }
+                                return; // Don't navigate if we're just toggling same section
                             } else {
-                                // Expand this subnav
+                                // Different section - always expand subnav
                                 subnav.classList.add('expanded');
                                 arrow?.classList.add('expanded');
                             }
-                        } else if (!isAtTop) {
-                            // No subnav but not at top, scroll to top
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                            return;
                         }
                         
-                        // Navigate to section (only if at top)
-                        if (isAtTop) {
-                            router.navigate(section);
-                        }
+                        // Set a flag to indicate this is a primary nav click
+                        window.isPrimaryNavClick = true;
+                        
+                        // Always navigate to section on first click
+                        router.navigate(section);
+                        
+                        // Scroll to top to show header and banner for primary nav clicks
+                        setTimeout(() => {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            // Clear the flag after a brief delay
+                            setTimeout(() => {
+                                window.isPrimaryNavClick = false;
+                            }, 200);
+                        }, 50);
                     }
                 });
             });
@@ -2592,10 +2594,15 @@
                             router.navigate(AppState.currentSection, tab);
                         }
                         
-                        // Auto-scroll to section if it exists
-                        setTimeout(() => {
-                            scrollToSection(tab);
-                        }, 100); // Small delay to ensure tab is shown first
+                        // Only scroll if this is a genuine subnav click (not a primary nav transition)
+                        // Primary nav should show header without scrolling, only subnav should scroll
+                        if (targetSection === AppState.currentSection && !window.isPrimaryNavClick) {
+                            // We're in the same section, so this is a real subnav click - allow scrolling
+                            setTimeout(() => {
+                                scrollToSection(tab);
+                            }, 100); // Small delay to ensure tab is shown first
+                        }
+                        // If targetSection !== currentSection or isPrimaryNavClick, this is a primary nav transition - no scrolling
                     }
                 });
             });
