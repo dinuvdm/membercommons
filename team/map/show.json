@@ -1,0 +1,44 @@
+{
+  "cities": {
+    "shortTitle": "Team Locations",
+    "listTitle": "Team Locations",
+    "dataTitle": "Team Locations",
+    "datatype": "csv",
+    "dataset": "/membermap/cities.csv",
+    "markerType": "google",
+    "nameColumn": "city",
+    "search": {
+      "In City": "City",
+      "In County Name": "County"
+    },
+    "datastates": ["GA"],
+    "mapInfo": "Cities and Counties in Georgia"
+  },
+  "recyclers": {
+    "listTitle": "B2B Recyclers",
+    "dataTitle": "B2B Recyclers",
+    "googleCSV": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRBRXb005Plt3mmmJunBMk6IejMu-VAJOPdlHWXUpyecTAF-SK4OpfSjPHNMN_KAePShbNsiOo2hZzt/pub?gid=1924677788&single=true&output=csv",
+    "googleCategories": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRBRXb005Plt3mmmJunBMk6IejMu-VAJOPdlHWXUpyecTAF-SK4OpfSjPHNMN_KAePShbNsiOo2hZzt/pub?gid=381237740&single=true&output=csv",
+    "nameColumn": "organization name",
+    "titleColumn": "organization name",
+    "searchFields": "organization name",
+    "addressColumn": "address",
+    "valueColumn": "category",
+    "valueColumnLabel": "Category",
+    "catColumn": "Category",
+    "subcatColumn": "Materials Accepted",
+    "itemsColumn": "Materials Accepted",
+    "color": "#E31C79",
+    "markerType": "google",
+    "search": {
+      "In Main Category": "Category",
+      "In Materials Accepted": "Materials Accepted",
+      "In Location Name": "organization name",
+      "In Address": "address",
+      "In County Name": "county",
+      "In Website URL": "website"
+    },
+    "datastates": ["GA"],
+    "mapInfo": "Add <a href='https://map.georgia.org/recycling/'>B2B&nbsp;Recycler Listings</a> or post comments to submit additions to our <a href='https://docs.google.com/spreadsheets/d/1YmfBPEFpfmaKmxcnxijPU8-esVkhaVBE1wLZqPNOKtY/edit?usp=sharing' target='georgia_recyclers_sheet'>Google&nbsp;Sheet</a>."
+  }
+}

@@ -13,12 +13,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `cargo test` - Run tests
 
 ### Development Mode
-- `cargo run serve` starts server on localhost:8081 by default (note: no `--` needed)
 - Server host/port configurable via `SERVER_HOST`/`SERVER_PORT` environment variables
+- **IMPORTANT**: Never use `cargo run serve` alone - it blocks the terminal and stops when you exit
 
-### Background Development Server
+### Background Development Server (ALWAYS USE THIS)
 ```bash
-# Use this command to start server (in background for development/testing)
+# ALWAYS use this command to start server - keeps running in background
 nohup cargo run serve > server.log 2>&1 &
 
 # Check if dev server is running
@@ -27,6 +27,10 @@ curl http://localhost:8081/api/health
 # Stop dev background server
 lsof -ti:8081 | xargs kill -9
 ```
+
+### Alternative Commands (NOT RECOMMENDED)
+- `cargo run serve` - Blocks terminal, stops when you exit (DO NOT USE)
+- `cargo run -- serve` - Same issue, blocks terminal (DO NOT USE)
 
 ## Project Vision & Requirements
 
