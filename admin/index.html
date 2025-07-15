@@ -383,7 +383,7 @@
                 </div>
             </div>
 
-            <!-- Claude API Usage Monitor -->
+            <!-- API Usage Monitor -->
             <div class="admin-card" id="claude-usage-card">
                 <div class="admin-card-header">
                     <div class="admin-card-header-content">
@@ -391,12 +391,12 @@
                             <i data-feather="activity"></i>
                         </div>
                         <div>
-                            <h3>Claude API Usage Monitor</h3>
+                            <h3>API Usage Monitor</h3>
                             <span class="status-badge active">Live</span>
                         </div>
                     </div>
                 </div>
-                <p>Monitor your Claude API usage across both terminal CLI and website integrations with real-time quota tracking.</p>
+                <p>Monitor your API usage across both terminal CLI and website integrations with real-time quota tracking.</p>
                 
                 <div class="usage-sections" style="margin-top: 16px;">
                     <!-- CLI Usage Section -->
@@ -429,8 +429,7 @@
                     </button>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <label style="font-size: 13px; color: var(--text-secondary);">Billing day:</label>
-                        <input type="number" id="billing-day-input" min="1" max="31" style="width: 50px; padding: 4px 8px; border: 1px solid var(--border-light); border-radius: 4px; font-size: 13px;" placeholder="15">
-                        <button onclick="setBillingDay()" style="padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border-light); border-radius: 4px; cursor: pointer; font-size: 13px;">Set</button>
+                        <input type="number" id="billing-day-input" min="1" max="31" style="width: 50px; padding: 4px 8px; border: 1px solid var(--border-light); border-radius: 4px; font-size: 13px;" placeholder="15" onchange="setBillingDay()">
                     </div>
                 </div>
                 
