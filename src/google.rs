@@ -48,6 +48,14 @@ pub struct GeminiAnalysisResponse {
     analysis: Option<String>,
     error: Option<String>,
     error_details: Option<GeminiErrorDetails>,
+    token_usage: Option<TokenUsage>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TokenUsage {
+    prompt_tokens: Option<u32>,
+    completion_tokens: Option<u32>,
+    total_tokens: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -141,15 +149,17 @@ pub async fn analyze_with_gemini(
             analysis: None,
             error: Some("Gemini API key not configured".to_string()),
             error_details: None,
+            token_usage: None,
         }));
     }
 
     match call_gemini_api(&data.config.gemini_api_key, &req.prompt).await {
-        Ok(analysis) => Ok(HttpResponse::Ok().json(GeminiAnalysisResponse {
+        Ok((analysis, token_usage)) => Ok(HttpResponse::Ok().json(GeminiAnalysisResponse {
             success: true,
             analysis: Some(analysis),
             error: None,
             error_details: None,
+            token_usage,
         })),
         Err(e) => {
             // Log detailed error for debugging
@@ -165,13 +175,14 @@ pub async fn analyze_with_gemini(
                 analysis: None,
                 error: Some(e.to_string()),
                 error_details,
+                token_usage: None,
             }))
         }
     }
 }
 
 // Call Gemini API for text generation
-async fn call_gemini_api(api_key: &str, prompt: &str) -> anyhow::Result<String> {
+async fn call_gemini_api(api_key: &str, prompt: &str) -> anyhow::Result<(String, Option<TokenUsage>)> {
     let client = reqwest::Client::new();
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={}",
@@ -262,5 +273,25 @@ async fn call_gemini_api(api_key: &str, prompt: &str) -> anyhow::Result<String> 
     
     println!("Gemini API text extracted successfully - Length: {} chars", text.len());
     
-    Ok(text.to_string())
+    // Extract token usage information
+    let token_usage = response_json
+        .get("usageMetadata")
+        .and_then(|usage| {
+            let prompt_tokens = usage.get("promptTokenCount").and_then(|v| v.as_u64()).map(|v| v as u32);
+            let completion_tokens = usage.get("candidatesTokenCount").and_then(|v| v.as_u64()).map(|v| v as u32);
+            let total_tokens = usage.get("totalTokenCount").and_then(|v| v.as_u64()).map(|v| v as u32);
+            
+            Some(TokenUsage {
+                prompt_tokens,
+                completion_tokens,
+                total_tokens,
+            })
+        });
+    
+    if let Some(ref usage) = token_usage {
+        println!("Token usage - Prompt: {:?}, Completion: {:?}, Total: {:?}", 
+                 usage.prompt_tokens, usage.completion_tokens, usage.total_tokens);
+    }
+    
+    Ok((text.to_string(), token_usage))
 }

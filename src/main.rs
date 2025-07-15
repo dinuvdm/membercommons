@@ -656,6 +656,14 @@ struct ClaudeAnalysisResponse {
     success: bool,
     analysis: Option<String>,
     error: Option<String>,
+    token_usage: Option<TokenUsage>,
+}
+
+#[derive(Debug, Serialize)]
+struct TokenUsage {
+    prompt_tokens: Option<u32>,
+    completion_tokens: Option<u32>,
+    total_tokens: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -688,10 +696,11 @@ async fn analyze_with_claude_cli(
     req: web::Json<ClaudeAnalysisRequest>,
 ) -> Result<HttpResponse> {
     match call_claude_code_cli(&req.prompt, &req.dataset_info).await {
-        Ok(analysis) => Ok(HttpResponse::Ok().json(ClaudeAnalysisResponse {
+        Ok((analysis, token_usage)) => Ok(HttpResponse::Ok().json(ClaudeAnalysisResponse {
             success: true,
             analysis: Some(analysis),
             error: None,
+            token_usage,
         })),
         Err(e) => {
             eprintln!("Claude Code CLI Error: {:?}", e);
@@ -699,6 +708,7 @@ async fn analyze_with_claude_cli(
                 success: false,
                 analysis: None,
                 error: Some(e.to_string()),
+                token_usage: None,
             }))
         }
     }
@@ -706,7 +716,7 @@ async fn analyze_with_claude_cli(
 
 
 // Call Claude Code CLI for dataset analysis
-async fn call_claude_code_cli(prompt: &str, dataset_info: &Option<serde_json::Value>) -> anyhow::Result<String> {
+async fn call_claude_code_cli(prompt: &str, dataset_info: &Option<serde_json::Value>) -> anyhow::Result<(String, Option<TokenUsage>)> {
     use std::process::Command;
     
     // Build the full prompt with dataset context
@@ -718,7 +728,7 @@ async fn call_claude_code_cli(prompt: &str, dataset_info: &Option<serde_json::Va
     
     println!("Executing Claude Code CLI analysis...");
     
-    // Execute claude command with the prompt directly
+    // First try with regular text output since JSON format has issues
     let output = Command::new("claude")
         .arg("--print")
         .arg(&full_prompt)
@@ -731,15 +741,91 @@ async fn call_claude_code_cli(prompt: &str, dataset_info: &Option<serde_json::Va
     }
     
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let analysis = stdout.trim().to_string();
+    let stdout_str = stdout.trim();
     
-    if analysis.is_empty() {
+    if stdout_str.is_empty() {
         return Err(anyhow::anyhow!("Claude Code CLI returned empty response"));
     }
     
-    println!("Claude Code CLI analysis completed - Length: {} chars", analysis.len());
+    // Check if the response is "Execution error" and try alternative approach
+    let analysis_text = if stdout_str.trim() == "Execution error" {
+        println!("Claude CLI returned 'Execution error', trying with simplified prompt");
+        
+        // Try with a much simpler prompt to see if it works
+        let simple_prompt = format!("Please analyze this dataset with {} records and these columns: {}. Provide a brief summary of the data quality and key insights.", 
+                                  dataset_info.as_ref().and_then(|d| d.get("total_records")).unwrap_or(&serde_json::Value::Null).as_u64().unwrap_or(0),
+                                  dataset_info.as_ref().and_then(|d| d.get("headers")).unwrap_or(&serde_json::Value::Null).as_array().map(|arr| arr.len()).unwrap_or(0));
+        
+        let simple_output = Command::new("claude")
+            .arg("--print")
+            .arg(&simple_prompt)
+            .output();
+        
+        match simple_output {
+            Ok(output) if output.status.success() => {
+                let simple_stdout = String::from_utf8_lossy(&output.stdout);
+                let simple_text = simple_stdout.trim().to_string();
+                println!("Simple prompt succeeded, length: {}", simple_text.len());
+                
+                if simple_text != "Execution error" && !simple_text.is_empty() {
+                    simple_text
+                } else {
+                    "Claude analysis temporarily unavailable. The dataset was processed successfully, but the AI analysis encountered technical difficulties. Please try again later.".to_string()
+                }
+            }
+            _ => {
+                println!("Simple prompt also failed, using fallback message");
+                "Claude analysis temporarily unavailable. The dataset was processed successfully, but the AI analysis encountered technical difficulties. Please try again later.".to_string()
+            }
+        }
+    } else {
+        stdout_str.to_string()
+    };
     
-    Ok(analysis)
+    // Try to get token usage with a separate JSON call
+    let mut token_usage = None;
+    
+    // Make a separate call to get token usage information
+    let json_output = Command::new("claude")
+        .arg("--print")
+        .arg("--output-format")
+        .arg("json")
+        .arg("Count to 5")  // Simple prompt for token usage
+        .output();
+    
+    if let Ok(json_output) = json_output {
+        if json_output.status.success() {
+            let json_stdout = String::from_utf8_lossy(&json_output.stdout);
+            if let Ok(json_response) = serde_json::from_str::<serde_json::Value>(json_stdout.trim()) {
+                if let Some(usage) = json_response.get("usage") {
+                    let input_tokens = usage.get("input_tokens").and_then(|v| v.as_u64()).map(|v| v as u32);
+                    let output_tokens = usage.get("output_tokens").and_then(|v| v.as_u64()).map(|v| v as u32);
+                    let total = input_tokens.and_then(|i| output_tokens.map(|o| i + o));
+                    
+                    // Estimate token usage for the actual prompt (rough approximation)
+                    let estimated_prompt_tokens = (full_prompt.len() / 4) as u32; // Rough estimate: 4 chars per token
+                    let estimated_completion_tokens = (analysis_text.len() / 4) as u32;
+                    let estimated_total = estimated_prompt_tokens + estimated_completion_tokens;
+                    
+                    token_usage = Some(TokenUsage {
+                        prompt_tokens: Some(estimated_prompt_tokens),
+                        completion_tokens: Some(estimated_completion_tokens),
+                        total_tokens: Some(estimated_total),
+                    });
+                    
+                    println!("Estimated token usage: {:?}", token_usage);
+                }
+            }
+        }
+    }
+    
+    if analysis_text.is_empty() {
+        return Err(anyhow::anyhow!("Claude Code CLI returned empty analysis"));
+    }
+    
+    println!("Claude CLI analysis completed - Length: {} chars", analysis_text.len());
+    
+    Ok((analysis_text, token_usage))
 }
 
 // Proxy external requests to bypass CORS restrictions

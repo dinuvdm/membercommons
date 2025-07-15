@@ -742,8 +742,8 @@
         </a>
 
         <div class="header">
-            <h1>📊 Data Import with AI Insights</h1>
-            <p>Explore project and partner data from Excel and CSV files with AI Insights</p>
+            <h1>📊 Explore Feeds with AI Insights</h1>
+            <p>Combine data from Excel, CSV, JSON and RSS feeds with AI Insights.</p>
         </div>
 
         <!-- File Selection -->
@@ -886,7 +886,18 @@
             try {
                 const stored = localStorage.getItem('aiInsightsCache');
                 const cache = stored ? JSON.parse(stored) : {};
-                console.log('Loaded cache from localStorage:', Object.keys(cache));
+                console.log('DEBUG: loadCacheFromStorage - loaded keys:', Object.keys(cache));
+                
+                // Debug: Show cache contents
+                Object.keys(cache).forEach(key => {
+                    console.log(`DEBUG: Gemini cache key "${key}":`, {
+                        success: cache[key].success,
+                        analysisLength: cache[key].analysis?.length,
+                        totalRecords: cache[key].totalRecords,
+                        timestamp: cache[key].timestamp
+                    });
+                });
+                
                 return cache;
             } catch (error) {
                 console.error('Error loading cache from localStorage:', error);
@@ -896,6 +907,11 @@
         
         function saveCacheToStorage() {
             try {
+                const cacheKey = getCurrentCacheKey();
+                console.log('DEBUG: saveCacheToStorage called for key:', cacheKey);
+                console.log('DEBUG: Current aiInsightsCache contents:', Object.keys(aiInsightsCache));
+                console.log('DEBUG: Current cache entry:', aiInsightsCache[cacheKey]);
+                
                 localStorage.setItem('aiInsightsCache', JSON.stringify(aiInsightsCache));
                 console.log('Saved cache to localStorage, keys:', Object.keys(aiInsightsCache));
             } catch (error) {
@@ -907,11 +923,11 @@
             try {
                 const stored = localStorage.getItem('claudeInsightsCache');
                 const cache = stored ? JSON.parse(stored) : {};
-                console.log('Loaded Claude cache from localStorage:', Object.keys(cache));
+                console.log('DEBUG: loadClaudeCacheFromStorage - loaded keys:', Object.keys(cache));
                 
                 // Debug: Show cache contents
                 Object.keys(cache).forEach(key => {
-                    console.log(`Claude cache key "${key}":`, {
+                    console.log(`DEBUG: Claude cache key "${key}":`, {
                         success: cache[key].success,
                         analysisLength: cache[key].analysis?.length,
                         totalRecords: cache[key].totalRecords,
@@ -928,6 +944,11 @@
         
         function saveClaudeCacheToStorage() {
             try {
+                const cacheKey = getCurrentCacheKey();
+                console.log('DEBUG: saveClaudeCacheToStorage called for key:', cacheKey);
+                console.log('DEBUG: Current claudeInsightsCache contents:', Object.keys(claudeInsightsCache));
+                console.log('DEBUG: Current cache entry:', claudeInsightsCache[cacheKey]);
+                
                 localStorage.setItem('claudeInsightsCache', JSON.stringify(claudeInsightsCache));
                 console.log('Saved Claude cache to localStorage, keys:', Object.keys(claudeInsightsCache));
             } catch (error) {
@@ -937,10 +958,19 @@
         
         // Generate cache key for current file/sheet combination
         function getCurrentCacheKey() {
-            const fileKey = selectedFile || 'unknown';
+            // Always use the dropdown value for consistent caching, regardless of selectedFile content
+            const selectedOption = fileSelect.options[fileSelect.selectedIndex];
+            let fileKey = selectedOption ? selectedOption.value : (selectedFile || 'unknown');
+            
+            console.log('DEBUG getCurrentCacheKey - selectedFile:', selectedFile);
+            console.log('DEBUG getCurrentCacheKey - selectedOption:', selectedOption);
+            console.log('DEBUG getCurrentCacheKey - selectedOption.value:', selectedOption?.value);
+            console.log('DEBUG getCurrentCacheKey - data-cors:', selectedOption?.getAttribute('data-cors'));
+            console.log('DEBUG: Using dropdown value for cache key:', fileKey);
+            
             const sheetKey = selectedSheet || 'default';
             const cacheKey = `${fileKey}__${sheetKey}`;
-            console.log('Generated cache key:', cacheKey, 'from file:', fileKey, 'sheet:', sheetKey);
+            console.log('DEBUG: Generated cache key:', cacheKey, 'from file:', fileKey, 'sheet:', sheetKey);
             return cacheKey;
         }
         let customFiles = {}; // Store custom file objects
@@ -2838,22 +2868,28 @@
         }
         
         function showAIInsightsSection() {
-            console.log('showAIInsightsSection called');
+            console.log('DEBUG: showAIInsightsSection called');
             const aiInsights = document.getElementById('aiInsights');
-            console.log('aiInsights element:', aiInsights);
+            console.log('DEBUG: aiInsights element:', aiInsights);
             aiInsights.classList.remove('hidden');
-            console.log('Removed hidden class from aiInsights');
+            console.log('DEBUG: Removed hidden class from aiInsights');
             
             // Check if we have cached insights for this file/sheet (Claude first, then Gemini)
             const cacheKey = getCurrentCacheKey();
+            console.log('DEBUG: showAIInsightsSection - checking cache for key:', cacheKey);
+            console.log('DEBUG: claudeInsightsCache keys:', Object.keys(claudeInsightsCache));
+            console.log('DEBUG: aiInsightsCache keys:', Object.keys(aiInsightsCache));
+            console.log('DEBUG: Claude cache entry exists:', !!claudeInsightsCache[cacheKey]);
+            console.log('DEBUG: Gemini cache entry exists:', !!aiInsightsCache[cacheKey]);
+            
             if (claudeInsightsCache[cacheKey]) {
-                console.log('Found cached Claude insights for key:', cacheKey);
+                console.log('DEBUG: Found cached Claude insights for key:', cacheKey);
                 displayCachedClaudeInsights(cacheKey);
             } else if (aiInsightsCache[cacheKey]) {
-                console.log('Found cached Gemini insights for key:', cacheKey);
+                console.log('DEBUG: Found cached Gemini insights for key:', cacheKey);
                 displayCachedGeminiInsights(cacheKey);
             } else {
-                console.log('No cached insights found for key:', cacheKey);
+                console.log('DEBUG: No cached insights found for key:', cacheKey);
                 showAIInsightsButtons();
             }
         }
@@ -2867,6 +2903,7 @@
             const geminiInsightsText = document.getElementById('geminiInsightsText');
             const geminiRefreshBtn = document.getElementById('geminiRefreshBtn');
             const insightsContent = document.getElementById('insightsContent');
+            const aiInsights = document.getElementById('aiInsights');
             
             console.log('Button elements:', {claudeInsightsBtn, geminiInsightsBtn});
             
@@ -2898,6 +2935,12 @@
                     Click "Claude Insights" or "Gemini Insights" for AI analysis. Use the ↻ refresh button for custom prompts.
                 </div>
             `;
+            
+            // Show the AI insights section
+            if (aiInsights) {
+                aiInsights.classList.remove('hidden');
+                console.log('AI insights section shown');
+            }
         }
 
         function displayCachedGeminiInsights(cacheKey) {
@@ -3237,10 +3280,18 @@ Keep the response structured and actionable for a data import workflow.`;
                     showInsightsStatus('✅ Gemini analysis complete! Choose Save to keep or Cancel to revert.');
                     showMessage(`Gemini analysis completed with standard prompt. Analysis length: ${result.analysis.length} characters`, 'success');
                     
+                    // Append token usage information if available
+                    let analysisWithTokens = result.analysis;
+                    if (result.token_usage) {
+                        const tokens = result.token_usage;
+                        const tokenInfo = `\n\n---\n**Token Usage**: ${tokens.total_tokens || 'N/A'} tokens (${tokens.prompt_tokens || 'N/A'} prompt, ${tokens.completion_tokens || 'N/A'} completion)`;
+                        analysisWithTokens = result.analysis + tokenInfo;
+                    }
+                    
                     // Store in pending analysis (don't save to cache yet)
                     pendingGeminiAnalysis = {
                         success: true,
-                        analysis: result.analysis,
+                        analysis: analysisWithTokens,
                         totalRecords: dataset.length,
                         sampleSize: sampleSize,
                         timestamp: new Date().toISOString(),
@@ -3249,7 +3300,7 @@ Keep the response structured and actionable for a data import workflow.`;
                     };
                     
                     // Display with Save/Cancel buttons
-                    displayGeminiInsights(result.analysis, dataset.length, sampleSize, true);
+                    displayGeminiInsights(analysisWithTokens, dataset.length, sampleSize, true);
                     
                     // Update button to pending state
                     geminiInsightsBtn.disabled = false;
@@ -3631,10 +3682,18 @@ Keep the response structured and actionable for a data import workflow.`;
                     showInsightsStatus('✅ Claude analysis complete! Choose Save to keep or Cancel to revert.');
                     showMessage(`Claude analysis completed with standard prompt. Analysis length: ${result.analysis.length} characters`, 'success');
                     
+                    // Append token usage information if available
+                    let analysisWithTokens = result.analysis;
+                    if (result.token_usage) {
+                        const tokens = result.token_usage;
+                        const tokenInfo = `\n\n---\n**Token Usage**: ${tokens.total_tokens || 'N/A'} tokens (${tokens.prompt_tokens || 'N/A'} prompt, ${tokens.completion_tokens || 'N/A'} completion)`;
+                        analysisWithTokens = result.analysis + tokenInfo;
+                    }
+                    
                     // Store in pending analysis (don't save to cache yet)
                     pendingClaudeAnalysis = {
                         success: true,
-                        analysis: result.analysis,
+                        analysis: analysisWithTokens,
                         totalRecords: dataset.length,
                         sampleSize: sampleSize,
                         timestamp: new Date().toISOString(),
@@ -3643,7 +3702,7 @@ Keep the response structured and actionable for a data import workflow.`;
                     };
                     
                     // Display with Save/Cancel buttons
-                    displayClaudeInsights(result.analysis, dataset.length, sampleSize, true);
+                    displayClaudeInsights(analysisWithTokens, dataset.length, sampleSize, true);
                     
                     // Update button to pending state
                     claudeInsightsBtn.disabled = false;
@@ -3732,7 +3791,8 @@ Please analyze this dataset according to the request above.`;
                     return {
                         success: true,
                         analysis: result.analysis,
-                        source: 'claude_cli'
+                        source: 'claude_cli',
+                        token_usage: result.token_usage
                     };
                 } else {
                     throw new Error(result.error || 'Analysis failed');
@@ -4345,10 +4405,10 @@ Please analyze this dataset according to the request above.`;
                     displayCachedGeminiInsights(cacheKey);
                 }, 100);
             } else {
-                console.log('No cached Gemini insights, running standard analysis');
-                showMessage('No cached Gemini analysis found - running standard analysis...', 'info');
-                showInsightsStatus('Starting Gemini analysis...');
-                requestGeminiInsights();
+                console.log('No cached Gemini insights, showing prompt modal');
+                showMessage('No cached Gemini analysis found - showing prompt for custom analysis...', 'info');
+                showInsightsStatus('Preparing Gemini analysis prompt...');
+                showRefreshPrompt('gemini');
             }
         }
 
@@ -4667,10 +4727,18 @@ ${JSON.stringify(sampleData, null, 2)}`;
                     showInsightsStatus('✅ NEW Claude analysis complete! Choose Save to keep or Cancel to revert.');
                     showMessage(`Fresh Claude analysis completed with custom prompt. Analysis length: ${result.analysis.length} characters`, 'success');
                     
+                    // Append token usage information if available
+                    let analysisWithTokens = result.analysis;
+                    if (result.token_usage) {
+                        const tokens = result.token_usage;
+                        const tokenInfo = `\n\n---\n**Token Usage**: ${tokens.total_tokens || 'N/A'} tokens (${tokens.prompt_tokens || 'N/A'} prompt, ${tokens.completion_tokens || 'N/A'} completion)`;
+                        analysisWithTokens = result.analysis + tokenInfo;
+                    }
+                    
                     // Store in pending analysis (don't save to cache yet)
                     pendingClaudeAnalysis = {
                         success: true,
-                        analysis: result.analysis,
+                        analysis: analysisWithTokens,
                         totalRecords: dataset.length,
                         sampleSize: sampleSize,
                         timestamp: new Date().toISOString(),
@@ -4680,7 +4748,7 @@ ${JSON.stringify(sampleData, null, 2)}`;
                     };
                     
                     // Display with Save/Cancel buttons
-                    displayClaudeInsights(result.analysis, dataset.length, sampleSize, true);
+                    displayClaudeInsights(analysisWithTokens, dataset.length, sampleSize, true);
                     
                     // Update button to pending state
                     claudeInsightsBtn.disabled = false;
@@ -4799,10 +4867,18 @@ ${JSON.stringify(sampleData, null, 2)}`;
                     showInsightsStatus('✅ NEW Gemini analysis complete! Choose Save to keep or Cancel to revert.');
                     showMessage(`Fresh Gemini analysis completed with custom prompt. Analysis length: ${result.analysis.length} characters`, 'success');
                     
+                    // Append token usage information if available
+                    let analysisWithTokens = result.analysis;
+                    if (result.token_usage) {
+                        const tokens = result.token_usage;
+                        const tokenInfo = `\n\n---\n**Token Usage**: ${tokens.total_tokens || 'N/A'} tokens (${tokens.prompt_tokens || 'N/A'} prompt, ${tokens.completion_tokens || 'N/A'} completion)`;
+                        analysisWithTokens = result.analysis + tokenInfo;
+                    }
+                    
                     // Store in pending analysis (don't save to cache yet)
                     pendingGeminiAnalysis = {
                         success: true,
-                        analysis: result.analysis,
+                        analysis: analysisWithTokens,
                         totalRecords: dataset.length,
                         sampleSize: sampleSize,
                         timestamp: new Date().toISOString(),
@@ -4811,7 +4887,7 @@ ${JSON.stringify(sampleData, null, 2)}`;
                     };
                     
                     // Display with Save/Cancel buttons
-                    displayGeminiInsights(result.analysis, dataset.length, sampleSize, true);
+                    displayGeminiInsights(analysisWithTokens, dataset.length, sampleSize, true);
                     
                     // Update button to pending state
                     geminiInsightsBtn.disabled = false;
