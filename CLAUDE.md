@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Background Development Server
 ```bash
-# Start server in background (for development/testing)
+# Use this command to start server (in background for development/testing)
 nohup cargo run serve > server.log 2>&1 &
 
 # Check if dev server is running
