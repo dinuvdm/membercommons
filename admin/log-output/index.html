@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="../../css/common.css">
     <!-- Formatting for pre code in readme -->
     <link rel="stylesheet" href="../../css/shared-styles.css">
+    <!-- Standalone Navigation -->
+    <link rel="stylesheet" href="../../css/standalone-nav.css">
     
     <style>
         body {
@@ -19,28 +21,15 @@
             color: var(--text-primary, #1A1A1A);
             line-height: 1.6;
             margin: 0;
-            padding: 20px;
+            padding: 0;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            padding: 20px;
         }
         
-        .breadcrumb {
-            margin-bottom: 24px;
-        }
-        
-        .breadcrumb a {
-            color: var(--accent-blue, #3B82F6);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
         
         .header {
             text-align: center;
@@ -114,10 +103,6 @@
 <body>
     <div id="admin-log-content">
         <div class="container">
-            <div class="breadcrumb">
-                <a href="../">← Admin Dashboard</a>
-            </div>
-            
             <div class="header">
                 <h1>📊 Admin Log Output</h1>
                 <p>Real-time logging demonstration of the enhanced displayFile() function</p>
@@ -149,6 +134,8 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.min.js"></script>
     <script src="../../js/common.js"></script>
     <script src="../../admin/sql/panel/db-admin.js"></script>
+    <!-- Standalone Navigation -->
+    <script src="../../js/standalone-nav.js"></script>
     <script>
         // Wait for DOM and initialize everything
         document.addEventListener('DOMContentLoaded', function() {
