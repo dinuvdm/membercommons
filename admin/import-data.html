@@ -754,7 +754,7 @@
                     <select id="fileSelect" class="form-select">
                         <option value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh5-bIR4hC1f9H3NtDCNT19hZXnqz8WRrBwTuLGnZiA5PWhFILUv2nS2FKE2TZ4dZ-RnJkZwHx1t2Y/pub?gid=1054734503&single=true&output=csv" selected>Google Sheets - Individuals (CSV → accounts table)</option>
                         <option value="../preferences/projects/DFC-ActiveProjects.xlsx">DFC Active Projects (Excel → projects table)</option>
-                        <option value="democracylab">DemocracyLab Projects (JSON → projects table)</option>
+                        <!-- <option value="democracylab">DemocracyLab Projects (JSON → projects table)</option> -->
                         <option value="custom">Choose File...</option>
                     </select>
                 </div>
@@ -980,8 +980,13 @@
         function handleFileDropdownChange(event) {
             const value = event.target.value;
             
-            // Save file selection to browser storage
-            saveFileSelectionToStorage(value);
+            // Only save to browser storage if this is a user-initiated change (not during initialization)
+            if (!isInitializing) {
+                saveFileSelectionToStorage(value);
+            }
+            
+            // Update URL hash parameter with the new feed value
+            updateFeedHashParam(value);
             
             // Hide insights and preview section when dropdown changes
             const aiInsights = document.getElementById('aiInsights');
@@ -1012,11 +1017,29 @@
                 // Hide custom file upload and use predefined file
                 hideSection(customFileSection);
                 hideSection(analyzeSection);
-                selectedFile = value;
-                if (value === 'democracylab') {
-                    // Show preview for DemocracyLab projects
-                    autoAnalyzeAndPreviewWithRustToAvoidsCORS();
+                
+                // Get the selected option to check for data attributes
+                const selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                const dataUrl = selectedOption.getAttribute('data-url');
+                const isCors = selectedOption.getAttribute('data-cors') === 'true';
+                
+                if (dataUrl) {
+                    // This is a dynamic option from Google Sheet
+                    selectedFile = dataUrl;
+                    console.log(`Selected dynamic option: ${selectedOption.textContent} (${value}) - URL: ${dataUrl}, CORS: ${isCors}`);
+                    
+                    if (isCors) {
+                        // Use CORS proxy when CORS is true
+                        console.log('Using CORS proxy for:', value);
+                        autoAnalyzeAndPreviewWithRustToAvoidsCORS();
+                    } else {
+                        // Use direct fetch for non-CORS URLs
+                        console.log('Using direct fetch for:', value);
+                        autoAnalyzeAndPreview();
+                    }
                 } else {
+                    // This is a static predefined file
+                    selectedFile = value;
                     // Automatically analyze predefined file and show preview
                     autoAnalyzeAndPreview();
                 }
@@ -1199,7 +1222,7 @@
 
         async function autoAnalyzeAndPreview() {
             try {
-                showMessage('Loading file preview...', 'info');
+                showMessage(`Loading file preview: ${selectedFile}`, 'info');
                 
                 // First, try to get sheet info and auto-select first sheet
                 await analyzeFile();
@@ -1221,15 +1244,18 @@
         }
 
         // Reusable function for external API calls with CORS handling
-        async function fetchExternalAPI(url, options = {}) {
+        async function fetchExternalAPI(url, options = {}, forceCorsProxy = false) {
             // Check if we're on model.earth domain (allow-listed for direct access)
             const isModelEarthDomain = window.location.hostname.includes('model.earth');
             
-            if (isModelEarthDomain) {
+            if (isModelEarthDomain && !forceCorsProxy) {
                 // Direct fetch for model.earth domain (CORS allow-listed)
                 showMessage('Using direct API access for model.earth domain...', 'info');
                 const response = await fetch(url, options);
                 return await response.json();
+            } else if (forceCorsProxy) {
+                // Skip direct fetch and go straight to proxy when CORS is known to be required
+                showMessage('Using CORS proxy for external API...', 'info');
             } else {
                 // For other domains, try direct fetch first and fallback to Rust backend
                 try {
@@ -1240,65 +1266,106 @@
                     // If CORS fails, use Rust backend to proxy the request
                     console.log('CORS blocked direct access:', corsError.message);
                     showMessage('Direct API access blocked by CORS. Using Rust backend proxy...', 'info');
-                    
-                    try {
-                        // Use Rust backend to fetch the external URL
-                        const proxyResponse = await fetch(`${API_BASE}/proxy`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                url: url,
-                                method: options.method || 'GET',
-                                headers: options.headers || {}
-                            })
-                        });
-
-                        if (!proxyResponse.ok) {
-                            throw new Error(`Proxy request failed: ${proxyResponse.status} ${proxyResponse.statusText}`);
-                        }
-
-                        const proxyResult = await proxyResponse.json();
-                        
-                        if (proxyResult.success) {
-                            showMessage('Successfully fetched data via Rust backend proxy', 'success');
-                            return proxyResult.data;
-                        } else {
-                            throw new Error(proxyResult.error || 'Proxy request failed');
-                        }
-                    } catch (proxyError) {
-                        console.error('Rust backend proxy failed:', proxyError.message);
-                        showMessage('Both direct access and proxy failed. Using fallback data...', 'warning');
-                        
-                        // Return mock data structure for DemocracyLab as last resort
-                        if (url.includes('democracylab.org')) {
-                            return [
-                                {
-                                    project_name: "Sample DemocracyLab Project",
-                                    project_description: "This is sample data. Both direct access and backend proxy failed.",
-                                    project_url: "https://www.democracylab.org",
-                                    project_location: "Various",
-                                    project_date_created: new Date().toISOString(),
-                                    project_date_modified: new Date().toISOString()
-                                }
-                            ];
-                        }
-                        throw proxyError;
-                    }
                 }
+            }
+            
+            // Use Rust backend proxy
+            try {
+                // Use Rust backend to fetch the external URL
+                const proxyResponse = await fetch(`${API_BASE}/proxy`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: url,
+                        method: options.method || 'GET',
+                        headers: options.headers || {}
+                    })
+                });
+
+                if (!proxyResponse.ok) {
+                    throw new Error(`Proxy request failed: ${proxyResponse.status} ${proxyResponse.statusText}`);
+                }
+
+                const proxyResult = await proxyResponse.json();
+                
+                if (proxyResult.success) {
+                    showMessage('Successfully fetched data via Rust backend proxy', 'success');
+                    
+                    // Check if the response might be RSS/XML
+                    if (typeof proxyResult.data === 'string' && 
+                        (proxyResult.data.includes('<rss') || proxyResult.data.includes('<feed') || 
+                         proxyResult.data.includes('<?xml'))) {
+                        // Parse as RSS/XML instead of treating as JSON
+                        console.log('Detected RSS/XML content from proxy, parsing...');
+                        const rssData = parseRSS(proxyResult.data);
+                        
+                        // Convert RSS data to JSON-like objects for consistency
+                        if (rssData.length > 1) {
+                            const headers = rssData[0];
+                            const items = rssData.slice(1).map(row => {
+                                const item = {};
+                                headers.forEach((header, index) => {
+                                    item[header] = row[index] || '';
+                                });
+                                return item;
+                            });
+                            return items;
+                        }
+                        return [];
+                    }
+                    
+                    return proxyResult.data;
+                } else {
+                    throw new Error(proxyResult.error || 'Proxy request failed');
+                }
+            } catch (proxyError) {
+                console.error('Rust backend proxy failed:', proxyError.message);
+                showMessage('Both direct access and proxy failed. Using fallback data...', 'warning');
+                
+                // Return mock data structure for DemocracyLab as last resort
+                if (url.includes('democracylab.org')) {
+                    return [
+                        {
+                            project_name: "Sample DemocracyLab Project",
+                            project_description: "This is sample data. Both direct access and backend proxy failed.",
+                            project_url: "https://www.democracylab.org",
+                            project_location: "Various",
+                            project_date_created: new Date().toISOString(),
+                            project_date_modified: new Date().toISOString()
+                        }
+                    ];
+                }
+                throw proxyError;
             }
         }
 
         async function autoAnalyzeAndPreviewWithRustToAvoidsCORS() {
             try {
-                showMessage('Loading DemocracyLab projects preview...', 'info');
+                // Get the actual URL to display in the message
+                let apiUrl = selectedFile;
                 
-                // Hide sheet selection since DemocracyLab doesn't use sheets
+                // For options from Google Sheet, get the URL from data-url attribute
+                if (!selectedFile.startsWith('http')) {
+                    const selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                    const dataUrl = selectedOption.getAttribute('data-url');
+                    if (dataUrl) {
+                        apiUrl = dataUrl;
+                    }
+                }
+                
+                showMessage(`Loading preview via CORS proxy: ${apiUrl}`, 'info');
+                
+                // Hide sheet selection since external APIs don't use sheets
                 hideSection(sheetSelection);
                 
+                // Check if this option specifically requires CORS proxy
+                const selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                const forceCors = selectedOption && selectedOption.getAttribute('data-cors') === 'true';
+                
                 // Use Rust to load external API to avoid CORS restriction on Javascript.
-                const response = await fetchExternalAPI('https://www.democracylab.org/api/projects?page=2&sortField=-project_date_modified');
+                const response = await fetchExternalAPI(apiUrl, {}, forceCors);
                 
                 console.log('DemocracyLab API response:', response);
                 console.log('Response type:', typeof response);
@@ -1341,8 +1408,8 @@
                     throw new Error(`Invalid data format received from API. Response type: ${typeof response}, keys: ${response && typeof response === 'object' ? Object.keys(response).join(', ') : 'none'}`);
                 }
                 
-                console.log('Successfully extracted projects array, length:', projects.length);
-                showMessage(`Found ${projects.length} DemocracyLab projects`, 'success');
+                console.log('Successfully extracted lists array, length:', projects.length);
+                showMessage(`Found ${projects.length} items in list.`, 'success');
                 
                 // Flatten nested objects in the projects data
                 console.log('Flattening nested objects in project data...');
@@ -1363,12 +1430,14 @@
                 console.log('All headers after flattening:', headers);
                 
                 // Create preview data structure similar to Excel/CSV files
+                const sourceName = selectedOption ? selectedOption.textContent : 'external_api';
+                
                 const previewData = {
                     preview: flattenedProjects.slice(0, 5), // Show first 5 projects
                     total_records: flattenedProjects.length,
                     loaded_records: flattenedProjects.length,
                     headers: headers,
-                    source: 'democracylab'
+                    source: sourceName.toLowerCase().replace(/\s+/g, '_')
                 };
                 
                 // Store the full dataset for later import
@@ -1378,8 +1447,8 @@
                     loaded_records: previewData.loaded_records,
                     headers: previewData.headers,
                     full_dataset: flattenedProjects,
-                    source: 'democracylab',
-                    sheet_name: 'DemocracyLab Projects'
+                    source: sourceName.toLowerCase().replace(/\s+/g, '_'),
+                    sheet_name: sourceName
                 };
                 
                 // Display the preview
@@ -1393,8 +1462,8 @@
                 showAIInsightsButtons();
                 
             } catch (error) {
-                console.error('DemocracyLab preview error:', error);
-                showMessage('Failed to load DemocracyLab projects: ' + error.message, 'error');
+                console.error('Failed to load:', error);
+                showMessage('Failed to load: ' + error.message, 'error');
             }
         }
 
@@ -1617,6 +1686,87 @@
             return result;
         }
 
+        // RSS/XML parsing utility function
+        function parseRSS(xmlText) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                
+                // Check for parsing errors
+                const parseError = xmlDoc.querySelector("parsererror");
+                if (parseError) {
+                    throw new Error("XML parsing error: " + parseError.textContent);
+                }
+                
+                // Get all item elements (RSS) or entry elements (Atom)
+                const items = xmlDoc.querySelectorAll("item, entry");
+                
+                if (items.length === 0) {
+                    throw new Error("No RSS items or Atom entries found in XML");
+                }
+                
+                // Define headers based on common RSS/Atom elements
+                const headers = ['title', 'link', 'description', 'pubDate', 'guid', 'category', 'author'];
+                const result = [headers]; // First row as headers
+                
+                items.forEach(item => {
+                    const row = headers.map(header => {
+                        let element;
+                        
+                        // Handle different element names for RSS vs Atom
+                        switch(header) {
+                            case 'title':
+                                element = item.querySelector('title');
+                                break;
+                            case 'link':
+                                element = item.querySelector('link');
+                                // For Atom feeds, link might be an attribute
+                                if (!element || !element.textContent.trim()) {
+                                    const linkAttr = item.querySelector('link[href]');
+                                    return linkAttr ? linkAttr.getAttribute('href') : '';
+                                }
+                                break;
+                            case 'description':
+                                element = item.querySelector('description, summary, content');
+                                break;
+                            case 'pubDate':
+                                element = item.querySelector('pubDate, published, updated');
+                                break;
+                            case 'guid':
+                                element = item.querySelector('guid, id');
+                                break;
+                            case 'category':
+                                element = item.querySelector('category');
+                                break;
+                            case 'author':
+                                element = item.querySelector('author, creator');
+                                break;
+                            default:
+                                element = item.querySelector(header);
+                        }
+                        
+                        if (element) {
+                            // Strip HTML tags from content if present
+                            let content = element.textContent || element.innerHTML || '';
+                            content = content.replace(/<[^>]*>/g, '').trim();
+                            return content;
+                        }
+                        
+                        return '';
+                    });
+                    
+                    result.push(row);
+                });
+                
+                console.log(`Parsed ${items.length} RSS/XML items`);
+                return result;
+                
+            } catch (error) {
+                console.error('RSS parsing error:', error);
+                throw new Error(`Failed to parse RSS/XML: ${error.message}`);
+            }
+        }
+
         function isCSVFile(filePath) {
             if (typeof filePath === 'string') {
                 return filePath.includes('output=csv') || filePath.endsWith('.csv');
@@ -1629,10 +1779,11 @@
         function getImportTableForFile(filePath) {
             if (isCSVFile(filePath)) {
                 return 'accounts'; // CSV files go to accounts table
-            } else if (filePath === 'democracylab') {
-                return 'projects'; // DemocracyLab projects go to projects table
             } else {
-                return 'projects'; // Excel files go to projects table
+                // Check if this is a projects data source
+                const selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                const isProjects = selectedOption && selectedOption.getAttribute('data-projects') === 'true';
+                return isProjects ? 'projects' : 'projects'; // Default to projects table
             }
         }
 
@@ -1673,6 +1824,45 @@
                         
                         jsonData = parseCSV(csvText);
                         console.log('Parsed CSV rows:', jsonData.length);
+                        
+                    } else if (selectedFile.endsWith('.json') || response.headers.get('content-type')?.includes('application/json')) {
+                        // Handle JSON file
+                        console.log('Processing as JSON file');
+                        const jsonResponse = await response.json();
+                        console.log('JSON response type:', Array.isArray(jsonResponse) ? 'array' : typeof jsonResponse);
+                        
+                        if (Array.isArray(jsonResponse) && jsonResponse.length > 0) {
+                            // Convert JSON objects to flat array format that the rest of the code expects
+                            const firstObject = jsonResponse[0];
+                            const headers = Object.keys(firstObject);
+                            
+                            // Create jsonData array with headers as first row, data as subsequent rows
+                            jsonData = [headers]; // First row as headers
+                            jsonResponse.forEach(obj => {
+                                const row = headers.map(header => {
+                                    const value = obj[header];
+                                    // Handle nested objects by flattening them
+                                    if (typeof value === 'object' && value !== null) {
+                                        return extractObjectValues(value);
+                                    }
+                                    return value || '';
+                                });
+                                jsonData.push(row);
+                            });
+                            
+                            console.log('Converted JSON to tabular format, rows:', jsonData.length);
+                        } else {
+                            throw new Error('JSON response is not a valid array of objects');
+                        }
+                        
+                    } else if (selectedFile.endsWith('.rss') || selectedFile.endsWith('.xml') || response.headers.get('content-type')?.includes('application/rss+xml') || response.headers.get('content-type')?.includes('text/xml') || response.headers.get('content-type')?.includes('application/xml')) {
+                        // Handle RSS/XML file
+                        console.log('Processing as RSS/XML file');
+                        const xmlText = await response.text();
+                        console.log('XML text length:', xmlText.length);
+                        
+                        jsonData = parseRSS(xmlText);
+                        console.log('Parsed RSS items:', jsonData.length);
                         
                     } else {
                         // Handle Excel file
@@ -1891,8 +2081,11 @@
             const targetTable = getImportTableForFile(selectedFile);
             const recordType = targetTable === 'accounts' ? 'individuals' : 'projects';
             
-            // For CSV files and DemocracyLab, sheet selection is not required
-            if (!isCSVFile(selectedFile) && selectedFile !== 'democracylab' && !selectedSheet) {
+            // For CSV files and projects data, sheet selection is not required
+            const selectedOption = fileSelect.options[fileSelect.selectedIndex];
+            const isProjects = selectedOption && selectedOption.getAttribute('data-projects') === 'true';
+            
+            if (!isCSVFile(selectedFile) && !isProjects && !selectedSheet) {
                 showMessage('Please select a sheet first', 'error');
                 return;
             }
@@ -2005,9 +2198,12 @@
                     return;
                 }
                 
-                // For DemocracyLab projects, use the data import endpoint with fetched data
-                if (selectedFile === 'democracylab') {
-                    showMessage('Importing DemocracyLab projects with duplicate checking...', 'info');
+                // For projects data (like DemocracyLab), use the data import endpoint with fetched data
+                const selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                const isProjects = selectedOption.getAttribute('data-projects') === 'true';
+                
+                if (isProjects) {
+                    showMessage('Importing projects with duplicate checking...', 'info');
                     
                     try {
                         // Use the standard data import endpoint with our pre-loaded dataset
@@ -2020,8 +2216,8 @@
                                 data: previewDataResult.full_dataset || previewDataResult.preview,
                                 headers: previewDataResult.headers,
                                 table_name: targetTable,
-                                source: 'democracylab',
-                                file_source: 'DemocracyLab API'
+                                source: previewDataResult.source || 'external_api',
+                                file_source: selectedOption.textContent || 'External API'
                             })
                         });
 
@@ -4760,31 +4956,163 @@ ${JSON.stringify(sampleData, null, 2)}`;
             }
         }
 
+        // Load Google Sheet configuration for dynamic dropdown population
+        async function loadGoogleSheetConfig() {
+            const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSxfv7lxikjrmro3EJYGE_134vm5HdDszZKt4uKswHhsNJ_-afSaG9RoA4oeNV656r4mTuG3wTu38pM/pub?output=csv';
+            
+            try {
+                console.log('Loading Google Sheet configuration...');
+                const response = await fetch(SHEET_URL);
+                const csvText = await response.text();
+                
+                // Parse CSV
+                const rows = csvText.split('\n').map(row => row.split(',').map(cell => cell.replace(/"/g, '').trim()));
+                const headers = rows[0];
+                
+                console.log('CSV headers:', headers);
+                
+                // Find column indices
+                const titleIndex = headers.findIndex(h => h.toLowerCase() === 'title');
+                const urlIndex = headers.findIndex(h => h.toLowerCase() === 'url');
+                const feedIndex = headers.findIndex(h => h.toLowerCase() === 'feed');
+                const corsIndex = headers.findIndex(h => h.toLowerCase() === 'cors');
+                
+                if (titleIndex === -1 || urlIndex === -1 || feedIndex === -1) {
+                    throw new Error('Required columns (Title, URL, Feed) not found in sheet');
+                }
+                
+                console.log('Column indices - Title:', titleIndex, 'URL:', urlIndex, 'Feed:', feedIndex, 'CORS:', corsIndex);
+                
+                // Process data rows and add to dropdown
+                const customOption = fileSelect.querySelector('option[value="custom"]');
+                
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row.length < Math.max(titleIndex, urlIndex, feedIndex) + 1) continue;
+                    
+                    const title = row[titleIndex];
+                    const url = row[urlIndex];
+                    const feed = row[feedIndex];
+                    const cors = corsIndex !== -1 ? row[corsIndex] : '';
+                    
+                    if (title && url && feed) {
+                        const option = document.createElement('option');
+                        option.value = feed;
+                        option.textContent = title;
+                        option.setAttribute('data-url', url);
+                        option.setAttribute('data-cors', cors.toLowerCase() === 'true' ? 'true' : 'false');
+                        
+                        // Add data-projects attribute for democracylab
+                        if (feed === 'democracylab') {
+                            option.setAttribute('data-projects', 'true');
+                        }
+                        
+                        // Insert before the "Choose File..." option
+                        fileSelect.insertBefore(option, customOption);
+                        
+                        console.log(`Added option: ${title} (${feed}) - CORS: ${cors}`);
+                    }
+                }
+                
+                console.log('Google Sheet configuration loaded successfully');
+                
+            } catch (error) {
+                console.error('Failed to load Google Sheet configuration:', error);
+                showMessage('Failed to load dynamic options from Google Sheet', 'warning');
+            }
+        }
+
+        // URL hash parameter management
+        function getURLHashParam(paramName) {
+            const urlParams = new URLSearchParams(window.location.hash.substring(1));
+            return urlParams.get(paramName);
+        }
+
+        function setURLHashParam(paramName, value) {
+            const urlParams = new URLSearchParams(window.location.hash.substring(1));
+            if (value) {
+                urlParams.set(paramName, value);
+            } else {
+                urlParams.delete(paramName);
+            }
+            
+            // Update the URL without triggering a page reload
+            const newHash = urlParams.toString();
+            window.location.hash = newHash ? `#${newHash}` : '';
+        }
+
+        function updateFeedHashParam(feedValue) {
+            setURLHashParam('feed', feedValue);
+        }
+
+        // Track initialization state to avoid saving to browser storage on initial hash parameter load
+        let isInitializing = true;
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            // Try to restore saved file selection from browser storage
-            const savedFileSelection = loadFileSelectionFromStorage();
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Load Google Sheet configuration first
+            await loadGoogleSheetConfig();
+            
+            // Check for feed hash parameter first
+            const feedHashParam = getURLHashParam('feed');
             let selectedOption;
             
-            if (savedFileSelection) {
-                // Check if the saved selection is still available in the dropdown
-                const savedOption = Array.from(fileSelect.options).find(option => option.value === savedFileSelection);
-                if (savedOption) {
-                    fileSelect.value = savedFileSelection;
-                    selectedOption = savedOption;
-                    selectedFile = savedFileSelection;
-                    console.log('Restored file selection from browser storage:', savedFileSelection);
+            if (feedHashParam) {
+                // Use feed from URL hash parameter (don't save to browser storage until user changes)
+                const hashOption = Array.from(fileSelect.options).find(option => option.value === feedHashParam);
+                if (hashOption) {
+                    fileSelect.value = feedHashParam;
+                    selectedOption = hashOption;
+                    selectedFile = feedHashParam;
+                    console.log('Using feed from URL hash parameter (not saving to browser storage):', feedHashParam);
                 } else {
-                    // Saved selection no longer available, use default
-                    selectedOption = fileSelect.options[fileSelect.selectedIndex];
-                    selectedFile = selectedOption.value;
-                    console.log('Saved file selection not available, using default:', selectedFile);
+                    // Hash parameter feed not found, fall back to browser storage
+                    const savedFileSelection = loadFileSelectionFromStorage();
+                    if (savedFileSelection) {
+                        const savedOption = Array.from(fileSelect.options).find(option => option.value === savedFileSelection);
+                        if (savedOption) {
+                            fileSelect.value = savedFileSelection;
+                            selectedOption = savedOption;
+                            selectedFile = savedFileSelection;
+                            console.log('Hash feed not found, restored from browser storage:', savedFileSelection);
+                        } else {
+                            selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                            selectedFile = selectedOption.value;
+                            console.log('Hash feed not found, saved selection not available, using default:', selectedFile);
+                        }
+                    } else {
+                        selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                        selectedFile = selectedOption.value;
+                        console.log('Hash feed not found, no saved selection, using default:', selectedFile);
+                    }
                 }
             } else {
-                // No saved selection, use default
-                selectedOption = fileSelect.options[fileSelect.selectedIndex];
-                selectedFile = selectedOption.value;
-                console.log('No saved file selection, using default:', selectedFile);
+                // No hash parameter, try to restore saved file selection from browser storage
+                const savedFileSelection = loadFileSelectionFromStorage();
+                
+                if (savedFileSelection) {
+                    // Check if the saved selection is still available in the dropdown
+                    const savedOption = Array.from(fileSelect.options).find(option => option.value === savedFileSelection);
+                    if (savedOption) {
+                        fileSelect.value = savedFileSelection;
+                        selectedOption = savedOption;
+                        selectedFile = savedFileSelection;
+                        console.log('Restored file selection from browser storage:', savedFileSelection);
+                    } else {
+                        // Saved selection no longer available, use default
+                        selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                        selectedFile = selectedOption.value;
+                        console.log('Saved file selection not available, using default:', selectedFile);
+                    }
+                } else {
+                    // No saved selection, use default
+                    selectedOption = fileSelect.options[fileSelect.selectedIndex];
+                    selectedFile = selectedOption.value;
+                    console.log('No saved file selection, using default:', selectedFile);
+                }
+                
+                // Update URL hash with the selected feed
+                updateFeedHashParam(selectedFile);
             }
             
             // Check for hash parameters
@@ -4794,9 +5122,23 @@ ${JSON.stringify(sampleData, null, 2)}`;
             showMessage(`Import tool loaded. ${selectedOption.text} is selected.`, 'info');
             
             // Auto-load the selected file on page load
-            if (selectedFile === 'democracylab') {
-                autoAnalyzeAndPreviewWithRustToAvoidsCORS();
+            const dataUrl = selectedOption.getAttribute('data-url');
+            const isCors = selectedOption.getAttribute('data-cors') === 'true';
+            
+            if (dataUrl) {
+                // This is a dynamic option from Google Sheet
+                selectedFile = dataUrl;
+                console.log(`Auto-loading dynamic option: ${selectedOption.text} (${selectedOption.value}) - URL: ${dataUrl}, CORS: ${isCors}`);
+                
+                if (isCors) {
+                    // Use CORS proxy when CORS is true
+                    autoAnalyzeAndPreviewWithRustToAvoidsCORS();
+                } else {
+                    // Use direct fetch for non-CORS URLs
+                    autoAnalyzeAndPreview();
+                }
             } else {
+                // This is a static predefined file
                 autoAnalyzeAndPreview();
             }
             
@@ -4838,6 +5180,9 @@ ${JSON.stringify(sampleData, null, 2)}`;
                     }
                 }, 2000); // Wait 2 seconds for data to load
             }
+            
+            // Initialization complete, allow browser storage updates on dropdown changes
+            isInitializing = false;
         });
     </script>
 </body>

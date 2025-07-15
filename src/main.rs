@@ -770,21 +770,55 @@ async fn proxy_external_request(req: web::Json<ProxyRequest>) -> Result<HttpResp
     
     match request_builder.send().await {
         Ok(response) => {
-            match response.json::<serde_json::Value>().await {
-                Ok(json_data) => {
-                    println!("Proxy request successful, returning {} bytes", serde_json::to_string(&json_data).unwrap_or_default().len());
-                    Ok(HttpResponse::Ok().json(ProxyResponse {
-                        success: true,
-                        data: Some(json_data),
-                        error: None,
-                    }))
+            // Get content type to determine how to parse the response
+            let content_type = response.headers()
+                .get("content-type")
+                .and_then(|ct| ct.to_str().ok())
+                .unwrap_or("")
+                .to_lowercase();
+            
+            // Try to get the response text first
+            match response.text().await {
+                Ok(text_data) => {
+                    println!("Proxy request successful, returning {} bytes", text_data.len());
+                    
+                    // Check if it's XML/RSS content
+                    if content_type.contains("xml") || content_type.contains("rss") || 
+                       text_data.trim_start().starts_with("<?xml") || 
+                       text_data.contains("<rss") || text_data.contains("<feed") {
+                        // Return as raw text for XML/RSS content
+                        Ok(HttpResponse::Ok().json(ProxyResponse {
+                            success: true,
+                            data: Some(serde_json::Value::String(text_data)),
+                            error: None,
+                        }))
+                    } else {
+                        // Try to parse as JSON for non-XML content
+                        match serde_json::from_str::<serde_json::Value>(&text_data) {
+                            Ok(json_data) => {
+                                Ok(HttpResponse::Ok().json(ProxyResponse {
+                                    success: true,
+                                    data: Some(json_data),
+                                    error: None,
+                                }))
+                            }
+                            Err(_) => {
+                                // If JSON parsing fails, return as raw text
+                                Ok(HttpResponse::Ok().json(ProxyResponse {
+                                    success: true,
+                                    data: Some(serde_json::Value::String(text_data)),
+                                    error: None,
+                                }))
+                            }
+                        }
+                    }
                 }
                 Err(parse_error) => {
-                    eprintln!("Failed to parse response as JSON: {}", parse_error);
+                    eprintln!("Failed to parse response as text: {}", parse_error);
                     Ok(HttpResponse::InternalServerError().json(ProxyResponse {
                         success: false,
                         data: None,
-                        error: Some(format!("Failed to parse response as JSON: {}", parse_error)),
+                        error: Some(format!("Failed to parse response: {}", parse_error)),
                     }))
                 }
             }
