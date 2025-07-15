@@ -1,3 +1,6 @@
 [submodule "localsite"]
 	path = localsite
 	url = https://github.com/ModelEarth/localsite
+[submodule "planet"]
+	path = planet
+	url = https://github.com/modelearth/planet
