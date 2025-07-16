@@ -1,1 +1,1 @@
-This is a beautiful JAM Stack website with REST html forms using Rust API that interacts with an Azure PostgreSQL backend using Rust SQLx. AI Insights are provided by Google Gemini and Claude Code CLI.
+This is a beautiful JAM Stack website with REST forms using Rust API to interact with an Azure PostgreSQL backend.

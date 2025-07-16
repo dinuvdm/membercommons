@@ -62,17 +62,32 @@
 .logo {
     width: 32px;
     height: 32px;
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-weight: 600;
     flex-shrink: 0;
+    transition: var(--transition-smooth);
+}
+
+.logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Make logo larger when expanded */
+.sidebar:not(.collapsed) .logo {
+    width: 40px;
+    height: 40px;
+}
+
+.sidebar:not(.collapsed) .logo img {
+    width: 55px;
 }
 
 .logo-text {
+    display: none;
     font-size: 16px;
     font-weight: 200;
     color: var(--text-primary);
@@ -96,10 +111,13 @@
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 4px;
+    padding: 12px;
     border-radius: var(--radius-sm);
     transition: var(--transition-smooth);
-    margin-left: auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 .sidebar-toggle:hover {
@@ -107,8 +125,28 @@
     color: var(--text-primary);
 }
 
+/* When expanded: arrow points left, when collapsed: arrow points right */
 .sidebar.collapsed .sidebar-toggle {
-    transform: rotate(180deg);
+    /* justify-content: center; */
+}
+
+/* Don't apply CSS rotation - let JavaScript handle icon changes */
+.sidebar-toggle i {
+    transform: none;
+}
+
+/* Ensure arrow icon maintains proper size */
+.sidebar-toggle i {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border-light);
+    padding: 8px;
 }
 
 /* Navigation Menu */
@@ -127,29 +165,41 @@
 }
 
 .nav-link {
-    width: 100%;
+    width: calc(100% - 16px);
     display: flex;
     align-items: center;
     padding: 12px 20px;
     background: none;
-    border: none;
+    border: 0px solid transparent;
+    border-radius: 50px;
     color: var(--text-secondary);
     cursor: pointer;
     transition: var(--transition-smooth);
     text-align: left;
-    font-size: 14px;
+    font-size: 20px;
     font-weight: 500;
+    margin: 2px 8px;
+    font-family: TwitterChirp, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .nav-link:hover {
     background: var(--bg-tertiary);
+    border-color: var(--border-medium);
     color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .nav-link.active {
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+/* Only show background when collapsed */
+.sidebar.collapsed .nav-link.active {
     background: var(--bg-tertiary);
-    color: var(--accent-blue);
-    font-weight: 600;
+}
+.sidebar.collapsed.hovered .nav-link.active {
+    background: none;
 }
 
 .nav-icon {
@@ -164,16 +214,19 @@
     white-space: nowrap;
     opacity: 1;
     transition: var(--transition-smooth);
+    display: block;
 }
 
 .sidebar.collapsed .nav-text {
     opacity: 0;
     width: 0;
+    display: none;
 }
 
 .sidebar.collapsed.hovered .nav-text {
     opacity: 1;
     width: auto;
+    display: block;
 }
 
 .nav-arrow {
@@ -189,8 +242,12 @@
 }
 
 .sidebar.collapsed .nav-arrow {
-    opacity: 0;
-    width: 0;
+    opacity: 1;
+    width: 16px;
+}
+
+.sidebar.collapsed .nav-link {
+    margin-left: 0;
 }
 
 .sidebar.collapsed.hovered .nav-arrow {

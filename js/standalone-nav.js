@@ -59,11 +59,10 @@ class StandaloneNavigation {
         const navHTML = `
             <div class="sidebar" id="standalone-sidebar">
                 <div class="sidebar-header">
-                    <div class="logo">MC</div>
+                    <div class="logo">
+                        <img src="${rootPath}/img/logo/neighborhood/favicon.png" alt="MC" />
+                    </div>
                     <span class="logo-text">MemberCommons</span>
-                    <button class="sidebar-toggle" id="sidebar-toggle">
-                        <i data-feather="chevrons-left"></i>
-                    </button>
                 </div>
                 
                 <div class="nav-menu">
@@ -179,6 +178,12 @@ class StandaloneNavigation {
                         </div>
                     </div>
                 </div>
+                
+                <div class="sidebar-footer">
+                    <button class="sidebar-toggle" id="sidebar-toggle">
+                        <i data-feather="chevrons-left"></i>
+                    </button>
+                </div>
             </div>
             
             <div class="mobile-overlay" id="mobile-overlay"></div>
@@ -283,8 +288,31 @@ class StandaloneNavigation {
             this.isCollapsed = !this.isCollapsed;
             sidebar.classList.toggle('collapsed', this.isCollapsed);
             
+            // Update toggle icon based on state
+            this.updateToggleIcon();
+            
             // Store state in localStorage
             localStorage.setItem('standaloneNavCollapsed', this.isCollapsed);
+        }
+    }
+    
+    updateToggleIcon() {
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        if (!sidebarToggle) return;
+        
+        const icon = sidebarToggle.querySelector('i');
+        if (!icon) return;
+        
+        // Set icon based on collapsed state
+        if (this.isCollapsed) {
+            icon.setAttribute('data-feather', 'chevrons-right');
+        } else {
+            icon.setAttribute('data-feather', 'chevrons-left');
+        }
+        
+        // Refresh feather icons if available
+        if (typeof feather !== 'undefined') {
+            feather.replace();
         }
     }
     
@@ -364,6 +392,8 @@ class StandaloneNavigation {
                 sidebar.classList.add('collapsed');
             }
         }
+        // Update icon to match current state
+        this.updateToggleIcon();
     }
 }
 

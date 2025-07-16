@@ -93,9 +93,25 @@
             color: white;
             font-weight: 600;
             flex-shrink: 0;
+            transition: var(--transition-smooth);
+        }
+
+        .logo img {
+            transition: var(--transition-smooth);
+        }
+
+        /* Make logo larger when expanded */
+        .sidebar:not(.collapsed) .logo {
+            width: 40px;
+            height: 40px;
+        }
+
+        .sidebar:not(.collapsed) .logo img {
+            width: 55px;
         }
 
         .logo-text {
+            display: none;
             font-size: 16px;
             font-weight: 200;
             color: var(--text-primary);
@@ -113,27 +129,42 @@
             border: none;
             color: var(--text-secondary);
             cursor: pointer;
-            padding: 8px;
+            padding: 12px;
             border-radius: var(--radius-md);
             transition: var(--transition-smooth);
-            margin-left: auto;
+            width: 100%;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
         }
 
         .sidebar-toggle:hover {
-            background: none;
+            background: var(--bg-tertiary);
             color: var(--text-primary);
         }
 
+        /* When expanded: arrow points left, when collapsed: arrow points right */
         .sidebar.collapsed .sidebar-toggle {
-            opacity: 1;
-            pointer-events: auto;
+            /* justify-content: center; */
         }
 
-        .sidebar.collapsed .sidebar-toggle i {
-            transform: rotate(180deg);
+        /* Don't apply CSS rotation since JavaScript handles icon changes */
+        .sidebar-toggle i {
+            transform: none;
+        }
+
+        /* Ensure arrow icon maintains proper size */
+        .sidebar-toggle i {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-light);
+            padding: 8px;
         }
 
         .nav-menu {
@@ -165,8 +196,8 @@
 
         .nav-section {
             margin-bottom: 8px;
-            border-bottom: 1px solid var(--border-light);
-            padding-bottom: 16px;
+            /* border-bottom: 1px solid var(--border-light); */
+            padding-bottom: 10px;
         }
 
         .nav-section:last-child {
@@ -185,16 +216,26 @@
             text-decoration: none;
             transition: var(--transition-smooth);
             cursor: pointer;
-            border: none;
+            border: 0px solid transparent;
+            border-radius: 50px;
             background: none;
-            width: 100%;
+            width: calc(100% - 16px);
             text-align: left;
-            font-size: 14px;
+            font-size: 20px;
             font-weight: 500;
+            margin: 2px 8px;
+            font-family: TwitterChirp, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .nav-link:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--border-medium);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
         }
 
         .nav-link.active {
-            color: var(--accent-green);
+            color: var(--text-primary);
             font-weight: 600;
         }
 
@@ -209,6 +250,7 @@
             flex: 1;
             opacity: 1;
             transition: var(--transition-smooth);
+            display: block;
         }
 
         .sidebar.collapsed:not(.hovered) .nav-link:hover {
@@ -225,6 +267,7 @@
         .sidebar.collapsed .nav-text {
             opacity: 0;
             pointer-events: none;
+            display: none;
         }
 
         .nav-arrow {
@@ -236,7 +279,11 @@
         }
 
         .sidebar.collapsed .nav-arrow {
-            opacity: 0;
+            opacity: 1;
+        }
+
+        .sidebar.collapsed .nav-link {
+            margin-left: 0;
         }
 
         .nav-arrow.expanded {
@@ -762,6 +809,7 @@
         .sidebar.collapsed.hovered .nav-text {
             opacity: 1;
             pointer-events: auto;
+            display: block;
         }
 
         .sidebar.collapsed.hovered .nav-arrow {
@@ -803,9 +851,6 @@
                 -->
                 <div class="logoX"><img onclick="goWelcome()" style="margin-left:-7px;width:40px;cursor:pointer" src="img/logo/neighborhood/favicon.png"></div>
                 <span class="logo-text">MemberCommons</span>
-                <button class="sidebar-toggle" id="sidebar-toggle">
-                    <i data-feather="chevrons-left"></i>
-                </button>
             </div>
             
             <div class="nav-menu">
@@ -908,6 +953,12 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <i data-feather="chevrons-left"></i>
+                </button>
             </div>
         </nav>
 
@@ -2314,6 +2365,8 @@
             if (isFullOverlap) {
                 icon.setAttribute('data-feather', 'x');
             } else if (isPartialOverlap) {
+                icon.setAttribute('data-feather', 'chevrons-right');
+            } else if (isCollapsed) {
                 icon.setAttribute('data-feather', 'chevrons-right');
             } else {
                 icon.setAttribute('data-feather', 'chevrons-left');
