@@ -131,16 +131,16 @@ Complete CRM schema based on SuiteCRM/Salesforce structure:
 
 ### Environment Configuration
 1. **Primary Database**: PostgreSQL (Azure/Google compatible)
-   ```
-   DATABASE_URL=postgresql://sqladmin@model-earth-server.database.windows.net/ModelEarthDB
-   GEMINI_API_KEY=your_key_here
-   SERVER_HOST=127.0.0.1
-   SERVER_PORT=8081
-   ```
 
-2. **Fallback Handling**: When database connection fails, populate with informative placeholders rather than errors
+COMMONS_HOST in .env file
 
-3. **Security**: Store auth keys in separate config file excluded by `.gitignore`
+2. **Trade Flow Database**: PostgreSQL (Azure/Google compatible)
+
+EXIOBASE_HOST in .env file
+
+3. **Fallback Handling**: When database connection fails, populate with informative placeholders rather than errors
+
+4. **Security**: Store auth keys in separate config file excluded by `.gitignore`
 
 ### Frontend Setup Requirements
 ```javascript

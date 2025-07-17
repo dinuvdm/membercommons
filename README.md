@@ -115,16 +115,12 @@ MemberCommons/
    createdb ModelEarthDB
    
    # Run schema setup
-   psql ModelEarthDB < sql/suitecrm-postgres.sql
+   psql membercommons < sql/suitecrm-postgres.sql
    ```
 
 4. **Configure environment variables**
-   ```bash
-   export DATABASE_URL="postgresql://sqladmin@model-earth-server.database.windows.net/ModelEarthDB"
-   export GEMINI_API_KEY="your-gemini-api-key"
-   export SERVER_HOST="127.0.0.1"
-   export SERVER_PORT="8081"
-   ```
+
+COMMONS_HOST in .env file
 
 5. **Initialize database schema**
    ```bash
