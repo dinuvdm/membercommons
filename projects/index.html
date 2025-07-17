@@ -7,12 +7,15 @@
     <link rel="icon" type="image/x-icon" href="../img/logo/neighborhood/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css">
     
-    <!-- Shared Navigation Styles -->
-    <link rel="stylesheet" href="../css/navigation.css">
-    
+    <link rel="stylesheet" href="../css/common.css">
+    <!-- Formatting for pre code in readme -->
+    <link rel="stylesheet" href="../css/shared-styles.css">
+    <!-- Standalone Navigation -->
+    <link rel="stylesheet" href="../css/standalone-nav.css">
+
     <!-- Page-specific Styles -->
     <link rel="stylesheet" href="../css/projects.css">
-    
+
     <style>
         :root {
             --bg-primary: #F9FAFB;
@@ -144,6 +147,7 @@
         /* Page content specific styles */
         .page-content {
             display: none;
+            margin: 20px;
         }
 
         .page-content.active {
@@ -152,8 +156,10 @@
     </style>
 </head>
 <body>
-    <!-- Navigation will be injected here by navigation.js -->
     
+    <!-- Standalone Navigation -->
+    <script src="../js/standalone-nav.js"></script>
+
     <!-- Opportunities Content -->
     <div id="opportunities-content" class="page-content active">
         <!-- Content will be dynamically loaded by projects.js -->
@@ -238,7 +244,6 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.min.js"></script>
     <script src="../js/common.js"></script>
-    <script src="../js/navigation.js"></script>
     <script src="../js/projects.js"></script>
     
     <script>
@@ -260,56 +265,7 @@
             }
 
             setTimeout(() => {
-                AppState.navigation = initializeNavigation({
-                    defaultSection: 'projects',
-                    defaultTab: AppState.currentTab,
-                    onSectionChange: (section, tab) => {
-                        AppState.currentSection = section;
-                        AppState.currentTab = tab;
-                        
-                        // Handle navigation to other single-page apps
-                        if (section === 'home') {
-                            window.location.href = '../#' + tab;
-                            return;
-                        }
-                        /*
-                        else if (section === 'people') {
-                            window.location.href = '../people/#' + tab;
-                            return;
-                        } else if (section === 'account') {
-                            window.location.href = '../account/#' + tab;
-                            return;
-                        }
-                        */
-
-                        showContent(tab);
-                        updatePageTitle(section, tab);
-                    },
-                    onTabChange: (tab, section) => {
-                        AppState.currentTab = tab;
-                        
-                        // Handle navigation to other single-page apps
-                        if (section === 'home') {
-                            window.location.href = '../#' + tab;
-                            return;
-                        }
-                        /*
-                        else if (section === 'people') {
-                            window.location.href = '../people/#' + tab;
-                            return;
-                        } else if (section === 'account') {
-                            window.location.href = '../account/#' + tab;
-                            return;
-                        }
-                        */
-                        
-                        showContent(tab);
-                        updatePageTitle(section, tab);
-                    },
-                    onSidebarToggle: (collapsed) => {
-                        console.log('Sidebar toggled:', collapsed ? 'collapsed' : 'expanded');
-                    }
-                });
+                
 
                 // Move existing page content into the navigation structure
                 const pageContents = document.querySelectorAll('.page-content');

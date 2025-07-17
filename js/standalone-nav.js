@@ -60,7 +60,7 @@ class StandaloneNavigation {
             <div class="sidebar" id="standalone-sidebar">
                 <div class="sidebar-header">
                     <div class="logo">
-                        <img src="${rootPath}/img/logo/neighborhood/favicon.png" alt="MC" />
+                        <a href="${rootPath}"><img src="${rootPath}img/logo/neighborhood/favicon.png" alt="Up" /></a>
                     </div>
                     <span class="logo-text">MemberCommons</span>
                 </div>
@@ -298,21 +298,63 @@ class StandaloneNavigation {
     
     updateToggleIcon() {
         const sidebarToggle = document.getElementById('sidebar-toggle');
-        if (!sidebarToggle) return;
-        
-        const icon = sidebarToggle.querySelector('i');
-        if (!icon) return;
-        
-        // Set icon based on collapsed state
-        if (this.isCollapsed) {
-            icon.setAttribute('data-feather', 'chevrons-right');
-        } else {
-            icon.setAttribute('data-feather', 'chevrons-left');
+        if (!sidebarToggle) {
+            console.log("sidebar-toggle not found");
+            return;
         }
         
-        // Refresh feather icons if available
-        if (typeof feather !== 'undefined') {
-            feather.replace();
+        // Check actual sidebar state from DOM instead of this.isCollapsed
+        const sidebar = document.getElementById('standalone-sidebar');
+        const actuallyCollapsed = sidebar ? sidebar.classList.contains('collapsed') : false;
+        
+        console.log("updateToggleIcon() - DOM collapsed:", actuallyCollapsed, "this.isCollapsed:", this.isCollapsed);
+        
+        // Sync the class property with actual DOM state
+        this.isCollapsed = actuallyCollapsed;
+        
+        // Look for either <i> element (before feather processing) or <svg> element (after feather processing)
+        let icon = sidebarToggle.querySelector('i') || sidebarToggle.querySelector('svg');
+        
+        if (!icon) {
+            console.log("Neither <i> nor <svg> icon found - creating new <i> element");
+            // Create new icon element
+            icon = document.createElement('i');
+            icon.setAttribute('data-feather', 'chevrons-left');
+            sidebarToggle.appendChild(icon);
+            
+            // Reinitialize feather icons for the new element
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+            // After feather processes it, find the new SVG
+            icon = sidebarToggle.querySelector('svg');
+        }
+        
+        const targetIcon = this.isCollapsed ? 'chevrons-right' : 'chevrons-left';
+        console.log("Setting icon to:", targetIcon);
+        
+        // If it's an SVG (already processed by feather), we need to replace it with a new <i> element
+        if (icon.tagName === 'SVG') {
+            console.log("Found SVG, replacing with new <i> element");
+            const newIcon = document.createElement('i');
+            newIcon.setAttribute('data-feather', targetIcon);
+            sidebarToggle.replaceChild(newIcon, icon);
+            
+            // Process the new icon with feather
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+                console.log("feather.replace() called for new icon");
+            }
+        } else {
+            // If it's an <i> element, just update the attribute
+            console.log("Found <i> element, updating data-feather attribute");
+            icon.setAttribute('data-feather', targetIcon);
+            
+            // Refresh feather icons
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+                console.log("feather.replace() called");
+            }
         }
     }
     
@@ -385,13 +427,23 @@ class StandaloneNavigation {
     // Restore collapsed state from localStorage
     restoreState() {
         const savedCollapsed = localStorage.getItem('standaloneNavCollapsed');
+        const sidebar = document.getElementById('standalone-sidebar');
+        
         if (savedCollapsed === 'true' && !this.isMobile) {
             this.isCollapsed = true;
-            const sidebar = document.getElementById('standalone-sidebar');
             if (sidebar) {
                 sidebar.classList.add('collapsed');
             }
+        } else {
+            // Default to expanded state
+            this.isCollapsed = false;
+            if (sidebar) {
+                sidebar.classList.remove('collapsed');
+            }
         }
+        
+        console.log("restoreState() - isCollapsed:", this.isCollapsed, "savedCollapsed:", savedCollapsed);
+        
         // Update icon to match current state
         this.updateToggleIcon();
     }
@@ -426,8 +478,11 @@ document.addEventListener('DOMContentLoaded', function() {
         currentPage: currentPage
     });
     
-    // Restore state after initialization
+    // Restore state after initialization and feather icons are ready
     setTimeout(() => {
+        if (typeof feather !== 'undefined') {
+            feather.replace(); // Ensure feather icons are initialized
+        }
         standaloneNav.restoreState();
-    }, 100);
+    }, 500);
 });

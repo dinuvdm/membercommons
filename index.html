@@ -251,8 +251,13 @@
             opacity: 1;
             transition: var(--transition-smooth);
             display: block;
+            max-height: 24px;
+            overflow-y: hidden;
         }
-
+        .subnav-link {
+            max-height: 24px;
+            overflow-y: hidden;
+        }
         .sidebar.collapsed:not(.hovered) .nav-link:hover {
                background: var(--accent-blue) !important;
                color: white !important;
@@ -2348,12 +2353,19 @@
 
         // Function to update sidebar toggle icon based on overlap state
         function updateSidebarToggleIcon() {
+            //alert("updateSidebarToggleIcon() called in index.html");
             const sidebarToggle = document.getElementById('sidebar-toggle');
             const sidebar = document.getElementById('sidebar');
-            if (!sidebarToggle || !sidebar) return;
+            if (!sidebarToggle || !sidebar) {
+                alert("sidebar-toggle or sidebar not found in index.html");
+                return;
+            }
             
-            const icon = sidebarToggle.querySelector('i');
-            if (!icon) return;
+            let icon = sidebarToggle.querySelector('i');
+            if (!icon) {
+                console.log("icon not found in index.html - sidebar toggle button exists but has no icon element");
+                return;
+            }
             
             // Check app container width
             const appContainer = document.querySelector('.app-container');
@@ -2730,16 +2742,14 @@
             
             sidebar.addEventListener('mouseleave', function() {
                 if (this.classList.contains('collapsed') && isHoverExpanded && slideRightEnabled) {
-                    hoverTimeout = setTimeout(() => {
-                        this.classList.remove('hovered');
-                        this.style.width = 'var(--sidebar-collapsed)';
-                        isHoverExpanded = false;
-                        
-                        // Toggle button visibility handled by CSS
-                        
-                        // Update toggle icon
-                        updateSidebarToggleIcon();
-                    }, 500);
+                    this.classList.remove('hovered');
+                    this.style.width = 'var(--sidebar-collapsed)';
+                    isHoverExpanded = false;
+                    
+                    // Toggle button visibility handled by CSS
+                    
+                    // Update toggle icon
+                    updateSidebarToggleIcon();
                 }
             });
             
