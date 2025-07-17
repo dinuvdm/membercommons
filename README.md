@@ -1,5 +1,7 @@
 # MemberCommons
 
+Active dev now occurs at [github.com/modelearth/team](https://github.com/modelearth/team/)
+
 ### Team Project Collaboration Platform
 
 MemberCommons is a JAM Stack toolset for teams implementing partner tools using modern web technologies with AI-powered insights. MemberCommons connects staff with developers, designers, and innovators to collaborate on coding projects focused on skill training, job creation and environmental improvement.
