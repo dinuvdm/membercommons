@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="../css/common.css">
     <link rel="stylesheet" href="../css/shared-styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="../js/list.js"></script>
     <style>
         :root {
             --bg-primary: #F9FAFB;
@@ -752,7 +753,6 @@
             <div style="display: flex; gap: 16px; align-items: flex-start;">
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
                     <select id="fileSelect" class="form-select">
-                        <option value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh5-bIR4hC1f9H3NtDCNT19hZXnqz8WRrBwTuLGnZiA5PWhFILUv2nS2FKE2TZ4dZ-RnJkZwHx1t2Y/pub?gid=1054734503&single=true&output=csv" selected>Google Sheets - Individuals (CSV → accounts table)</option>
                         <option value="../preferences/projects/DFC-ActiveProjects.xlsx">DFC Active Projects (Excel → projects table)</option>
                         <!-- <option value="democracylab">DemocracyLab Projects (JSON → projects table)</option> -->
                         <option value="custom">Choose File...</option>
@@ -885,98 +885,6 @@
         let currentActiveAI = null; // 'claude' or 'gemini'
         let currentPromptAI = null; // For tracking which AI the modal is for
         
-        // Cache persistence functions
-        function loadCacheFromStorage() {
-            try {
-                const stored = localStorage.getItem('aiInsightsCache');
-                const cache = stored ? JSON.parse(stored) : {};
-                console.log('DEBUG: loadCacheFromStorage - loaded keys:', Object.keys(cache));
-                
-                // Debug: Show cache contents
-                Object.keys(cache).forEach(key => {
-                    console.log(`DEBUG: Gemini cache key "${key}":`, {
-                        success: cache[key].success,
-                        analysisLength: cache[key].analysis?.length,
-                        totalRecords: cache[key].totalRecords,
-                        timestamp: cache[key].timestamp
-                    });
-                });
-                
-                return cache;
-            } catch (error) {
-                console.error('Error loading cache from localStorage:', error);
-                return {};
-            }
-        }
-        
-        function saveCacheToStorage() {
-            try {
-                const cacheKey = getCurrentCacheKey();
-                console.log('DEBUG: saveCacheToStorage called for key:', cacheKey);
-                console.log('DEBUG: Current aiInsightsCache contents:', Object.keys(aiInsightsCache));
-                console.log('DEBUG: Current cache entry:', aiInsightsCache[cacheKey]);
-                
-                localStorage.setItem('aiInsightsCache', JSON.stringify(aiInsightsCache));
-                console.log('Saved cache to localStorage, keys:', Object.keys(aiInsightsCache));
-            } catch (error) {
-                console.error('Error saving cache to localStorage:', error);
-            }
-        }
-        
-        function loadClaudeCacheFromStorage() {
-            try {
-                const stored = localStorage.getItem('claudeInsightsCache');
-                const cache = stored ? JSON.parse(stored) : {};
-                console.log('DEBUG: loadClaudeCacheFromStorage - loaded keys:', Object.keys(cache));
-                
-                // Debug: Show cache contents
-                Object.keys(cache).forEach(key => {
-                    console.log(`DEBUG: Claude cache key "${key}":`, {
-                        success: cache[key].success,
-                        analysisLength: cache[key].analysis?.length,
-                        totalRecords: cache[key].totalRecords,
-                        timestamp: cache[key].timestamp
-                    });
-                });
-                
-                return cache;
-            } catch (error) {
-                console.error('Error loading Claude cache from localStorage:', error);
-                return {};
-            }
-        }
-        
-        function saveClaudeCacheToStorage() {
-            try {
-                const cacheKey = getCurrentCacheKey();
-                console.log('DEBUG: saveClaudeCacheToStorage called for key:', cacheKey);
-                console.log('DEBUG: Current claudeInsightsCache contents:', Object.keys(claudeInsightsCache));
-                console.log('DEBUG: Current cache entry:', claudeInsightsCache[cacheKey]);
-                
-                localStorage.setItem('claudeInsightsCache', JSON.stringify(claudeInsightsCache));
-                console.log('Saved Claude cache to localStorage, keys:', Object.keys(claudeInsightsCache));
-            } catch (error) {
-                console.error('Error saving Claude cache to localStorage:', error);
-            }
-        }
-        
-        // Generate cache key for current file/sheet combination
-        function getCurrentCacheKey() {
-            // Always use the dropdown value for consistent caching, regardless of selectedFile content
-            const selectedOption = fileSelect.options[fileSelect.selectedIndex];
-            let fileKey = selectedOption ? selectedOption.value : (selectedFile || 'unknown');
-            
-            console.log('DEBUG getCurrentCacheKey - selectedFile:', selectedFile);
-            console.log('DEBUG getCurrentCacheKey - selectedOption:', selectedOption);
-            console.log('DEBUG getCurrentCacheKey - selectedOption.value:', selectedOption?.value);
-            console.log('DEBUG getCurrentCacheKey - data-cors:', selectedOption?.getAttribute('data-cors'));
-            console.log('DEBUG: Using dropdown value for cache key:', fileKey);
-            
-            const sheetKey = selectedSheet || 'default';
-            const cacheKey = `${fileKey}__${sheetKey}`;
-            console.log('DEBUG: Generated cache key:', cacheKey, 'from file:', fileKey, 'sheet:', sheetKey);
-            return cacheKey;
-        }
         let customFiles = {}; // Store custom file objects
 
         // DOM elements
@@ -1277,103 +1185,6 @@
             }
         }
 
-        // Reusable function for external API calls with CORS handling
-        async function fetchExternalAPI(url, options = {}, forceCorsProxy = false) {
-            // Check if we're on model.earth domain (allow-listed for direct access)
-            const isModelEarthDomain = window.location.hostname.includes('model.earth');
-            
-            if (isModelEarthDomain && !forceCorsProxy) {
-                // Direct fetch for model.earth domain (CORS allow-listed)
-                showMessage('Using direct API access for model.earth domain...', 'info');
-                const response = await fetch(url, options);
-                return await response.json();
-            } else if (forceCorsProxy) {
-                // Skip direct fetch and go straight to proxy when CORS is known to be required
-                showMessage('Using CORS proxy for external API...', 'info');
-            } else {
-                // For other domains, try direct fetch first and fallback to Rust backend
-                try {
-                    showMessage('Attempting direct API access...', 'info');
-                    const response = await fetch(url, options);
-                    return await response.json();
-                } catch (corsError) {
-                    // If CORS fails, use Rust backend to proxy the request
-                    console.log('CORS blocked direct access:', corsError.message);
-                    showMessage('Direct API access blocked by CORS. Using Rust backend proxy...', 'info');
-                }
-            }
-            
-            // Use Rust backend proxy
-            try {
-                // Use Rust backend to fetch the external URL
-                const proxyResponse = await fetch(`${API_BASE}/proxy`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        url: url,
-                        method: options.method || 'GET',
-                        headers: options.headers || {}
-                    })
-                });
-
-                if (!proxyResponse.ok) {
-                    throw new Error(`Proxy request failed: ${proxyResponse.status} ${proxyResponse.statusText}`);
-                }
-
-                const proxyResult = await proxyResponse.json();
-                
-                if (proxyResult.success) {
-                    showMessage('Successfully fetched data via Rust backend proxy', 'success');
-                    
-                    // Check if the response might be RSS/XML
-                    if (typeof proxyResult.data === 'string' && 
-                        (proxyResult.data.includes('<rss') || proxyResult.data.includes('<feed') || 
-                         proxyResult.data.includes('<?xml'))) {
-                        // Parse as RSS/XML instead of treating as JSON
-                        console.log('Detected RSS/XML content from proxy, parsing...');
-                        const rssData = parseRSS(proxyResult.data);
-                        
-                        // Convert RSS data to JSON-like objects for consistency
-                        if (rssData.length > 1) {
-                            const headers = rssData[0];
-                            const items = rssData.slice(1).map(row => {
-                                const item = {};
-                                headers.forEach((header, index) => {
-                                    item[header] = row[index] || '';
-                                });
-                                return item;
-                            });
-                            return items;
-                        }
-                        return [];
-                    }
-                    
-                    return proxyResult.data;
-                } else {
-                    throw new Error(proxyResult.error || 'Proxy request failed');
-                }
-            } catch (proxyError) {
-                console.error('Rust backend proxy failed:', proxyError.message);
-                showMessage('Both direct access and proxy failed. Using fallback data...', 'warning');
-                
-                // Return mock data structure for DemocracyLab as last resort
-                if (url.includes('democracylab.org')) {
-                    return [
-                        {
-                            project_name: "Sample DemocracyLab Project",
-                            project_description: "This is sample data. Both direct access and backend proxy failed.",
-                            project_url: "https://www.democracylab.org",
-                            project_location: "Various",
-                            project_date_created: new Date().toISOString(),
-                            project_date_modified: new Date().toISOString()
-                        }
-                    ];
-                }
-                throw proxyError;
-            }
-        }
 
         async function autoAnalyzeAndPreviewWithRustToAvoidsCORS() {
             try {
@@ -1389,7 +1200,7 @@
                     }
                 }
                 
-                showMessage(`Loading preview via CORS proxy: ${apiUrl}`, 'info');
+                showMessage(`Loading preview via unified data loader: ${apiUrl}`, 'info');
                 
                 // Hide sheet selection since external APIs don't use sheets
                 hideSection(sheetSelection);
@@ -1398,92 +1209,21 @@
                 const selectedOption = fileSelect.options[fileSelect.selectedIndex];
                 const forceCors = selectedOption && selectedOption.getAttribute('data-cors') === 'true';
                 
-                // Use Rust to load external API to avoid CORS restriction on Javascript.
-                const response = await fetchExternalAPI(apiUrl, {}, forceCors);
-                
-                console.log('DemocracyLab API response:', response);
-                console.log('Response type:', typeof response);
-                console.log('Is array:', Array.isArray(response));
-                
-                // Handle different response structures more flexibly
-                let projects;
-                
-                if (Array.isArray(response)) {
-                    // Direct API response (array)
-                    projects = response;
-                } else if (response && response.data && Array.isArray(response.data)) {
-                    // Proxy response with data property
-                    projects = response.data;
-                } else if (response && response.projects && Array.isArray(response.projects)) {
-                    // Response with projects property
-                    projects = response.projects;
-                } else if (response && response.results && Array.isArray(response.results)) {
-                    // Response with results property
-                    projects = response.results;
-                } else if (response && Array.isArray(response.project_tiles)) {
-                    // DemocracyLab specific format with project_tiles
-                    projects = response.project_tiles;
-                } else if (response && typeof response === 'object') {
-                    // Check for any array property in the response
-                    const keys = Object.keys(response);
-                    console.log('Response keys:', keys);
-                    
-                    for (const key of keys) {
-                        if (Array.isArray(response[key])) {
-                            console.log(`Found array at key: ${key}, length: ${response[key].length}`);
-                            projects = response[key];
-                            break;
-                        }
-                    }
-                }
-                
-                if (!Array.isArray(projects)) {
-                    console.error('Unable to find project array in response:', response);
-                    throw new Error(`Invalid data format received from API. Response type: ${typeof response}, keys: ${response && typeof response === 'object' ? Object.keys(response).join(', ') : 'none'}`);
-                }
-                
-                console.log('Successfully extracted lists array, length:', projects.length);
-                showMessage(`Found ${projects.length} items in list.`, 'success');
-                
-                // Flatten nested objects in the projects data
-                console.log('Flattening nested objects in project data...');
-                const flattenedProjects = projects.map(project => {
-                    const flattened = flattenObject(project);
-                    console.log('Original project keys:', Object.keys(project));
-                    console.log('Flattened project keys:', Object.keys(flattened));
-                    return flattened;
+                // Use unified data loading from js/list.js
+                const loadResult = await loadUnifiedData(apiUrl, {
+                    forceCorsProxy: forceCors,
+                    API_BASE: API_BASE
                 });
                 
-                // Get all unique headers from flattened data
-                const allHeaders = new Set();
-                flattenedProjects.forEach(project => {
-                    Object.keys(project).forEach(key => allHeaders.add(key));
-                });
-                const headers = Array.from(allHeaders).sort();
+                console.log('Unified data loading result:', loadResult);
+                showMessage(`Found ${loadResult.total_records} items in ${loadResult.format.toUpperCase()} format.`, 'success');
                 
-                console.log('All headers after flattening:', headers);
-                
-                // Create preview data structure similar to Excel/CSV files
+                // Create preview data structure using shared formatter
                 const sourceName = selectedOption ? selectedOption.textContent : 'external_api';
-                
-                const previewData = {
-                    preview: flattenedProjects.slice(0, 5), // Show first 5 projects
-                    total_records: flattenedProjects.length,
-                    loaded_records: flattenedProjects.length,
-                    headers: headers,
-                    source: sourceName.toLowerCase().replace(/\s+/g, '_')
-                };
+                const { previewData, fullResult } = formatUnifiedPreviewData(loadResult, sourceName);
                 
                 // Store the full dataset for later import
-                previewDataResult = {
-                    preview: previewData.preview,
-                    total_records: previewData.total_records,
-                    loaded_records: previewData.loaded_records,
-                    headers: previewData.headers,
-                    full_dataset: flattenedProjects,
-                    source: sourceName.toLowerCase().replace(/\s+/g, '_'),
-                    sheet_name: sourceName
-                };
+                previewDataResult = fullResult;
                 
                 // Display the preview
                 displayPreview(previewData);
@@ -1690,136 +1430,6 @@
             }
         }
 
-        // CSV parsing utility functions
-        function parseCSV(csvText) {
-            const lines = csvText.split('\n').filter(line => line.trim());
-            const result = [];
-            
-            for (let line of lines) {
-                const row = [];
-                let current = '';
-                let inQuotes = false;
-                
-                for (let i = 0; i < line.length; i++) {
-                    const char = line[i];
-                    
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        row.push(current.trim());
-                        current = '';
-                    } else {
-                        current += char;
-                    }
-                }
-                
-                row.push(current.trim());
-                result.push(row);
-            }
-            
-            return result;
-        }
-
-        // RSS/XML parsing utility function
-        function parseRSS(xmlText) {
-            try {
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-                
-                // Check for parsing errors
-                const parseError = xmlDoc.querySelector("parsererror");
-                if (parseError) {
-                    throw new Error("XML parsing error: " + parseError.textContent);
-                }
-                
-                // Get all item elements (RSS) or entry elements (Atom)
-                const items = xmlDoc.querySelectorAll("item, entry");
-                
-                if (items.length === 0) {
-                    throw new Error("No RSS items or Atom entries found in XML");
-                }
-                
-                // Define headers based on common RSS/Atom elements
-                const headers = ['title', 'link', 'description', 'pubDate', 'guid', 'category', 'author'];
-                const result = [headers]; // First row as headers
-                
-                items.forEach(item => {
-                    const row = headers.map(header => {
-                        let element;
-                        
-                        // Handle different element names for RSS vs Atom
-                        switch(header) {
-                            case 'title':
-                                element = item.querySelector('title');
-                                break;
-                            case 'link':
-                                element = item.querySelector('link');
-                                // For Atom feeds, link might be an attribute
-                                if (!element || !element.textContent.trim()) {
-                                    const linkAttr = item.querySelector('link[href]');
-                                    return linkAttr ? linkAttr.getAttribute('href') : '';
-                                }
-                                break;
-                            case 'description':
-                                element = item.querySelector('description, summary, content');
-                                break;
-                            case 'pubDate':
-                                element = item.querySelector('pubDate, published, updated');
-                                break;
-                            case 'guid':
-                                element = item.querySelector('guid, id');
-                                break;
-                            case 'category':
-                                element = item.querySelector('category');
-                                break;
-                            case 'author':
-                                element = item.querySelector('author, creator');
-                                break;
-                            default:
-                                element = item.querySelector(header);
-                        }
-                        
-                        if (element) {
-                            // Strip HTML tags from content if present
-                            let content = element.textContent || element.innerHTML || '';
-                            content = content.replace(/<[^>]*>/g, '').trim();
-                            return content;
-                        }
-                        
-                        return '';
-                    });
-                    
-                    result.push(row);
-                });
-                
-                console.log(`Parsed ${items.length} RSS/XML items`);
-                return result;
-                
-            } catch (error) {
-                console.error('RSS parsing error:', error);
-                throw new Error(`Failed to parse RSS/XML: ${error.message}`);
-            }
-        }
-
-        function isCSVFile(filePath) {
-            if (typeof filePath === 'string') {
-                return filePath.includes('output=csv') || filePath.endsWith('.csv');
-            } else if (filePath instanceof File) {
-                return filePath.name.toLowerCase().endsWith('.csv');
-            }
-            return false;
-        }
-
-        function getImportTableForFile(filePath) {
-            if (isCSVFile(filePath)) {
-                return 'accounts'; // CSV files go to accounts table
-            } else {
-                // Check if this is a projects data source
-                const selectedOption = fileSelect.options[fileSelect.selectedIndex];
-                const isProjects = selectedOption && selectedOption.getAttribute('data-projects') === 'true';
-                return isProjects ? 'projects' : 'projects'; // Default to projects table
-            }
-        }
 
         async function previewDataClientSide() {
             try {
@@ -2449,100 +2059,6 @@
             }
         }
 
-        // Helper function to flatten nested objects for database import
-        function flattenObject(obj, prefix = '', maxDepth = 3, currentDepth = 0) {
-            const flattened = {};
-            
-            if (currentDepth >= maxDepth || obj === null || obj === undefined) {
-                return flattened;
-            }
-            
-            for (const key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    const value = obj[key];
-                    const newKey = prefix ? `${prefix}_${key}` : key;
-                    
-                    if (value === null || value === undefined) {
-                        flattened[newKey] = null;
-                    } else if (Array.isArray(value)) {
-                        // Handle arrays by extracting useful information
-                        if (value.length === 0) {
-                            flattened[newKey] = null;
-                        } else if (value.length === 1 && typeof value[0] === 'object') {
-                            // If array has one object, flatten that object
-                            const subFlattened = flattenObject(value[0], newKey, maxDepth, currentDepth + 1);
-                            Object.assign(flattened, subFlattened);
-                        } else {
-                            // For multiple items or primitive arrays, join them
-                            flattened[newKey] = value.map(item => 
-                                typeof item === 'object' ? extractObjectValues(item, 1) : String(item)
-                            ).join(', ');
-                        }
-                    } else if (typeof value === 'object') {
-                        // Recursively flatten nested objects
-                        const subFlattened = flattenObject(value, newKey, maxDepth, currentDepth + 1);
-                        Object.assign(flattened, subFlattened);
-                    } else {
-                        // Primitive value
-                        flattened[newKey] = value;
-                    }
-                }
-            }
-            
-            return flattened;
-        }
-
-        // Helper function to extract meaningful values from nested objects
-        function extractObjectValues(obj, maxDepth = 2, currentDepth = 0) {
-            if (obj === null || obj === undefined) {
-                return '';
-            }
-            
-            if (typeof obj !== 'object') {
-                return String(obj);
-            }
-            
-            if (Array.isArray(obj)) {
-                if (obj.length === 0) return '[]';
-                if (obj.length === 1) return extractObjectValues(obj[0], maxDepth, currentDepth + 1);
-                return `[${obj.length} items: ${obj.slice(0, 3).map(item => extractObjectValues(item, maxDepth, currentDepth + 1)).join(', ')}${obj.length > 3 ? '...' : ''}]`;
-            }
-            
-            // Stop recursion if we've gone too deep
-            if (currentDepth >= maxDepth) {
-                return '{...}';
-            }
-            
-            const keys = Object.keys(obj);
-            if (keys.length === 0) return '{}';
-            
-            // For objects, extract key-value pairs up to a limit
-            const pairs = [];
-            const maxPairs = 3;
-            
-            for (let i = 0; i < Math.min(keys.length, maxPairs); i++) {
-                const key = keys[i];
-                const value = obj[key];
-                const extractedValue = extractObjectValues(value, maxDepth, currentDepth + 1);
-                
-                // Format the key-value pair
-                if (extractedValue && extractedValue !== '{}' && extractedValue !== '[]') {
-                    pairs.push(`${key}: ${extractedValue}`);
-                }
-            }
-            
-            if (pairs.length === 0) {
-                // If no meaningful pairs found, just show the keys
-                return `{${keys.slice(0, 3).join(', ')}${keys.length > 3 ? '...' : ''}}`;
-            }
-            
-            let result = pairs.join(', ');
-            if (keys.length > maxPairs) {
-                result += `... (+${keys.length - maxPairs} more)`;
-            }
-            
-            return result;
-        }
 
         function displayPreview(data) {
             const content = document.getElementById('previewContent');
@@ -2775,41 +2291,6 @@
             content.innerHTML = html;
         }
 
-        function showMessage(message, type = 'info', clearPrevious = false) {
-            // Add timestamp to message
-            const timestamp = new Date().toLocaleTimeString();
-            const timestampedMessage = `[${timestamp}] ${message}`;
-            
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.textContent = timestampedMessage;
-            
-            // Append new message to the bottom of the log
-            statusMessages.appendChild(alertDiv);
-            
-            // Keep only the last 20 messages to prevent memory issues
-            while (statusMessages.children.length > 20) {
-                statusMessages.removeChild(statusMessages.firstChild);
-            }
-            
-            // Ensure the log container is visible
-            statusMessages.style.display = 'block';
-            
-            // Auto-scroll to the bottom to show the newest message
-            statusMessages.scrollTop = statusMessages.scrollHeight;
-        }
-
-        function clearMessages() {
-            statusMessages.innerHTML = '';
-        }
-
-        function showSection(element) {
-            element.classList.remove('hidden');
-        }
-
-        function hideSection(element) {
-            element.classList.add('hidden');
-        }
 
         function showUploadFallback() {
             // Show the upload fallback section
@@ -2838,17 +2319,6 @@
             `;
         }
 
-        function showLoading(button, text) {
-            button.disabled = true;
-            button.textContent = text;
-            button.classList.add('loading');
-        }
-
-        function hideLoading(button, text) {
-            button.disabled = false;
-            button.textContent = text;
-            button.classList.remove('loading');
-        }
 
         // AI Insights Management Functions
         function showInsightsStatus(message) {
@@ -4092,23 +3562,6 @@ Please analyze this dataset according to the request above.`;
             `;
         }
 
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function maskApiKey(url) {
-            return url.replace(/key=[^&]+/, 'key=***MASKED***');
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
 
         function generateTroubleshootingSteps(statusCode) {
             switch (statusCode) {
@@ -4451,51 +3904,6 @@ Please analyze this dataset according to the request above.`;
         let pendingClaudeAnalysis = null;
         let pendingGeminiAnalysis = null;
 
-        // Browser storage for prompt input
-        const PROMPT_STORAGE_KEY = 'membercommons_prompt_input';
-        
-        function savePromptToStorage(prompt) {
-            if (prompt && prompt.trim()) {
-                localStorage.setItem(PROMPT_STORAGE_KEY, prompt.trim());
-                console.log('Saved prompt to browser storage:', prompt.substring(0, 50) + (prompt.length > 50 ? '...' : ''));
-            } else {
-                // Clear storage when prompt is blank
-                localStorage.removeItem(PROMPT_STORAGE_KEY);
-                console.log('Cleared prompt from browser storage (blank prompt)');
-            }
-        }
-        
-        function loadPromptFromStorage() {
-            const savedPrompt = localStorage.getItem(PROMPT_STORAGE_KEY);
-            if (savedPrompt) {
-                console.log('Loaded prompt from browser storage:', savedPrompt.substring(0, 50) + (savedPrompt.length > 50 ? '...' : ''));
-                return savedPrompt;
-            }
-            return null;
-        }
-
-        // Browser storage for selected file
-        const FILE_SELECT_STORAGE_KEY = 'membercommons_selected_file';
-        
-        function saveFileSelectionToStorage(fileValue) {
-            if (fileValue && fileValue !== 'custom') {
-                localStorage.setItem(FILE_SELECT_STORAGE_KEY, fileValue);
-                console.log('Saved file selection to browser storage:', fileValue);
-            } else {
-                // Don't store custom file selections as they won't be available on reload
-                localStorage.removeItem(FILE_SELECT_STORAGE_KEY);
-                console.log('Cleared file selection from browser storage');
-            }
-        }
-        
-        function loadFileSelectionFromStorage() {
-            const savedFileSelection = localStorage.getItem(FILE_SELECT_STORAGE_KEY);
-            if (savedFileSelection) {
-                console.log('Loaded file selection from browser storage:', savedFileSelection);
-                return savedFileSelection;
-            }
-            return null;
-        }
 
         // Save/Cancel functions for Claude analysis
         function saveClaudeAnalysis() {
@@ -5075,164 +4483,17 @@ ${JSON.stringify(sampleData, null, 2)}`;
             }
         }
 
-        // Load Google Sheet configuration for dynamic dropdown population
-        async function loadGoogleSheetConfig() {
-            const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSxfv7lxikjrmro3EJYGE_134vm5HdDszZKt4uKswHhsNJ_-afSaG9RoA4oeNV656r4mTuG3wTu38pM/pub?output=csv';
-            
-            try {
-                console.log('Loading Google Sheet configuration...');
-                const response = await fetch(SHEET_URL);
-                const csvText = await response.text();
-                
-                // Parse CSV
-                const rows = csvText.split('\n').map(row => row.split(',').map(cell => cell.replace(/"/g, '').trim()));
-                const headers = rows[0];
-                
-                console.log('CSV headers:', headers);
-                
-                // Find column indices
-                const titleIndex = headers.findIndex(h => h.toLowerCase() === 'title');
-                const urlIndex = headers.findIndex(h => h.toLowerCase() === 'url');
-                const feedIndex = headers.findIndex(h => h.toLowerCase() === 'feed');
-                const corsIndex = headers.findIndex(h => h.toLowerCase() === 'cors');
-                
-                if (titleIndex === -1 || urlIndex === -1 || feedIndex === -1) {
-                    throw new Error('Required columns (Title, URL, Feed) not found in sheet');
-                }
-                
-                console.log('Column indices - Title:', titleIndex, 'URL:', urlIndex, 'Feed:', feedIndex, 'CORS:', corsIndex);
-                
-                // Process data rows and add to dropdown
-                const customOption = fileSelect.querySelector('option[value="custom"]');
-                
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    if (row.length < Math.max(titleIndex, urlIndex, feedIndex) + 1) continue;
-                    
-                    const title = row[titleIndex];
-                    const url = row[urlIndex];
-                    const feed = row[feedIndex];
-                    const cors = corsIndex !== -1 ? row[corsIndex] : '';
-                    
-                    if (title && url && feed) {
-                        const option = document.createElement('option');
-                        option.value = feed;
-                        option.textContent = title;
-                        option.setAttribute('data-url', url);
-                        option.setAttribute('data-cors', cors.toLowerCase() === 'true' ? 'true' : 'false');
-                        
-                        // Add data-projects attribute for democracylab
-                        if (feed === 'democracylab') {
-                            option.setAttribute('data-projects', 'true');
-                        }
-                        
-                        // Insert before the "Choose File..." option
-                        fileSelect.insertBefore(option, customOption);
-                        
-                        console.log(`Added option: ${title} (${feed}) - CORS: ${cors}`);
-                    }
-                }
-                
-                console.log('Google Sheet configuration loaded successfully');
-                
-            } catch (error) {
-                console.error('Failed to load Google Sheet configuration:', error);
-                showMessage('Failed to load dynamic options from Google Sheet', 'warning');
-            }
-        }
+        // Note: loadGoogleSheetConfig is now in js/list.js as a shared function
 
-        // URL hash parameter management
-        function getURLHashParam(paramName) {
-            const urlParams = new URLSearchParams(window.location.hash.substring(1));
-            return urlParams.get(paramName);
-        }
-
-        function setURLHashParam(paramName, value) {
-            const urlParams = new URLSearchParams(window.location.hash.substring(1));
-            if (value) {
-                urlParams.set(paramName, value);
-            } else {
-                urlParams.delete(paramName);
-            }
-            
-            // Update the URL without triggering a page reload
-            const newHash = urlParams.toString();
-            window.location.hash = newHash ? `#${newHash}` : '';
-        }
-
-        function updateFeedHashParam(feedValue) {
-            setURLHashParam('feed', feedValue);
-        }
 
         // Track initialization state to avoid saving to browser storage on initial hash parameter load
         let isInitializing = true;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
-            // Load Google Sheet configuration first
-            await loadGoogleSheetConfig();
-            
-            // Check for feed hash parameter first
-            const feedHashParam = getURLHashParam('feed');
-            let selectedOption;
-            
-            if (feedHashParam) {
-                // Use feed from URL hash parameter (don't save to browser storage until user changes)
-                const hashOption = Array.from(fileSelect.options).find(option => option.value === feedHashParam);
-                if (hashOption) {
-                    fileSelect.value = feedHashParam;
-                    selectedOption = hashOption;
-                    selectedFile = feedHashParam;
-                    console.log('Using feed from URL hash parameter (not saving to browser storage):', feedHashParam);
-                } else {
-                    // Hash parameter feed not found, fall back to browser storage
-                    const savedFileSelection = loadFileSelectionFromStorage();
-                    if (savedFileSelection) {
-                        const savedOption = Array.from(fileSelect.options).find(option => option.value === savedFileSelection);
-                        if (savedOption) {
-                            fileSelect.value = savedFileSelection;
-                            selectedOption = savedOption;
-                            selectedFile = savedFileSelection;
-                            console.log('Hash feed not found, restored from browser storage:', savedFileSelection);
-                        } else {
-                            selectedOption = fileSelect.options[fileSelect.selectedIndex];
-                            selectedFile = selectedOption.value;
-                            console.log('Hash feed not found, saved selection not available, using default:', selectedFile);
-                        }
-                    } else {
-                        selectedOption = fileSelect.options[fileSelect.selectedIndex];
-                        selectedFile = selectedOption.value;
-                        console.log('Hash feed not found, no saved selection, using default:', selectedFile);
-                    }
-                }
-            } else {
-                // No hash parameter, try to restore saved file selection from browser storage
-                const savedFileSelection = loadFileSelectionFromStorage();
-                
-                if (savedFileSelection) {
-                    // Check if the saved selection is still available in the dropdown
-                    const savedOption = Array.from(fileSelect.options).find(option => option.value === savedFileSelection);
-                    if (savedOption) {
-                        fileSelect.value = savedFileSelection;
-                        selectedOption = savedOption;
-                        selectedFile = savedFileSelection;
-                        console.log('Restored file selection from browser storage:', savedFileSelection);
-                    } else {
-                        // Saved selection no longer available, use default
-                        selectedOption = fileSelect.options[fileSelect.selectedIndex];
-                        selectedFile = selectedOption.value;
-                        console.log('Saved file selection not available, using default:', selectedFile);
-                    }
-                } else {
-                    // No saved selection, use default
-                    selectedOption = fileSelect.options[fileSelect.selectedIndex];
-                    selectedFile = selectedOption.value;
-                    console.log('No saved file selection, using default:', selectedFile);
-                }
-                
-                // Update URL hash with the selected feed
-                updateFeedHashParam(selectedFile);
-            }
+            // Use shared function for Google Sheet loading and initialization
+            const selectedOption = await initializeFileSelectionWithGoogleSheet(fileSelect, 'feed', 'fileSelection');
+            selectedFile = selectedOption.value;
             
             // Check for hash parameters
             const urlParams = new URLSearchParams(window.location.hash.substring(1));
